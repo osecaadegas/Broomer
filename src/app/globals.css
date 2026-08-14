@@ -140,7 +140,7 @@ body {
 }
 
 .animate-question-reveal {
-  animation: question-reveal 0.35s ease-out both;
+  animation: question-reveal 0.12s ease-out both;
 }
 
 @keyframes lights-prelude {
@@ -174,8 +174,8 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   box-sizing: border-box;
-  width: 8rem;
-  height: 3.75rem;
+  width: 9rem;
+  height: 4.25rem;
   min-inline-size: 0;
   margin-inline: 0;
   padding: 0.3rem;
@@ -193,6 +193,9 @@ body {
 
 .diabolical-switch-side {
   appearance: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   display: grid;
   place-items: center;
   width: 100%;

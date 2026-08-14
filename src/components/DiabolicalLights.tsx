@@ -1,12 +1,28 @@
 "use client";
 
 import Image from "next/image";
+import type { MouseEvent, PointerEvent } from "react";
 
 interface Props {
   onChoose: (enabled: boolean) => void;
 }
 
 export function DiabolicalLights({ onChoose }: Readonly<Props>) {
+  function chooseWithPointer(
+    enabled: boolean,
+    event: PointerEvent<HTMLButtonElement>,
+  ) {
+    if (event.button !== 0) return;
+    onChoose(enabled);
+  }
+
+  function chooseWithKeyboard(
+    enabled: boolean,
+    event: MouseEvent<HTMLButtonElement>,
+  ) {
+    if (event.detail === 0) onChoose(enabled);
+  }
+
   return (
     <section
       aria-labelledby="lights-question"
@@ -24,14 +40,16 @@ export function DiabolicalLights({ onChoose }: Readonly<Props>) {
         <button
           type="button"
           className="diabolical-switch-side diabolical-switch-off"
-          onClick={() => onChoose(false)}
+          onPointerDown={(event) => chooseWithPointer(false, event)}
+          onClick={(event) => chooseWithKeyboard(false, event)}
         >
           OFF
         </button>
         <button
           type="button"
           className="diabolical-switch-side diabolical-switch-on"
-          onClick={() => onChoose(true)}
+          onPointerDown={(event) => chooseWithPointer(true, event)}
+          onClick={(event) => chooseWithKeyboard(true, event)}
         >
           ON
         </button>
