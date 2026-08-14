@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
-import { responses } from "@/db/schema";
+import { getAdminSupabase } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +7,11 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const admin = await getAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   const responseId = Number(id);
 
@@ -16,6 +19,13 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid response id" }, { status: 400 });
   }
 
-  await db.delete(responses).where(eq(responses.id, responseId));
+  const { error } = await admin.supabase
+    .from("responses")
+    .delete()
+    .eq("id", responseId);
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
   return NextResponse.json({ ok: true });
 }

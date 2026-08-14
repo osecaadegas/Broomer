@@ -1,11 +1,14 @@
-import { db } from "@/db";
-import { sql } from "drizzle-orm";
+import { createPublicSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await db.execute(sql`select 1`);
+    const supabase = createPublicSupabaseClient();
+    const { error } = await supabase
+      .from("questions")
+      .select("id", { head: true, count: "exact" });
+    if (error) throw error;
     return Response.json({ ok: true });
   } catch {
     return Response.json({ ok: false }, { status: 500 });

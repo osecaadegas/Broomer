@@ -1,21 +1,35 @@
 import { NextResponse } from "next/server";
-import { asc, desc } from "drizzle-orm";
-import { db } from "@/db";
-import { questions, responses } from "@/db/schema";
+import {
+  createPublicSupabaseClient,
+  getAdminSupabase,
+} from "@/lib/supabase/server";
+import type {
+  SupabaseQuestionRow,
+  SupabaseResponseRow,
+} from "@/lib/supabase/types";
 import { isQuestionVisible } from "@/lib/questionnaire";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const rows = await db
-    .select()
-    .from(responses)
-    .orderBy(desc(responses.createdAt), desc(responses.id));
+  const admin = await getAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const serialized = rows.map((row) => ({
+  const { data, error } = await admin.supabase
+    .from("responses")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const serialized = (data as SupabaseResponseRow[]).map((row) => ({
     id: row.id,
     answers: row.answers ?? {},
-    createdAt: row.createdAt.toISOString(),
+    createdAt: row.created_at,
   }));
 
   return NextResponse.json({ responses: serialized });
@@ -43,7 +57,9 @@ export async function POST(request: Request) {
   }
 
   const answerMap: Record<string, string | string[]> = {};
-  for (const [key, value] of Object.entries(answers as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(
+    answers as Record<string, unknown>,
+  )) {
     if (typeof value === "string" && value.trim() !== "") {
       answerMap[key] = value;
     } else if (
@@ -55,14 +71,31 @@ export async function POST(request: Request) {
   }
 
   // Enforce required questions on the server as well.
-  const allQuestions = await db
-    .select()
-    .from(questions)
-    .orderBy(asc(questions.position), asc(questions.id));
+  const supabase = createPublicSupabaseClient();
+  const { data: questionData, error: questionError } = await supabase
+    .from("questions")
+    .select("*")
+    .order("position")
+    .order("id");
+  if (questionError) {
+    return NextResponse.json({ error: questionError.message }, { status: 500 });
+  }
+
+  const allQuestions = questionData as SupabaseQuestionRow[];
 
   for (const question of allQuestions) {
     if (!question.required) continue;
-    if (!isQuestionVisible(question, answerMap)) continue;
+    if (
+      !isQuestionVisible(
+        {
+          dependsOn: question.depends_on,
+          conditionType: question.condition_type,
+          conditionValue: question.condition_value,
+        },
+        answerMap,
+      )
+    )
+      continue;
     const value = answerMap[String(question.id)];
     const missing =
       value === undefined ||
@@ -76,19 +109,12 @@ export async function POST(request: Request) {
     }
   }
 
-  const [inserted] = await db
-    .insert(responses)
-    .values({ answers: answerMap })
-    .returning();
+  const { error: insertError } = await supabase
+    .from("responses")
+    .insert({ answers: answerMap });
+  if (insertError) {
+    return NextResponse.json({ error: insertError.message }, { status: 500 });
+  }
 
-  return NextResponse.json(
-    {
-      response: {
-        id: inserted.id,
-        answers: inserted.answers,
-        createdAt: inserted.createdAt.toISOString(),
-      },
-    },
-    { status: 201 },
-  );
+  return NextResponse.json({ ok: true }, { status: 201 });
 }

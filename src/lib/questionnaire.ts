@@ -1,4 +1,4 @@
-import type { QuestionRow } from "@/db/schema";
+import type { SupabaseQuestionRow } from "@/lib/supabase/types";
 
 export const QUESTION_TYPES = [
   "short",
@@ -138,13 +138,13 @@ export function isPickType(type: QuestionType): boolean {
  */
 export function ratingScale(question: { options: string[] }): number[] {
   const parsed = question.options
-    .map((option) => Number(option))
+    .map(Number)
     .filter((value) => Number.isInteger(value) && value > 0)
     .sort((a, b) => a - b);
   return parsed.length > 1 ? parsed : [1, 2, 3, 4, 5];
 }
 
-export function toQuestion(row: QuestionRow): Question {
+export function toQuestionFromSupabase(row: SupabaseQuestionRow): Question {
   const rawOptions = Array.isArray(row.options) ? row.options : [];
   return {
     id: row.id,
@@ -155,16 +155,16 @@ export function toQuestion(row: QuestionRow): Question {
     ),
     required: row.required,
     position: row.position,
-    dependsOn: row.dependsOn,
-    conditionType: row.conditionType as Question["conditionType"],
-    conditionValue: row.conditionValue,
-    followUpOption: row.followUpOption,
-    followUpPlaceholder: row.followUpPlaceholder,
+    dependsOn: row.depends_on,
+    conditionType: row.condition_type as Question["conditionType"],
+    conditionValue: row.condition_value,
+    followUpOption: row.follow_up_option,
+    followUpPlaceholder: row.follow_up_placeholder,
     placeholder: row.placeholder,
-    multipleMax: row.multipleMax,
-    responseText: row.responseText,
-    responseTrigger: row.responseTrigger,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
+    multipleMax: row.multiple_max,
+    responseText: row.response_text,
+    responseTrigger: row.response_trigger,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }

@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
-import { questions } from "@/db/schema";
+import { getAdminSupabase } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const admin = await getAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -26,21 +29,28 @@ export async function POST(request: Request) {
   }
 
   const numericIds = ids
-    .map((id) => Number(id))
+    .map(Number)
     .filter((id) => Number.isInteger(id) && id > 0);
 
   if (numericIds.length === 0) {
-    return NextResponse.json({ error: "No valid question ids" }, { status: 400 });
+    return NextResponse.json(
+      { error: "No valid question ids" },
+      { status: 400 },
+    );
   }
 
-  await db.transaction(async (tx) => {
-    for (let index = 0; index < numericIds.length; index += 1) {
-      await tx
-        .update(questions)
-        .set({ position: index + 1 })
-        .where(eq(questions.id, numericIds[index]));
-    }
-  });
+  const results = await Promise.all(
+    numericIds.map((id, index) =>
+      admin.supabase
+        .from("questions")
+        .update({ position: index + 1 })
+        .eq("id", id),
+    ),
+  );
+  const failed = results.find((result) => result.error);
+  if (failed?.error) {
+    return NextResponse.json({ error: failed.error.message }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

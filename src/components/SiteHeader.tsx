@@ -44,6 +44,14 @@ export function SiteHeader() {
               </Link>
             );
           })}
+          <form action="/admin/logout" method="post">
+            <button
+              type="submit"
+              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 sm:px-3 sm:text-sm"
+            >
+              Sign out
+            </button>
+          </form>
         </nav>
       </div>
     </header>

@@ -1,21 +1,40 @@
 import { NextResponse } from "next/server";
-import { asc, max } from "drizzle-orm";
-import { db } from "@/db";
-import { questions } from "@/db/schema";
-import { hasOptions, isQuestionType, toQuestion } from "@/lib/questionnaire";
+import {
+  createPublicSupabaseClient,
+  getAdminSupabase,
+} from "@/lib/supabase/server";
+import type { SupabaseQuestionRow } from "@/lib/supabase/types";
+import {
+  hasOptions,
+  isQuestionType,
+  toQuestionFromSupabase,
+} from "@/lib/questionnaire";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const rows = await db
-    .select()
-    .from(questions)
-    .orderBy(asc(questions.position), asc(questions.id));
+  const supabase = createPublicSupabaseClient();
+  const { data, error } = await supabase
+    .from("questions")
+    .select("*")
+    .order("position")
+    .order("id");
 
-  return NextResponse.json({ questions: rows.map(toQuestion) });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    questions: (data as SupabaseQuestionRow[]).map(toQuestionFromSupabase),
+  });
 }
 
 export async function POST(request: Request) {
+  const admin = await getAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -62,7 +81,10 @@ export async function POST(request: Request) {
   }
 
   if (!isQuestionType(type)) {
-    return NextResponse.json({ error: "Invalid question type" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid question type" },
+      { status: 400 },
+    );
   }
 
   let optionsValue: string[] = [];
@@ -84,41 +106,48 @@ export async function POST(request: Request) {
     }
   }
 
-  const [maxRow] = await db
-    .select({ value: max(questions.position) })
-    .from(questions);
-  const nextPosition = Number(maxRow?.value ?? 0) + 1;
+  const { data: lastQuestion, error: positionError } = await admin.supabase
+    .from("questions")
+    .select("position")
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (positionError) {
+    return NextResponse.json({ error: positionError.message }, { status: 500 });
+  }
 
-  const [inserted] = await db
-    .insert(questions)
-    .values({
+  const nextPosition = Number(lastQuestion?.position ?? 0) + 1;
+  const { data: inserted, error } = await admin.supabase
+    .from("questions")
+    .insert({
       prompt: promptValue,
       type,
       options: optionsValue,
       required: required === true,
       position: nextPosition,
-      dependsOn:
-        typeof dependsOn === "number" ? dependsOn : undefined,
-      conditionType:
-        typeof conditionType === "string" ? conditionType : undefined,
-      conditionValue:
-        typeof conditionValue === "string" ? conditionValue : undefined,
-      followUpOption:
-        typeof followUpOption === "string" ? followUpOption : undefined,
-      followUpPlaceholder:
-        typeof followUpPlaceholder === "string"
-          ? followUpPlaceholder
-          : undefined,
-      placeholder:
-        typeof placeholder === "string" ? placeholder : undefined,
-      multipleMax:
-        typeof multipleMax === "number" ? multipleMax : undefined,
-      responseText:
-        typeof responseText === "string" ? responseText : undefined,
-      responseTrigger:
-        typeof responseTrigger === "string" ? responseTrigger : undefined,
+      depends_on: typeof dependsOn === "number" ? dependsOn : null,
+      condition_type: typeof conditionType === "string" ? conditionType : null,
+      condition_value:
+        typeof conditionValue === "string" ? conditionValue : null,
+      follow_up_option:
+        typeof followUpOption === "string" ? followUpOption : null,
+      follow_up_placeholder:
+        typeof followUpPlaceholder === "string" ? followUpPlaceholder : null,
+      placeholder: typeof placeholder === "string" ? placeholder : null,
+      multiple_max: typeof multipleMax === "number" ? multipleMax : null,
+      response_text: typeof responseText === "string" ? responseText : null,
+      response_trigger:
+        typeof responseTrigger === "string" ? responseTrigger : null,
     })
-    .returning();
+    .select()
+    .single();
 
-  return NextResponse.json({ question: toQuestion(inserted) }, { status: 201 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(
+    { question: toQuestionFromSupabase(inserted as SupabaseQuestionRow) },
+    { status: 201 },
+  );
 }

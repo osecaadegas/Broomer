@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
-import { questions } from "@/db/schema";
+import { getAdminSupabase } from "@/lib/supabase/server";
+import type { SupabaseQuestionRow } from "@/lib/supabase/types";
 import {
   hasOptions,
   isQuestionType,
-  toQuestion,
+  toQuestionFromSupabase,
   type QuestionType,
 } from "@/lib/questionnaire";
 
@@ -20,16 +19,25 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const admin = await getAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   const questionId = parseId(id);
   if (!questionId) {
     return NextResponse.json({ error: "Invalid question id" }, { status: 400 });
   }
 
-  const [existing] = await db
-    .select()
-    .from(questions)
-    .where(eq(questions.id, questionId));
+  const { data: existing, error: existingError } = await admin.supabase
+    .from("questions")
+    .select("*")
+    .eq("id", questionId)
+    .maybeSingle();
+  if (existingError) {
+    return NextResponse.json({ error: existingError.message }, { status: 500 });
+  }
   if (!existing) {
     return NextResponse.json({ error: "Question not found" }, { status: 404 });
   }
@@ -76,15 +84,16 @@ export async function PATCH(
     type?: QuestionType;
     options?: string[];
     required?: boolean;
-    dependsOn?: number | null;
-    conditionType?: string | null;
-    conditionValue?: string | null;
-    followUpOption?: string | null;
-    followUpPlaceholder?: string | null;
+    depends_on?: number | null;
+    condition_type?: string | null;
+    condition_value?: string | null;
+    follow_up_option?: string | null;
+    follow_up_placeholder?: string | null;
     placeholder?: string | null;
-    multipleMax?: number | null;
-    responseText?: string | null;
-    responseTrigger?: string | null;
+    multiple_max?: number | null;
+    response_text?: string | null;
+    response_trigger?: string | null;
+    updated_at?: string;
   } = {};
 
   if (prompt !== undefined) {
@@ -146,60 +155,77 @@ export async function PATCH(
   }
 
   if (dependsOn !== undefined) {
-    update.dependsOn = typeof dependsOn === "number" ? dependsOn : null;
+    update.depends_on = typeof dependsOn === "number" ? dependsOn : null;
   }
   if (conditionType !== undefined) {
-    update.conditionType =
+    update.condition_type =
       typeof conditionType === "string" ? conditionType : null;
   }
   if (conditionValue !== undefined) {
-    update.conditionValue =
+    update.condition_value =
       typeof conditionValue === "string" ? conditionValue : null;
   }
   if (followUpOption !== undefined) {
-    update.followUpOption =
+    update.follow_up_option =
       typeof followUpOption === "string" ? followUpOption : null;
   }
   if (followUpPlaceholder !== undefined) {
-    update.followUpPlaceholder =
+    update.follow_up_placeholder =
       typeof followUpPlaceholder === "string" ? followUpPlaceholder : null;
   }
   if (placeholder !== undefined) {
-    update.placeholder =
-      typeof placeholder === "string" ? placeholder : null;
+    update.placeholder = typeof placeholder === "string" ? placeholder : null;
   }
   if (multipleMax !== undefined) {
-    update.multipleMax =
-      typeof multipleMax === "number" ? multipleMax : null;
+    update.multiple_max = typeof multipleMax === "number" ? multipleMax : null;
   }
   if (responseText !== undefined) {
-    update.responseText =
+    update.response_text =
       typeof responseText === "string" ? responseText : null;
   }
   if (responseTrigger !== undefined) {
-    update.responseTrigger =
+    update.response_trigger =
       typeof responseTrigger === "string" ? responseTrigger : null;
   }
 
-  const [updated] = await db
-    .update(questions)
-    .set({ ...update, updatedAt: new Date() })
-    .where(eq(questions.id, questionId))
-    .returning();
+  update.updated_at = new Date().toISOString();
+  const { data: updated, error } = await admin.supabase
+    .from("questions")
+    .update(update)
+    .eq("id", questionId)
+    .select()
+    .single();
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
-  return NextResponse.json({ question: toQuestion(updated) });
+  return NextResponse.json({
+    question: toQuestionFromSupabase(updated as SupabaseQuestionRow),
+  });
 }
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const admin = await getAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   const questionId = parseId(id);
   if (!questionId) {
     return NextResponse.json({ error: "Invalid question id" }, { status: 400 });
   }
 
-  await db.delete(questions).where(eq(questions.id, questionId));
+  const { error } = await admin.supabase
+    .from("questions")
+    .delete()
+    .eq("id", questionId);
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
   return NextResponse.json({ ok: true });
 }

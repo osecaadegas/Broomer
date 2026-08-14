@@ -1,18 +1,24 @@
-import { asc } from "drizzle-orm";
-import { db } from "@/db";
-import { questions } from "@/db/schema";
-import { toQuestion } from "@/lib/questionnaire";
+import { redirect } from "next/navigation";
+import { getAdminSupabase } from "@/lib/supabase/server";
+import type { SupabaseQuestionRow } from "@/lib/supabase/types";
+import { toQuestionFromSupabase } from "@/lib/questionnaire";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ResponseList } from "@/components/ResponseList";
 
 export const dynamic = "force-dynamic";
 
 export default async function ResponsesPage() {
-  const rows = await db
-    .select()
-    .from(questions)
-    .orderBy(asc(questions.position), asc(questions.id));
-  const initial = rows.map(toQuestion);
+  const admin = await getAdminSupabase();
+  if (!admin) redirect("/admin/login");
+
+  const { data, error } = await admin.supabase
+    .from("questions")
+    .select("*")
+    .order("position")
+    .order("id");
+  if (error) throw error;
+
+  const initial = (data as SupabaseQuestionRow[]).map(toQuestionFromSupabase);
 
   return (
     <main className="min-h-screen">
