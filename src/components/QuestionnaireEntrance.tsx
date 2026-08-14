@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Question } from "@/lib/questionnaire";
+import { DiabolicalLights } from "@/components/DiabolicalLights";
 import { GothicDoor } from "@/components/GothicDoor";
 import { GothicDoorClose } from "@/components/GothicDoorClose";
 import { Questionnaire } from "@/components/Questionnaire";
@@ -10,8 +11,9 @@ interface Props {
   questions: Question[];
 }
 
-export function QuestionnaireEntrance({ questions }: Props) {
-  const [unlocked, setUnlocked] = useState(false);
+export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
+  const [stage, setStage] = useState<"door" | "lights" | "questions">("door");
+  const [lightsOn, setLightsOn] = useState(false);
   const [closing, setClosing] = useState(false);
   const [loopKey, setLoopKey] = useState(0);
 
@@ -22,26 +24,37 @@ export function QuestionnaireEntrance({ questions }: Props) {
 
   function handleClosed() {
     setClosing(false);
-    setUnlocked(false);
+    setStage("door");
+    setLightsOn(false);
     setLoopKey((prev) => prev + 1);
+  }
+
+  function handleLights(enabled: boolean) {
+    setLightsOn(enabled);
+    setTimeout(() => setStage("questions"), 550);
   }
 
   return (
     <>
-      {!unlocked && (
-        <GothicDoor key={`door-${loopKey}`} onOpen={() => setUnlocked(true)} />
+      {lightsOn && (
+        <div aria-hidden className="candle-lighting fixed inset-0 z-[1]" />
       )}
-      <div
-        className={`w-full ${
-          unlocked ? "animate-question-reveal" : "opacity-0"
-        }`}
-      >
-        <Questionnaire
-          key={loopKey}
-          questions={questions}
-          onSubmitted={handleSubmitted}
+      {stage === "door" && (
+        <GothicDoor
+          key={`door-${loopKey}`}
+          onOpen={() => setStage("lights")}
         />
-      </div>
+      )}
+      {stage === "lights" && <DiabolicalLights onChoose={handleLights} />}
+      {stage === "questions" && (
+        <div className="relative z-10 w-full animate-question-reveal">
+          <Questionnaire
+            key={loopKey}
+            questions={questions}
+            onSubmitted={handleSubmitted}
+          />
+        </div>
+      )}
       {closing && <GothicDoorClose onDone={handleClosed} />}
     </>
   );

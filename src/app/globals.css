@@ -116,6 +116,145 @@ body {
   animation: question-reveal 0.6s ease-out 0.8s both;
 }
 
+@keyframes lights-prelude {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-lights-prelude {
+  animation: lights-prelude 0.7s ease-out 0.55s both;
+}
+
+.diabolical-title {
+  color: #e8c66a;
+  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-shadow:
+    0 1px 0 #6e4515,
+    0 0 18px rgba(226, 173, 55, 0.34),
+    0 8px 28px rgba(0, 0, 0, 0.72);
+}
+
+.diabolical-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 7.5rem;
+  height: 3.75rem;
+  padding: 0.22rem;
+  perspective: 480px;
+  background: #343236;
+  border: 1px solid #504c52;
+  border-radius: 0.25rem;
+  box-shadow:
+    -0.34rem 0 0 #29272b,
+    0.34rem 0 0 #29272b,
+    0 0.38rem 0 #201e22,
+    0 0.65rem 1.8rem rgba(0, 0, 0, 0.68);
+}
+
+.diabolical-switch-side {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  border: 0;
+  background: rgba(238, 235, 229, 0.88);
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  transform-style: preserve-3d;
+  transition:
+    color 150ms ease,
+    filter 150ms ease,
+    transform 150ms ease;
+}
+
+.diabolical-switch-side:focus-visible {
+  z-index: 2;
+  outline: 2px solid #e8c66a;
+  outline-offset: 3px;
+}
+
+.diabolical-switch-off {
+  color: #b41f27;
+  transform-origin: right;
+  transform: rotateX(10deg);
+}
+
+.diabolical-switch-on {
+  color: #8d898d;
+  transform-origin: left;
+  transform: rotateX(10deg) rotateY(-28deg);
+}
+
+.diabolical-switch-off:hover,
+.diabolical-switch-off:active {
+  color: #db2731;
+  filter: brightness(1.08);
+}
+
+.diabolical-switch-on:hover,
+.diabolical-switch-on:active {
+  color: #2f9f45;
+  filter: brightness(1.08);
+  transform: rotateX(10deg) rotateY(0deg);
+}
+
+@keyframes candle-flicker {
+  0%,
+  100% {
+    opacity: 0.68;
+    filter: brightness(0.92) saturate(0.92);
+  }
+  18% {
+    opacity: 0.82;
+    filter: brightness(1.08) saturate(1.08);
+  }
+  43% {
+    opacity: 0.7;
+    filter: brightness(0.97) saturate(1);
+  }
+  71% {
+    opacity: 0.88;
+    filter: brightness(1.13) saturate(1.12);
+  }
+}
+
+.candle-lighting {
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 72% 52% at 50% 32%,
+      rgba(255, 196, 92, 0.24) 0%,
+      rgba(174, 88, 36, 0.13) 38%,
+      transparent 72%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(127, 54, 24, 0.12),
+      transparent 28%,
+      transparent 72%,
+      rgba(127, 54, 24, 0.12)
+    );
+  mix-blend-mode: screen;
+  animation: candle-flicker 2.7s steps(7, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-lights-prelude,
+  .candle-lighting {
+    animation: none;
+  }
+}
+
 @keyframes ending-text {
   0% {
     opacity: 0;
