@@ -31,7 +31,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
 
   function handleLights(enabled: boolean) {
     setLightsOn(enabled);
-    setTimeout(() => setStage("questions"), 550);
+    setStage("questions");
   }
 
   return (
@@ -40,10 +40,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
         <div aria-hidden className="candle-lighting fixed inset-0 z-[1]" />
       )}
       {stage === "door" && (
-        <GothicDoor
-          key={`door-${loopKey}`}
-          onOpen={() => setStage("lights")}
-        />
+        <GothicDoor key={`door-${loopKey}`} onOpen={() => setStage("lights")} />
       )}
       {stage === "lights" && <DiabolicalLights onChoose={handleLights} />}
       {stage === "questions" && (

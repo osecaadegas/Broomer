@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 interface Props {
   onChoose: (enabled: boolean) => void;
 }
@@ -8,7 +10,7 @@ export function DiabolicalLights({ onChoose }: Readonly<Props>) {
   return (
     <section
       aria-labelledby="lights-question"
-      className="animate-lights-prelude relative z-10 flex min-h-72 flex-col items-center justify-center text-center"
+      className="animate-lights-prelude relative z-10 flex min-h-[min(32rem,calc(100svh-5rem))] w-full flex-col items-center justify-center px-2 py-6 text-center"
     >
       <h1
         id="lights-question"
@@ -17,11 +19,8 @@ export function DiabolicalLights({ onChoose }: Readonly<Props>) {
         Starting diabolically, lights?
       </h1>
 
-      <div
-        className="diabolical-switch mt-10"
-        role="group"
-        aria-label="Turn candle lighting off or on"
-      >
+      <fieldset className="diabolical-switch mt-8">
+        <legend className="sr-only">Turn candle lighting off or on</legend>
         <button
           type="button"
           className="diabolical-switch-side diabolical-switch-off"
@@ -36,7 +35,17 @@ export function DiabolicalLights({ onChoose }: Readonly<Props>) {
         >
           ON
         </button>
-      </div>
+      </fieldset>
+
+      <Image
+        src="/spongebob.png"
+        alt="SpongeBob presenting a gift"
+        width={1200}
+        height={713}
+        priority
+        sizes="(max-width: 640px) 62vw, 256px"
+        className="diabolical-spongebob mt-8 h-auto w-[min(62vw,16rem)] object-contain"
+      />
     </section>
   );
 }

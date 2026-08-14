@@ -51,7 +51,11 @@ body {
     linear-gradient(225deg, rgba(255, 255, 255, 0.025) 25%, transparent 25%),
     linear-gradient(315deg, rgba(255, 255, 255, 0.018) 25%, transparent 25%),
     linear-gradient(45deg, rgba(255, 255, 255, 0.018) 25%, transparent 25%);
-  background-position: 18px 0, 18px 0, 0 0, 0 0;
+  background-position:
+    18px 0,
+    18px 0,
+    0 0,
+    0 0;
   background-size: 36px 36px;
 }
 
@@ -80,24 +84,47 @@ body {
 }
 
 @keyframes slide-door-left {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
 }
 
 @keyframes slide-door-right {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes smoke-in {
-  0% { opacity: 0; transform: scale(0.8); }
-  40% { opacity: 1; transform: scale(1.1); }
-  100% { opacity: 0; transform: scale(1.4); }
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
 }
 
 @keyframes question-reveal {
-  0% { opacity: 0; transform: translateY(20px) scale(0.96); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .animate-slide-left {
@@ -113,7 +140,7 @@ body {
 }
 
 .animate-question-reveal {
-  animation: question-reveal 0.6s ease-out 0.8s both;
+  animation: question-reveal 0.35s ease-out both;
 }
 
 @keyframes lights-prelude {
@@ -128,7 +155,7 @@ body {
 }
 
 .animate-lights-prelude {
-  animation: lights-prelude 0.7s ease-out 0.55s both;
+  animation: lights-prelude 0.4s ease-out both;
 }
 
 .diabolical-title {
@@ -145,36 +172,47 @@ body {
 
 .diabolical-switch {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 7.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  box-sizing: border-box;
+  width: 8rem;
   height: 3.75rem;
-  padding: 0.22rem;
-  perspective: 480px;
-  background: #343236;
-  border: 1px solid #504c52;
+  min-inline-size: 0;
+  margin-inline: 0;
+  padding: 0.3rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #4a474d 0%, #28262b 100%);
+  border: 1px solid #5f5962;
   border-radius: 0.25rem;
   box-shadow:
-    -0.34rem 0 0 #29272b,
-    0.34rem 0 0 #29272b,
-    0 0.38rem 0 #201e22,
+    -0.28rem 0 0 #29272b,
+    0.28rem 0 0 #29272b,
+    0 0.34rem 0 #201e22,
+    inset 0 0.2rem 0.35rem rgba(0, 0, 0, 0.55),
     0 0.65rem 1.8rem rgba(0, 0, 0, 0.68);
 }
 
 .diabolical-switch-side {
-  position: relative;
+  appearance: none;
   display: grid;
   place-items: center;
+  width: 100%;
+  height: 100%;
   min-width: 0;
-  border: 0;
-  background: rgba(238, 235, 229, 0.88);
+  padding: 0;
+  border: 1px solid rgba(42, 39, 43, 0.56);
+  background: linear-gradient(180deg, #f6f3ef 0%, #cbc7c4 100%);
   font-size: 0.88rem;
   font-weight: 800;
   letter-spacing: 0;
-  transform-style: preserve-3d;
+  line-height: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0.18rem 0 #777277;
   transition:
     color 150ms ease,
     filter 150ms ease,
-    transform 150ms ease;
+    transform 100ms ease,
+    box-shadow 100ms ease;
 }
 
 .diabolical-switch-side:focus-visible {
@@ -185,14 +223,18 @@ body {
 
 .diabolical-switch-off {
   color: #b41f27;
-  transform-origin: right;
-  transform: rotateX(10deg);
+  border-radius: 0.12rem 0 0 0.12rem;
+  transform: translateY(-0.08rem);
 }
 
 .diabolical-switch-on {
-  color: #8d898d;
-  transform-origin: left;
-  transform: rotateX(10deg) rotateY(-28deg);
+  color: #767277;
+  border-left-color: #8b858b;
+  border-radius: 0 0.12rem 0.12rem 0;
+  transform: translateY(0.12rem);
+  box-shadow:
+    inset 0 0.18rem 0.32rem rgba(0, 0, 0, 0.25),
+    0 0.04rem 0 #6c676c;
 }
 
 .diabolical-switch-off:hover,
@@ -203,9 +245,18 @@ body {
 
 .diabolical-switch-on:hover,
 .diabolical-switch-on:active {
-  color: #2f9f45;
-  filter: brightness(1.08);
-  transform: rotateX(10deg) rotateY(0deg);
+  color: #258d3b;
+  filter: brightness(1.06);
+  transform: translateY(0.04rem);
+}
+
+.diabolical-switch-side:active {
+  box-shadow: inset 0 0.2rem 0.35rem rgba(0, 0, 0, 0.3);
+  transform: translateY(0.16rem);
+}
+
+.diabolical-spongebob {
+  filter: drop-shadow(0 1rem 1.2rem rgba(0, 0, 0, 0.48));
 }
 
 @keyframes candle-flicker {
