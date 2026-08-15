@@ -37,6 +37,7 @@ export interface Question {
 export type Answers = Record<string, string | string[]>;
 
 export const RESPONSE_QUESTION_SNAPSHOTS_KEY = "__questionSnapshots";
+export const RESPONSE_MOOD_SELFIE_KEY = "__moodSelfie";
 
 export interface QuestionSnapshot {
   prompt: string;

@@ -11,6 +11,7 @@ import { ClipboardListIcon, TrashIcon } from "@/components/icons";
 interface ResponseItem {
   id: number;
   answers: Record<string, string | string[]>;
+  moodSelfie: string | null;
   questionSnapshots: Record<string, QuestionSnapshot>;
   createdAt: string;
 }
@@ -90,7 +91,9 @@ export function ResponseList({ questions }: Props) {
       setConfirmId(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete response");
+      setError(
+        err instanceof Error ? err.message : "Failed to delete response",
+      );
     } finally {
       setDeletingId(null);
     }
@@ -162,7 +165,9 @@ export function ResponseList({ questions }: Props) {
                 }`}
               >
                 <span className="block text-xs font-semibold">
-                  {index === 0 ? "Latest answers" : `Submission ${responses.length - index}`}
+                  {index === 0
+                    ? "Latest answers"
+                    : `Submission ${responses.length - index}`}
                 </span>
                 <span
                   className={`mt-0.5 block text-xs ${active ? "text-indigo-100" : "text-slate-500"}`}
@@ -195,75 +200,89 @@ export function ResponseList({ questions }: Props) {
             </p>
           </div>
           {confirmId === selectedResponse.id ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500">Delete?</span>
-                  <button
-                    type="button"
-                    onClick={() => doDelete(selectedResponse.id)}
-                    disabled={deletingId === selectedResponse.id}
-                    className="rounded-lg bg-red-600 px-2 py-1 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmId(null)}
-                    className="rounded-lg px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
-                  >
-                    No
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setConfirmId(selectedResponse.id)}
-                  disabled={deletingId === selectedResponse.id}
-                  className="grid h-7 w-7 place-items-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                  aria-label="Delete this submission"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Delete?</span>
+              <button
+                type="button"
+                onClick={() => doDelete(selectedResponse.id)}
+                disabled={deletingId === selectedResponse.id}
+                className="rounded-lg bg-red-600 px-2 py-1 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmId(null)}
+                className="rounded-lg px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+              >
+                No
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmId(selectedResponse.id)}
+              disabled={deletingId === selectedResponse.id}
+              className="grid h-7 w-7 place-items-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+              aria-label="Delete this submission"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         <dl className="divide-y divide-slate-100">
-              {Object.entries(selectedResponse.answers ?? {}).map(([key, value]) => {
-                const isFollowUp = key.endsWith(":followup");
-                const questionId = isFollowUp
-                  ? key.slice(0, -":followup".length)
-                  : key;
-                const question =
-                  selectedResponse.questionSnapshots?.[questionId] ??
-                  questionMap[questionId];
-                const label = isFollowUp
-                  ? `${question ? question.prompt : "Removed question"} — follow-up`
-                  : question
-                    ? question.prompt
-                    : "Removed question";
-                return (
-                  <div
-                    key={key}
-                    className="grid gap-1 px-5 py-3 sm:grid-cols-[minmax(0,40%)_minmax(0,60%)] sm:gap-4"
-                  >
-                    <dt className="text-sm font-medium text-slate-700">
-                      {label}
-                    </dt>
-                    <dd className="break-words text-sm text-slate-500">
-                      {question?.type === "image" &&
-                      typeof value === "string" ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={value}
-                          alt={question.prompt || "Selected image"}
-                          className="h-24 w-auto rounded-lg object-contain"
-                        />
-                      ) : (
-                        formatAnswer(question, value)
-                      )}
-                    </dd>
-                  </div>
-                );
-              })}
+          {selectedResponse.moodSelfie && (
+            <div className="grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,40%)_minmax(0,60%)] sm:gap-4">
+              <dt className="text-sm font-medium text-slate-700">Mood selfie</dt>
+              <dd>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={selectedResponse.moodSelfie}
+                  alt="Mood selfie captured during this response"
+                  className="max-h-72 w-auto max-w-full rounded-lg object-contain"
+                />
+              </dd>
+            </div>
+          )}
+          {Object.entries(selectedResponse.answers ?? {}).map(
+            ([key, value]) => {
+              const isFollowUp = key.endsWith(":followup");
+              const questionId = isFollowUp
+                ? key.slice(0, -":followup".length)
+                : key;
+              const question =
+                selectedResponse.questionSnapshots?.[questionId] ??
+                questionMap[questionId];
+              const label = isFollowUp
+                ? `${question ? question.prompt : "Removed question"} — follow-up`
+                : question
+                  ? question.prompt
+                  : "Removed question";
+              return (
+                <div
+                  key={key}
+                  className="grid gap-1 px-5 py-3 sm:grid-cols-[minmax(0,40%)_minmax(0,60%)] sm:gap-4"
+                >
+                  <dt className="text-sm font-medium text-slate-700">
+                    {label}
+                  </dt>
+                  <dd className="break-words text-sm text-slate-500">
+                    {question?.type === "image" && typeof value === "string" ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={value}
+                        alt={question.prompt || "Selected image"}
+                        className="h-24 w-auto rounded-lg object-contain"
+                      />
+                    ) : (
+                      formatAnswer(question, value)
+                    )}
+                  </dd>
+                </div>
+              );
+            },
+          )}
         </dl>
       </article>
     </div>

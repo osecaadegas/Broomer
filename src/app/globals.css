@@ -474,6 +474,61 @@ body {
   will-change: transform, opacity;
 }
 
+@keyframes mood-sentence-in {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(5px);
+  }
+  22%,
+  78% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+    filter: blur(3px);
+  }
+}
+
+@keyframes selfie-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.78);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes hope-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-mood-sentence {
+  animation: mood-sentence-in 6s cubic-bezier(0.22, 0.68, 0.24, 1) both;
+}
+
+.animate-selfie-reveal {
+  animation: selfie-reveal 1.15s cubic-bezier(0.2, 0.8, 0.26, 1) both;
+}
+
+.animate-hope-message {
+  animation: hope-message-in 1.2s ease-out 0.35s both;
+}
+
 @keyframes slide-close-left {
   0% {
     transform: translateX(-100%);

@@ -11,12 +11,14 @@ import {
   type Question,
 } from "@/lib/questionnaire";
 import { FlyingEmojis } from "@/components/FlyingEmojis";
+import { MoodSelfieInterlude } from "@/components/MoodSelfieInterlude";
 import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClipboardListIcon,
 } from "@/components/icons";
+import { RESPONSE_MOOD_SELFIE_KEY } from "@/lib/questionnaire";
 
 type Answer = string | string[];
 
@@ -47,6 +49,8 @@ export function Questionnaire({
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [noPos, setNoPos] = useState({ left: 45, top: 0 });
+  const [moodInterlude, setMoodInterlude] = useState(false);
+  const [moodInterludeCompleted, setMoodInterludeCompleted] = useState(false);
 
   const visible = useMemo(
     () => questions.filter((question) => isQuestionVisible(question, answers)),
@@ -84,6 +88,16 @@ export function Questionnaire({
   function setAnswer(id: number, value: Answer) {
     setAnswers((prev) => ({ ...prev, [String(id)]: value }));
     clearError(id);
+
+    if (
+      currentSafe === 0 &&
+      question.type === "rating" &&
+      Number(value) < 2 &&
+      !moodInterludeCompleted
+    ) {
+      setMoodInterlude(true);
+      return;
+    }
 
     // Auto-advance on pick types when no follow-up text box or response text is active
     if (!isLast && isPickType(question.type)) {
@@ -158,7 +172,8 @@ export function Questionnaire({
     ) {
       setErrors((prev) => ({
         ...prev,
-        [String(question.id)]: `Pick exactly ${question.multipleMax} options to continue.`,
+        [String(question.id)]:
+          `Pick exactly ${question.multipleMax} options to continue.`,
       }));
       return;
     }
@@ -241,6 +256,20 @@ export function Questionnaire({
     setCurrent(0);
     setSubmitted(false);
     setSubmitError(null);
+    setMoodInterlude(false);
+    setMoodInterludeCompleted(false);
+  }
+
+  function finishMoodInterlude(selfie: string | null) {
+    if (selfie) {
+      setAnswers((previous) => ({
+        ...previous,
+        [RESPONSE_MOOD_SELFIE_KEY]: selfie,
+      }));
+    }
+    setMoodInterludeCompleted(true);
+    setMoodInterlude(false);
+    setCurrent(1);
   }
 
   if (total === 0) {
@@ -292,9 +321,7 @@ export function Questionnaire({
           </div>
 
           {/* Decorative heart */}
-          <div className="mt-4 animate-ending-heart text-2xl">
-            ❤️
-          </div>
+          <div className="mt-4 animate-ending-heart text-2xl">❤️</div>
 
           <button
             type="button"
@@ -315,8 +342,7 @@ export function Questionnaire({
 
   // Should the Next/Submit button be visible?
   const showFollowUp =
-    question.followUpOption != null &&
-    value === question.followUpOption;
+    question.followUpOption != null && value === question.followUpOption;
 
   // Detect response text trigger
   const showResponse =
@@ -327,12 +353,12 @@ export function Questionnaire({
       : String(value) === question.responseTrigger);
 
   // Detect if this is the "drinks" question and track Monster selection
-  const selectedOptions =
-    Array.isArray(value) ? (value as string[]) : [];
-  const isMonsterQuestion = question.options.some(
-    (opt) => opt.toLowerCase().includes("monster"),
+  const selectedOptions = Array.isArray(value) ? (value as string[]) : [];
+  const isMonsterQuestion = question.options.some((opt) =>
+    opt.toLowerCase().includes("monster"),
   );
-  const hasMonster = isMonsterQuestion &&
+  const hasMonster =
+    isMonsterQuestion &&
     selectedOptions.some((opt) => opt.toLowerCase().includes("monster"));
   const reachedMax =
     question.multipleMax != null &&
@@ -356,10 +382,19 @@ export function Questionnaire({
         : "none";
 
   return (
-    <form onSubmit={handleSubmit} noValidate className={`${cardShell} relative`}>
+    <>
+      {moodInterlude && <MoodSelfieInterlude onComplete={finishMoodInterlude} />}
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className={`${cardShell} relative`}
+      >
       <FlyingEmojis mode={emojiMode} />
       <div className={accentBar} />
-      <div key={question.id} className="animate-card-in relative z-10 p-6 sm:p-8">
+      <div
+        key={question.id}
+        className="animate-card-in relative z-10 p-6 sm:p-8"
+      >
         {question.prompt ? (
           <h2 className="text-xl font-semibold leading-snug text-stone-100">
             {question.prompt}
@@ -371,7 +406,7 @@ export function Questionnaire({
           </h2>
         ) : null}
 
-          <div className="mt-6">
+        <div className="mt-6">
           <div className={question.prompt ? "mt-5" : ""}>
             {question.type === "short" && (
               <input
@@ -477,7 +512,9 @@ export function Questionnaire({
                     <textarea
                       rows={3}
                       className={`${inputClass} animate-card-in resize-y`}
-                      placeholder={question.followUpPlaceholder || "Tell us more…"}
+                      placeholder={
+                        question.followUpPlaceholder || "Tell us more…"
+                      }
                       value={
                         typeof followUpValue === "string" ? followUpValue : ""
                       }
@@ -492,21 +529,19 @@ export function Questionnaire({
 
                 {question.multipleMax != null && (
                   <p className="mt-1 text-xs text-stone-500">
-                    Pick exactly {question.multipleMax} ({selectedOptions.length}/
-                    {question.multipleMax})
+                    Pick exactly {question.multipleMax} (
+                    {selectedOptions.length}/{question.multipleMax})
                     {selectedOptions.length >= question.multipleMax
                       ? " — max reached, deselect one to swap"
                       : ""}
                   </p>
                 )}
 
-                {isMonsterQuestion &&
-                  reachedMax &&
-                  !hasMonster && (
-                    <p className="mt-3 animate-card-in rounded-xl border border-[#c56d91]/40 bg-[#3a1930]/80 px-4 py-3 text-sm font-medium text-[#f0becf]">
-                      Are you sure about leaving Monster outside? 😢🥤
-                    </p>
-                  )}
+                {isMonsterQuestion && reachedMax && !hasMonster && (
+                  <p className="mt-3 animate-card-in rounded-xl border border-[#c56d91]/40 bg-[#3a1930]/80 px-4 py-3 text-sm font-medium text-[#f0becf]">
+                    Are you sure about leaving Monster outside? 😢🥤
+                  </p>
+                )}
               </div>
             )}
 
@@ -620,6 +655,7 @@ export function Questionnaire({
           )}
         </div>
       </div>
-    </form>
+      </form>
+    </>
   );
 }

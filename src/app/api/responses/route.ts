@@ -10,6 +10,7 @@ import type {
 import {
   isQuestionType,
   isQuestionVisible,
+  RESPONSE_MOOD_SELFIE_KEY,
   RESPONSE_QUESTION_SNAPSHOTS_KEY,
   type QuestionSnapshot,
 } from "@/lib/questionnaire";
@@ -35,7 +36,12 @@ export async function GET() {
     const stored = row.answers ?? {};
     const answers: Record<string, string | string[]> = {};
     for (const [key, value] of Object.entries(stored)) {
-      if (key === RESPONSE_QUESTION_SNAPSHOTS_KEY) continue;
+      if (
+        key === RESPONSE_QUESTION_SNAPSHOTS_KEY ||
+        key === RESPONSE_MOOD_SELFIE_KEY
+      ) {
+        continue;
+      }
       if (typeof value === "string") answers[key] = value;
       if (
         Array.isArray(value) &&
@@ -79,6 +85,10 @@ export async function GET() {
     return {
       id: row.id,
       answers,
+      moodSelfie:
+        typeof stored[RESPONSE_MOOD_SELFIE_KEY] === "string"
+          ? stored[RESPONSE_MOOD_SELFIE_KEY]
+          : null,
       questionSnapshots,
       createdAt: row.created_at,
     };
@@ -108,10 +118,28 @@ export async function POST(request: Request) {
     );
   }
 
+  const rawAnswers = answers as Record<string, unknown>;
+  const rawMoodSelfie = rawAnswers[RESPONSE_MOOD_SELFIE_KEY];
+  let moodSelfie: string | null = null;
+  if (rawMoodSelfie !== undefined) {
+    if (
+      typeof rawMoodSelfie !== "string" ||
+      rawMoodSelfie.length > 700_000 ||
+      !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(rawMoodSelfie)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid mood selfie" },
+        { status: 400 },
+      );
+    }
+    moodSelfie = rawMoodSelfie;
+  }
+
   const answerMap: Record<string, string | string[]> = {};
   for (const [key, value] of Object.entries(
-    answers as Record<string, unknown>,
+    rawAnswers,
   )) {
+    if (key.startsWith("__")) continue;
     if (typeof value === "string" && value.trim() !== "") {
       answerMap[key] = value;
     } else if (
@@ -193,14 +221,13 @@ export async function POST(request: Request) {
     };
   }
 
-  const { error: insertError } = await supabase
-    .from("responses")
-    .insert({
-      answers: {
-        ...answerMap,
-        [RESPONSE_QUESTION_SNAPSHOTS_KEY]: questionSnapshots,
-      },
-    });
+  const { error: insertError } = await supabase.from("responses").insert({
+    answers: {
+      ...answerMap,
+      ...(moodSelfie ? { [RESPONSE_MOOD_SELFIE_KEY]: moodSelfie } : {}),
+      [RESPONSE_QUESTION_SNAPSHOTS_KEY]: questionSnapshots,
+    },
+  });
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
