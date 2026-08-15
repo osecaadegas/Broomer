@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 interface Props {
   onOpen: () => void;
+  onStartMusic: () => void;
 }
 
 const emojis = [
@@ -13,12 +15,13 @@ const emojis = [
   { char: "🧹", label: "broom" },
 ];
 
-export function GothicDoor({ onOpen }: Props) {
+export function GothicDoor({ onOpen, onStartMusic }: Props) {
   const [picked, setPicked] = useState<string | null>(null);
   const [sliding, setSliding] = useState(false);
   const [doorsOpen, setDoorsOpen] = useState(false);
   const [toxicInput, setToxicInput] = useState("");
   const [toxicWrong, setToxicWrong] = useState(false);
+  const [broomFlying, setBroomFlying] = useState(false);
   const [smoke, setSmoke] = useState(false);
   const [gone, setGone] = useState(false);
 
@@ -27,6 +30,7 @@ export function GothicDoor({ onOpen }: Props) {
     setPicked(char);
 
     if (char === "🧹") {
+      onStartMusic();
       setSliding(true);
       setTimeout(() => setDoorsOpen(true), 900);
     }
@@ -34,9 +38,10 @@ export function GothicDoor({ onOpen }: Props) {
 
   function handleToxicSubmit() {
     if (toxicInput.trim().toLowerCase() === "toxic") {
-      setSmoke(true);
-      setTimeout(() => setGone(true), 1400);
-      setTimeout(() => onOpen(), 1500);
+      setBroomFlying(true);
+      setTimeout(() => setSmoke(true), 3050);
+      setTimeout(() => setGone(true), 4450);
+      setTimeout(() => onOpen(), 4550);
     } else {
       setToxicWrong(true);
       setToxicInput("");
@@ -210,7 +215,7 @@ export function GothicDoor({ onOpen }: Props) {
       )}
 
       {/* TOXIC WORD INPUT (phase 2 — after doors open) */}
-      {doorsOpen && !smoke && (
+      {doorsOpen && !broomFlying && !smoke && (
         <div className="pointer-events-auto relative z-40 flex flex-col items-center gap-4 animate-card-in">
           <p className="text-lg font-semibold tracking-wide text-stone-200">
             Stay .....
@@ -248,7 +253,26 @@ export function GothicDoor({ onOpen }: Props) {
         </div>
       )}
 
-      {/* TOXIC SMOKE (phase 3) */}
+      {/* FLYING BROOM (phase 3) */}
+      {broomFlying && !smoke && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-50 overflow-hidden">
+          <div className="animate-broom-flight absolute top-1/2">
+            <div className="animate-broom-jiggle">
+              <Image
+                src="/broomer.png"
+                alt=""
+                width={768}
+                height={1152}
+                priority
+                sizes="(max-width: 640px) 42vw, 300px"
+                className="h-auto w-[min(42vw,18rem)] object-contain drop-shadow-[0_1.2rem_1.4rem_rgba(0,0,0,0.55)]"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TOXIC SMOKE (phase 4) */}
       {smoke && (
         <div className="pointer-events-none absolute inset-0 z-50">
           <div

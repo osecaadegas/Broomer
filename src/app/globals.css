@@ -139,6 +139,56 @@ body {
   animation: smoke-in 1.4s ease-out forwards;
 }
 
+@keyframes broom-flight {
+  0% {
+    opacity: 0;
+    transform: translate3d(-45vw, 25vh, 0) rotate(-10deg) scale(0.72);
+  }
+  10% {
+    opacity: 1;
+  }
+  32% {
+    transform: translate3d(6vw, -10vh, 0) rotate(2deg) scale(0.9);
+  }
+  58% {
+    transform: translate3d(44vw, -22vh, 0) rotate(-3deg) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate3d(82vw, -7vh, 0) rotate(5deg) scale(0.94);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(145vw, -32vh, 0) rotate(-7deg) scale(0.76);
+  }
+}
+
+@keyframes broom-jiggle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  24% {
+    transform: translateY(-7px) rotate(1.2deg);
+  }
+  52% {
+    transform: translateY(4px) rotate(-0.8deg);
+  }
+  76% {
+    transform: translateY(-4px) rotate(1.5deg);
+  }
+}
+
+.animate-broom-flight {
+  animation: broom-flight 3.2s cubic-bezier(0.42, 0, 0.18, 1) both;
+  will-change: transform, opacity;
+}
+
+.animate-broom-jiggle {
+  animation: broom-jiggle 0.68s ease-in-out infinite;
+  transform-origin: 55% 65%;
+}
+
 .animate-question-reveal {
   animation: question-reveal 0.12s ease-out both;
 }
@@ -304,8 +354,13 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-lights-prelude,
-  .candle-lighting {
+  .candle-lighting,
+  .animate-broom-jiggle {
     animation: none;
+  }
+
+  .animate-broom-flight {
+    animation-duration: 0.8s;
   }
 }
 
