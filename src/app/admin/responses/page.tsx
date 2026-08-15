@@ -26,10 +26,10 @@ export default async function ResponsesPage() {
       <div className="mx-auto max-w-2xl px-4 pb-16 sm:px-6">
         <header className="py-8">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Responses
+            Their answers
           </h1>
           <p className="mt-1 text-sm text-slate-600 sm:text-base">
-            Review answers submitted through your questionnaire.
+            The latest submission is ready to read, with older ones just above it.
           </p>
         </header>
         <ResponseList questions={initial} />

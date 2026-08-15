@@ -7,7 +7,7 @@ import { ClipboardListIcon } from "@/components/icons";
 const links = [
   { href: "/", label: "Survey" },
   { href: "/admin", label: "Questions" },
-  { href: "/admin/responses", label: "Responses" },
+  { href: "/admin/responses", label: "Their answers" },
 ];
 
 export function SiteHeader() {
