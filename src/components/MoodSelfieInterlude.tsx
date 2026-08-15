@@ -20,7 +20,7 @@ const sentences = [
 ];
 
 const finalMessage =
-  "bad days are a thing indeed but i will be here to make them easier as much as im able";
+  "Now that you have meet her ,bad days are a thing indeed but i will be here to make them easier as much as im able";
 
 interface Props {
   onComplete: (selfie: string | null) => void;
