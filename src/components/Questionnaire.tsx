@@ -447,9 +447,10 @@ export function Questionnaire({
             {question.type === "rating" && (
               <div>
                 <div className="flex flex-wrap gap-2">
-                  {scale.map((rating) => {
+                  {scale.map((rating, ratingIndex) => {
                     const selected =
                       typeof value === "string" && value === String(rating);
+                    const animateMoodRating = currentSafe === 0 && rating > 2;
                     return (
                       <button
                         key={rating}
@@ -458,10 +459,19 @@ export function Questionnaire({
                         aria-label={`Rate ${rating} out of ${scale[scale.length - 1]}`}
                         aria-pressed={selected}
                         className={`h-11 w-11 rounded-xl border text-sm font-semibold transition ${
+                          animateMoodRating ? "animate-mood-rating" : ""
+                        } ${
                           selected
                             ? "border-[#c56d91] bg-gradient-to-br from-[#8e204b] to-[#654075] text-white shadow-md shadow-black/30"
                             : "border-white/10 bg-black/20 text-stone-300 hover:border-[#b45577]/60 hover:bg-[#311728] hover:text-[#f0becf]"
                         }`}
+                        style={
+                          animateMoodRating
+                            ? {
+                                animationDelay: `${Math.max(0, ratingIndex - 2) * 70}ms`,
+                              }
+                            : undefined
+                        }
                       >
                         {rating}
                       </button>

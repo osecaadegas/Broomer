@@ -36,6 +36,25 @@ body {
   animation: card-in 0.25s ease-out;
 }
 
+@keyframes mood-rating-in {
+  0% {
+    opacity: 0;
+    transform: translateY(5px) scale(0.82);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-mood-rating {
+  animation: mood-rating-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 .bg-dots {
   background-image: radial-gradient(
     circle at 1px 1px,
@@ -355,7 +374,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-lights-prelude,
   .candle-lighting,
-  .animate-broom-jiggle {
+  .animate-broom-jiggle,
+  .animate-mood-rating {
     animation: none;
   }
 
