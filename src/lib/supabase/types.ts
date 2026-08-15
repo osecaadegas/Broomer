@@ -20,6 +20,6 @@ export interface SupabaseQuestionRow {
 
 export interface SupabaseResponseRow {
   id: number;
-  answers: Record<string, string | string[]>;
+  answers: Record<string, unknown>;
   created_at: string;
 }

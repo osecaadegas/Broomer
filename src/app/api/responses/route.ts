@@ -7,7 +7,12 @@ import type {
   SupabaseQuestionRow,
   SupabaseResponseRow,
 } from "@/lib/supabase/types";
-import { isQuestionVisible } from "@/lib/questionnaire";
+import {
+  isQuestionType,
+  isQuestionVisible,
+  RESPONSE_QUESTION_SNAPSHOTS_KEY,
+  type QuestionSnapshot,
+} from "@/lib/questionnaire";
 
 export const dynamic = "force-dynamic";
 
@@ -26,11 +31,58 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const serialized = (data as SupabaseResponseRow[]).map((row) => ({
-    id: row.id,
-    answers: row.answers ?? {},
-    createdAt: row.created_at,
-  }));
+  const serialized = (data as SupabaseResponseRow[]).map((row) => {
+    const stored = row.answers ?? {};
+    const answers: Record<string, string | string[]> = {};
+    for (const [key, value] of Object.entries(stored)) {
+      if (key === RESPONSE_QUESTION_SNAPSHOTS_KEY) continue;
+      if (typeof value === "string") answers[key] = value;
+      if (
+        Array.isArray(value) &&
+        value.every((item) => typeof item === "string")
+      ) {
+        answers[key] = value;
+      }
+    }
+
+    const rawSnapshots = stored[RESPONSE_QUESTION_SNAPSHOTS_KEY];
+    const questionSnapshots: Record<string, QuestionSnapshot> = {};
+    if (
+      typeof rawSnapshots === "object" &&
+      rawSnapshots !== null &&
+      !Array.isArray(rawSnapshots)
+    ) {
+      for (const [key, value] of Object.entries(rawSnapshots)) {
+        if (
+          typeof value !== "object" ||
+          value === null ||
+          Array.isArray(value)
+        ) {
+          continue;
+        }
+        const snapshot = value as Record<string, unknown>;
+        if (
+          typeof snapshot.prompt === "string" &&
+          isQuestionType(snapshot.type) &&
+          Array.isArray(snapshot.options) &&
+          snapshot.options.every((option) => typeof option === "string")
+        ) {
+          questionSnapshots[key] = {
+            prompt: snapshot.prompt,
+            type: snapshot.type,
+            options: snapshot.options,
+          };
+        }
+      }
+    }
+
+    return {
+      id: row.id,
+      answers,
+      questionSnapshots,
+      createdAt: row.created_at,
+    };
+  });
 
   return NextResponse.json({ responses: serialized });
 }
@@ -109,9 +161,33 @@ export async function POST(request: Request) {
     }
   }
 
+  const questionSnapshots: Record<string, QuestionSnapshot> = {};
+  for (const question of allQuestions) {
+    const questionId = String(question.id);
+    const hasStoredAnswer =
+      answerMap[questionId] !== undefined ||
+      answerMap[`${questionId}:followup`] !== undefined;
+    if (!hasStoredAnswer || !isQuestionType(question.type)) continue;
+
+    questionSnapshots[questionId] = {
+      prompt: question.prompt,
+      type: question.type,
+      options: Array.isArray(question.options)
+        ? question.options.filter(
+            (option): option is string => typeof option === "string",
+          )
+        : [],
+    };
+  }
+
   const { error: insertError } = await supabase
     .from("responses")
-    .insert({ answers: answerMap });
+    .insert({
+      answers: {
+        ...answerMap,
+        [RESPONSE_QUESTION_SNAPSHOTS_KEY]: questionSnapshots,
+      },
+    });
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }

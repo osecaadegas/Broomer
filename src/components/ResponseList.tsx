@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ratingScale, type Question } from "@/lib/questionnaire";
+import {
+  ratingScale,
+  type Question,
+  type QuestionSnapshot,
+} from "@/lib/questionnaire";
 import { ClipboardListIcon, TrashIcon } from "@/components/icons";
 
 interface ResponseItem {
   id: number;
   answers: Record<string, string | string[]>;
+  questionSnapshots: Record<string, QuestionSnapshot>;
   createdAt: string;
 }
 
@@ -15,7 +20,7 @@ interface Props {
 }
 
 function formatAnswer(
-  question: Question | undefined,
+  question: QuestionSnapshot | undefined,
   value: string | string[],
 ): string {
   if (Array.isArray(value)) {
@@ -227,7 +232,9 @@ export function ResponseList({ questions }: Props) {
                 const questionId = isFollowUp
                   ? key.slice(0, -":followup".length)
                   : key;
-                const question = questionMap[questionId];
+                const question =
+                  selectedResponse.questionSnapshots?.[questionId] ??
+                  questionMap[questionId];
                 const label = isFollowUp
                   ? `${question ? question.prompt : "Removed question"} — follow-up`
                   : question

@@ -36,6 +36,14 @@ export interface Question {
 
 export type Answers = Record<string, string | string[]>;
 
+export const RESPONSE_QUESTION_SNAPSHOTS_KEY = "__questionSnapshots";
+
+export interface QuestionSnapshot {
+  prompt: string;
+  type: QuestionType;
+  options: string[];
+}
+
 /**
  * Evaluates whether a question should be shown based on the answers so far.
  * A question with no `dependsOn` is always visible.

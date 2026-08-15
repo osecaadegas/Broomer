@@ -7,7 +7,7 @@ import { ClipboardListIcon } from "@/components/icons";
 const links = [
   { href: "/", label: "Survey" },
   { href: "/admin", label: "Questions" },
-  { href: "/admin/responses", label: "Their answers" },
+  { href: "/admin/responses", label: "Answers" },
 ];
 
 export function SiteHeader() {
@@ -23,7 +23,9 @@ export function SiteHeader() {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-white shadow-sm">
             <ClipboardListIcon className="h-4.5 w-4.5" />
           </span>
-          <span className="text-sm sm:text-base">Questionnaire</span>
+          <span className="hidden text-sm sm:inline sm:text-base">
+            Questionnaire
+          </span>
         </Link>
 
         <nav className="flex items-center gap-0.5 sm:gap-1" aria-label="Main">
@@ -34,7 +36,7 @@ export function SiteHeader() {
                 key={link.href}
                 href={link.href}
                 aria-current={active ? "page" : undefined}
-                className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:px-3 sm:text-sm ${
+                className={`rounded-lg px-2 py-1.5 text-xs font-medium transition-colors sm:px-3 sm:text-sm ${
                   active
                     ? "bg-indigo-50 text-indigo-700"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
@@ -47,7 +49,7 @@ export function SiteHeader() {
           <form action="/admin/logout" method="post">
             <button
               type="submit"
-              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 sm:px-3 sm:text-sm"
+              className="rounded-lg px-2 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 sm:px-3 sm:text-sm"
             >
               Sign out
             </button>
