@@ -136,7 +136,6 @@ export async function POST(request: Request) {
   const allQuestions = questionData as SupabaseQuestionRow[];
 
   for (const question of allQuestions) {
-    if (!question.required) continue;
     if (
       !isQuestionVisible(
         {
@@ -149,6 +148,20 @@ export async function POST(request: Request) {
     )
       continue;
     const value = answerMap[String(question.id)];
+    if (
+      question.type === "multiple" &&
+      question.multiple_max != null &&
+      (!Array.isArray(value) || value.length !== question.multiple_max)
+    ) {
+      return NextResponse.json(
+        {
+          error: `"${question.prompt}" requires exactly ${question.multiple_max} options`,
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!question.required) continue;
     const missing =
       value === undefined ||
       (Array.isArray(value) && value.length === 0) ||

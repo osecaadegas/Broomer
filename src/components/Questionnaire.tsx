@@ -29,7 +29,7 @@ const inputClass =
   "w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-[15px] text-stone-100 placeholder:text-stone-500 shadow-inner shadow-black/20 outline-none transition focus:border-[#bd7996]/80 focus:ring-2 focus:ring-[#8c345c]/35";
 
 const cardShell =
-  "w-full overflow-hidden rounded-3xl border border-[#9d6682]/30 bg-[#17111f]/90 shadow-2xl shadow-black/60 ring-1 ring-white/5 backdrop-blur-xl";
+  "max-h-[calc(100dvh-2rem)] w-full max-w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-3xl border border-[#9d6682]/30 bg-[#17111f]/90 shadow-2xl shadow-black/60 ring-1 ring-white/5 backdrop-blur-xl sm:max-h-[calc(100dvh-5rem)]";
 
 const accentBar =
   "h-1.5 w-full bg-gradient-to-r from-[#7c173e] via-[#b45577] to-[#5b3377]";
@@ -132,22 +132,6 @@ export function Questionnaire({ questions, onSubmitted }: Props) {
       };
     });
     clearError(id);
-
-    // Auto-advance for multiple choice when max is reached (or immediately if no max)
-    if (!isLast && isPickType(question.type)) {
-      const nextCount =
-        (Array.isArray(answers[String(id)])
-          ? (answers[String(id)] as string[]).length
-          : 0) + 1;
-      const atMax =
-        question.multipleMax != null && nextCount >= question.multipleMax;
-      const hasFollowUpNow =
-        question.followUpOption != null &&
-        option === question.followUpOption;
-      if ((atMax || question.multipleMax == null) && !hasFollowUpNow) {
-        setTimeout(() => setCurrent(currentSafe + 1), 300);
-      }
-    }
   }
 
   function goBack() {
@@ -159,6 +143,20 @@ export function Questionnaire({ questions, onSubmitted }: Props) {
 
   function handleContinue() {
     if (!question) return;
+
+    const currentValue = answers[String(question.id)];
+    if (
+      question.type === "multiple" &&
+      question.multipleMax != null &&
+      (!Array.isArray(currentValue) ||
+        currentValue.length !== question.multipleMax)
+    ) {
+      setErrors((prev) => ({
+        ...prev,
+        [String(question.id)]: `Pick exactly ${question.multipleMax} options to continue.`,
+      }));
+      return;
+    }
 
     if (question.required && isEmpty(question.id)) {
       setErrors((prev) => ({
@@ -181,6 +179,17 @@ export function Questionnaire({ questions, onSubmitted }: Props) {
     const newErrors: Record<string, string> = {};
     for (let i = 0; i < visible.length; i += 1) {
       const q = visible[i];
+      const value = answers[String(q.id)];
+      if (
+        q.type === "multiple" &&
+        q.multipleMax != null &&
+        (!Array.isArray(value) || value.length !== q.multipleMax)
+      ) {
+        if (firstMissingIndex === -1) firstMissingIndex = i;
+        newErrors[String(q.id)] =
+          `Pick exactly ${q.multipleMax} options to continue.`;
+        continue;
+      }
       if (q.required && isEmpty(q.id)) {
         if (firstMissingIndex === -1) firstMissingIndex = i;
         newErrors[String(q.id)] = "i can ask as many times as you want 😜";
@@ -311,13 +320,6 @@ export function Questionnaire({ questions, onSubmitted }: Props) {
       ? value != null && String(value) !== ""
       : String(value) === question.responseTrigger);
 
-  // Show Next/Submit for non-pick types, follow-ups, responses, or last question
-  const showNextButton =
-    !isPickType(question.type) ||
-    showFollowUp ||
-    showResponse ||
-    isLast;
-
   // Detect if this is the "drinks" question and track Monster selection
   const selectedOptions =
     Array.isArray(value) ? (value as string[]) : [];
@@ -329,6 +331,17 @@ export function Questionnaire({ questions, onSubmitted }: Props) {
   const reachedMax =
     question.multipleMax != null &&
     selectedOptions.length >= question.multipleMax;
+  const requiresExactMultipleChoices =
+    question.type === "multiple" && question.multipleMax != null;
+  const hasExactMultipleChoices =
+    requiresExactMultipleChoices &&
+    selectedOptions.length === question.multipleMax;
+  const showNextButton =
+    !isPickType(question.type) ||
+    requiresExactMultipleChoices ||
+    showFollowUp ||
+    showResponse ||
+    isLast;
   const emojiMode: "happy" | "sad" | "none" =
     isMonsterQuestion && hasMonster
       ? "happy"
@@ -473,7 +486,8 @@ export function Questionnaire({ questions, onSubmitted }: Props) {
 
                 {question.multipleMax != null && (
                   <p className="mt-1 text-xs text-stone-500">
-                    Pick up to {question.multipleMax}
+                    Pick exactly {question.multipleMax} ({selectedOptions.length}/
+                    {question.multipleMax})
                     {selectedOptions.length >= question.multipleMax
                       ? " — max reached, deselect one to swap"
                       : ""}
@@ -588,7 +602,10 @@ export function Questionnaire({ questions, onSubmitted }: Props) {
           {showNextButton && (
             <button
               type="submit"
-              disabled={submitting}
+              disabled={
+                submitting ||
+                (requiresExactMultipleChoices && !hasExactMultipleChoices)
+              }
               className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#861d48] to-[#603a78] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-black/40 transition hover:from-[#a12759] hover:to-[#70448b] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLast ? (submitting ? "Submitting…" : "Submit") : "Next"}

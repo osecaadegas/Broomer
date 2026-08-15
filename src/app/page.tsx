@@ -18,7 +18,7 @@ export default async function HomePage() {
   const initial = (data as SupabaseQuestionRow[]).map(toQuestionFromSupabase);
 
   return (
-    <main className="relative flex min-h-screen overflow-hidden bg-[#08060d]">
+    <main className="relative flex min-h-svh overflow-x-hidden bg-[#08060d]">
       {/* Atmospheric gothic background */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#34203f_0%,_#171020_42%,_#08060d_78%)]" />
@@ -29,7 +29,7 @@ export default async function HomePage() {
         <div className="gothic-vignette absolute inset-0" />
       </div>
 
-      <div className="relative flex w-full flex-1 flex-col justify-center px-4 py-10 sm:px-6">
+      <div className="relative flex w-full flex-1 flex-col justify-center px-3 py-4 sm:px-6 sm:py-10">
         <div className="mx-auto w-full max-w-md">
           <QuestionnaireEntrance questions={initial} />
         </div>
