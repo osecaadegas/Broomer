@@ -22,6 +22,17 @@ export function createPublicSupabaseClient() {
   });
 }
 
+export function createSecretSupabaseClient() {
+  const { url } = getConfig();
+  const secretKey =
+    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secretKey) return null;
+
+  return createClient(url, secretKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 export async function createServerSupabaseClient() {
   const { url, publishableKey } = getConfig();
   const cookieStore = await cookies();

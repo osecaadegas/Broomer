@@ -23,7 +23,7 @@ const finalMessage =
   "Now that you have meet her ,bad days are a thing indeed but i will be here to make them easier as much as im able";
 
 interface Props {
-  onComplete: (selfie: string | null) => void;
+  onComplete: (selfie: string | null, moodTalk: string | null) => void;
 }
 
 export function MoodSelfieInterlude({ onComplete }: Readonly<Props>) {
@@ -31,11 +31,12 @@ export function MoodSelfieInterlude({ onComplete }: Readonly<Props>) {
   const streamRef = useRef<MediaStream | null>(null);
   const captureTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sentenceIndex, setSentenceIndex] = useState(0);
-  const [phase, setPhase] = useState<"sentences" | "camera" | "captured" | "unavailable">(
-    "sentences",
-  );
+  const [phase, setPhase] = useState<
+    "sentences" | "camera" | "captured" | "talk" | "unavailable"
+  >("sentences");
   const [selfie, setSelfie] = useState<string | null>(null);
   const [cameraAccepted, setCameraAccepted] = useState(false);
+  const [moodTalk, setMoodTalk] = useState("");
 
   useEffect(() => {
     if (phase !== "sentences") return;
@@ -88,8 +89,12 @@ export function MoodSelfieInterlude({ onComplete }: Readonly<Props>) {
   }, [phase]);
 
   useEffect(() => {
-    if (phase !== "captured" && phase !== "unavailable") return;
-    const timer = setTimeout(() => onComplete(selfie), 5200);
+    if (phase === "captured") {
+      const timer = setTimeout(() => setPhase("talk"), 4000);
+      return () => clearTimeout(timer);
+    }
+    if (phase !== "unavailable") return;
+    const timer = setTimeout(() => onComplete(null, null), 1800);
     return () => clearTimeout(timer);
   }, [onComplete, phase, selfie]);
 
@@ -153,6 +158,36 @@ export function MoodSelfieInterlude({ onComplete }: Readonly<Props>) {
         >
           {sentences[sentenceIndex].text}
         </p>
+      ) : phase === "talk" ? (
+        <div className="animate-selfie-reveal flex w-full max-w-md flex-col items-center rounded-2xl border border-[#c46b91]/35 bg-[#160f19]/95 px-5 py-5 shadow-[0_1.5rem_4rem_rgba(0,0,0,0.65)] sm:px-8 sm:py-8">
+          <h2 className="font-serif text-[clamp(1.5rem,6vw,2.1rem)] italic text-[#efadc8]">
+            Want to talk about it?
+          </h2>
+          <textarea
+            rows={3}
+            value={moodTalk}
+            onChange={(event) => setMoodTalk(event.target.value)}
+            placeholder="You can tell me here..."
+            className="mt-6 w-full resize-none rounded-xl border border-[#c46b91]/35 bg-black/25 px-4 py-3 text-base text-stone-100 outline-none placeholder:text-stone-600 focus:border-[#dd8aad]/70 focus:ring-2 focus:ring-[#a73d6b]/30"
+          />
+          <div className="mt-5 flex w-full gap-3">
+            <button
+              type="button"
+              onClick={() => onComplete(selfie, "")}
+              className="flex-1 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-stone-400 transition hover:border-white/20 hover:text-stone-200"
+            >
+              Skip
+            </button>
+            <button
+              type="button"
+              onClick={() => onComplete(selfie, moodTalk.trim())}
+              disabled={moodTalk.trim() === ""}
+              className="flex-1 rounded-xl bg-gradient-to-r from-[#861d48] to-[#603a78] px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="flex h-full w-full max-w-sm flex-col items-center justify-center gap-4 sm:gap-5">
           <div className="animate-selfie-reveal relative aspect-[3/4] h-[min(50dvh,calc((100vw-2rem)*4/3))] w-auto max-w-full shrink-0 overflow-hidden rounded-2xl border border-[#c46b91]/45 bg-[#160f19] shadow-[0_1.5rem_4rem_rgba(0,0,0,0.65),0_0_3rem_rgba(180,56,112,0.18)]">

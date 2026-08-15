@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   createPublicSupabaseClient,
+  createSecretSupabaseClient,
   getAdminSupabase,
 } from "@/lib/supabase/server";
 import type {
@@ -11,11 +12,14 @@ import {
   isQuestionType,
   isQuestionVisible,
   RESPONSE_MOOD_SELFIE_KEY,
+  RESPONSE_MOOD_SELFIE_PATH_KEY,
+  RESPONSE_MOOD_TALK_KEY,
   RESPONSE_QUESTION_SNAPSHOTS_KEY,
   type QuestionSnapshot,
 } from "@/lib/questionnaire";
 
 export const dynamic = "force-dynamic";
+const MOOD_SELFIE_BUCKET = "mood-selfies";
 
 export async function GET() {
   const admin = await getAdminSupabase();
@@ -32,13 +36,16 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const serialized = (data as SupabaseResponseRow[]).map((row) => {
+  const secretSupabase = createSecretSupabaseClient();
+  const serialized = await Promise.all((data as SupabaseResponseRow[]).map(async (row) => {
     const stored = row.answers ?? {};
     const answers: Record<string, string | string[]> = {};
     for (const [key, value] of Object.entries(stored)) {
       if (
         key === RESPONSE_QUESTION_SNAPSHOTS_KEY ||
-        key === RESPONSE_MOOD_SELFIE_KEY
+        key === RESPONSE_MOOD_SELFIE_KEY ||
+        key === RESPONSE_MOOD_SELFIE_PATH_KEY ||
+        key === RESPONSE_MOOD_TALK_KEY
       ) {
         continue;
       }
@@ -82,17 +89,30 @@ export async function GET() {
       }
     }
 
+    const storedSelfiePath = stored[RESPONSE_MOOD_SELFIE_PATH_KEY];
+    let moodSelfie: string | null =
+      typeof stored[RESPONSE_MOOD_SELFIE_KEY] === "string"
+        ? stored[RESPONSE_MOOD_SELFIE_KEY]
+        : null;
+    if (typeof storedSelfiePath === "string" && secretSupabase) {
+      const { data: signedData } = await secretSupabase.storage
+        .from(MOOD_SELFIE_BUCKET)
+        .createSignedUrl(storedSelfiePath, 15 * 60);
+      moodSelfie = signedData?.signedUrl ?? null;
+    }
+
     return {
       id: row.id,
       answers,
-      moodSelfie:
-        typeof stored[RESPONSE_MOOD_SELFIE_KEY] === "string"
-          ? stored[RESPONSE_MOOD_SELFIE_KEY]
+      moodSelfie,
+      moodTalk:
+        typeof stored[RESPONSE_MOOD_TALK_KEY] === "string"
+          ? stored[RESPONSE_MOOD_TALK_KEY]
           : null,
       questionSnapshots,
       createdAt: row.created_at,
     };
-  });
+  }));
 
   return NextResponse.json({ responses: serialized });
 }
@@ -120,6 +140,18 @@ export async function POST(request: Request) {
 
   const rawAnswers = answers as Record<string, unknown>;
   const rawMoodSelfie = rawAnswers[RESPONSE_MOOD_SELFIE_KEY];
+  const rawMoodTalk = rawAnswers[RESPONSE_MOOD_TALK_KEY];
+  let moodTalk: string | null = null;
+  if (rawMoodTalk !== undefined) {
+    if (typeof rawMoodTalk !== "string" || rawMoodTalk.length > 4000) {
+      return NextResponse.json(
+        { error: "Invalid mood conversation" },
+        { status: 400 },
+      );
+    }
+    moodTalk = rawMoodTalk.trim();
+  }
+
   let moodSelfie: string | null = null;
   if (rawMoodSelfie !== undefined) {
     if (
@@ -133,6 +165,40 @@ export async function POST(request: Request) {
       );
     }
     moodSelfie = rawMoodSelfie;
+  }
+
+  let moodSelfiePath: string | null = null;
+  const secretSupabase = moodSelfie ? createSecretSupabaseClient() : null;
+  if (moodSelfie) {
+    if (!secretSupabase) {
+      return NextResponse.json(
+        { error: "Private selfie storage is not configured" },
+        { status: 500 },
+      );
+    }
+
+    const encodedImage = moodSelfie.slice("data:image/jpeg;base64,".length);
+    const imageBytes = Buffer.from(encodedImage, "base64");
+    if (imageBytes.byteLength === 0 || imageBytes.byteLength > 500_000) {
+      return NextResponse.json(
+        { error: "Mood selfie is too large" },
+        { status: 400 },
+      );
+    }
+
+    moodSelfiePath = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.jpg`;
+    const { error: uploadError } = await secretSupabase.storage
+      .from(MOOD_SELFIE_BUCKET)
+      .upload(moodSelfiePath, imageBytes, {
+        contentType: "image/jpeg",
+        upsert: false,
+      });
+    if (uploadError) {
+      return NextResponse.json(
+        { error: `Failed to store mood selfie: ${uploadError.message}` },
+        { status: 500 },
+      );
+    }
   }
 
   const answerMap: Record<string, string | string[]> = {};
@@ -224,11 +290,19 @@ export async function POST(request: Request) {
   const { error: insertError } = await supabase.from("responses").insert({
     answers: {
       ...answerMap,
-      ...(moodSelfie ? { [RESPONSE_MOOD_SELFIE_KEY]: moodSelfie } : {}),
+      ...(moodSelfiePath
+        ? { [RESPONSE_MOOD_SELFIE_PATH_KEY]: moodSelfiePath }
+        : {}),
+      ...(moodTalk !== null ? { [RESPONSE_MOOD_TALK_KEY]: moodTalk } : {}),
       [RESPONSE_QUESTION_SNAPSHOTS_KEY]: questionSnapshots,
     },
   });
   if (insertError) {
+    if (moodSelfiePath && secretSupabase) {
+      await secretSupabase.storage
+        .from(MOOD_SELFIE_BUCKET)
+        .remove([moodSelfiePath]);
+    }
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 

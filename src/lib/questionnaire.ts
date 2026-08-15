@@ -38,6 +38,8 @@ export type Answers = Record<string, string | string[]>;
 
 export const RESPONSE_QUESTION_SNAPSHOTS_KEY = "__questionSnapshots";
 export const RESPONSE_MOOD_SELFIE_KEY = "__moodSelfie";
+export const RESPONSE_MOOD_SELFIE_PATH_KEY = "__moodSelfiePath";
+export const RESPONSE_MOOD_TALK_KEY = "__moodTalk";
 
 export interface QuestionSnapshot {
   prompt: string;

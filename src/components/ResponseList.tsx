@@ -12,6 +12,7 @@ interface ResponseItem {
   id: number;
   answers: Record<string, string | string[]>;
   moodSelfie: string | null;
+  moodTalk: string | null;
   questionSnapshots: Record<string, QuestionSnapshot>;
   createdAt: string;
 }
@@ -242,6 +243,16 @@ export function ResponseList({ questions }: Props) {
                   alt="Mood selfie captured during this response"
                   className="max-h-72 w-auto max-w-full rounded-lg object-contain"
                 />
+              </dd>
+            </div>
+          )}
+          {selectedResponse.moodTalk !== null && (
+            <div className="grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,40%)_minmax(0,60%)] sm:gap-4">
+              <dt className="text-sm font-medium text-slate-700">
+                Want to talk about it?
+              </dt>
+              <dd className="whitespace-pre-wrap break-words text-sm text-slate-500">
+                {selectedResponse.moodTalk.trim() || "Skipped"}
               </dd>
             </div>
           )}

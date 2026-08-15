@@ -19,6 +19,7 @@ import {
   ClipboardListIcon,
 } from "@/components/icons";
 import { RESPONSE_MOOD_SELFIE_KEY } from "@/lib/questionnaire";
+import { RESPONSE_MOOD_TALK_KEY } from "@/lib/questionnaire";
 
 type Answer = string | string[];
 
@@ -92,7 +93,7 @@ export function Questionnaire({
     if (
       currentSafe === 0 &&
       question.type === "rating" &&
-      Number(value) < 2 &&
+      Number(value) <= 2 &&
       !moodInterludeCompleted
     ) {
       setMoodInterlude(true);
@@ -260,11 +261,15 @@ export function Questionnaire({
     setMoodInterludeCompleted(false);
   }
 
-  function finishMoodInterlude(selfie: string | null) {
+  function finishMoodInterlude(
+    selfie: string | null,
+    moodTalk: string | null,
+  ) {
     if (selfie) {
       setAnswers((previous) => ({
         ...previous,
         [RESPONSE_MOOD_SELFIE_KEY]: selfie,
+        ...(moodTalk !== null ? { [RESPONSE_MOOD_TALK_KEY]: moodTalk } : {}),
       }));
     }
     setMoodInterludeCompleted(true);
