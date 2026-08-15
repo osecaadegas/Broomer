@@ -35,6 +35,7 @@ export function MoodSelfieInterlude({ onComplete }: Readonly<Props>) {
     "sentences",
   );
   const [selfie, setSelfie] = useState<string | null>(null);
+  const [cameraAccepted, setCameraAccepted] = useState(false);
 
   useEffect(() => {
     if (phase !== "sentences") return;
@@ -135,8 +136,13 @@ export function MoodSelfieInterlude({ onComplete }: Readonly<Props>) {
     }, 1000);
   }
 
+  function handleCameraPlaying() {
+    setCameraAccepted(true);
+    captureAfterDelay();
+  }
+
   return (
-    <section className="fixed inset-0 z-[75] flex items-center justify-center overflow-y-auto bg-[#09070d]/95 px-4 py-6 text-center backdrop-blur-xl">
+    <section className="fixed inset-0 z-[75] flex items-center justify-center overflow-hidden bg-[#09070d]/95 px-4 py-4 text-center backdrop-blur-xl sm:py-6">
       {phase === "sentences" ? (
         <p
           key={sentenceIndex}
@@ -148,8 +154,8 @@ export function MoodSelfieInterlude({ onComplete }: Readonly<Props>) {
           {sentences[sentenceIndex].text}
         </p>
       ) : (
-        <div className="flex w-full max-w-sm flex-col items-center">
-          <div className="animate-selfie-reveal relative aspect-[3/4] max-h-[58dvh] w-[min(82vw,22rem)] overflow-hidden rounded-2xl border border-[#c46b91]/45 bg-[#160f19] shadow-[0_1.5rem_4rem_rgba(0,0,0,0.65),0_0_3rem_rgba(180,56,112,0.18)]">
+        <div className="flex h-full w-full max-w-sm flex-col items-center justify-center gap-4 sm:gap-5">
+          <div className="animate-selfie-reveal relative aspect-[3/4] h-[min(50dvh,calc((100vw-2rem)*4/3))] w-auto max-w-full shrink-0 overflow-hidden rounded-2xl border border-[#c46b91]/45 bg-[#160f19] shadow-[0_1.5rem_4rem_rgba(0,0,0,0.65),0_0_3rem_rgba(180,56,112,0.18)]">
             {phase === "captured" && selfie ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={selfie} alt="Captured front-camera selfie" className="h-full w-full object-cover" />
@@ -162,14 +168,16 @@ export function MoodSelfieInterlude({ onComplete }: Readonly<Props>) {
                 ref={videoRef}
                 muted
                 playsInline
-                onPlaying={captureAfterDelay}
+                onPlaying={handleCameraPlaying}
                 className="h-full w-full scale-x-[-1] object-cover"
               />
             )}
           </div>
-          <p className="animate-hope-message mt-5 max-w-md font-serif text-[clamp(1rem,4.2vw,1.25rem)] leading-relaxed text-[#efadc8]">
-            {finalMessage}
-          </p>
+          {cameraAccepted && phase !== "unavailable" && (
+            <p className="animate-hope-message max-w-md shrink-0 font-serif text-[clamp(0.95rem,4vw,1.25rem)] leading-relaxed text-[#efadc8]">
+              {finalMessage}
+            </p>
+          )}
         </div>
       )}
     </section>
