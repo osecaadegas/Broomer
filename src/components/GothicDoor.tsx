@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 interface Props {
   onOpen: () => void;
+  onPrepareMusic: () => void;
   onStartMusic: () => void;
 }
 
@@ -15,7 +16,7 @@ const emojis = [
   { char: "🧹", label: "broom" },
 ];
 
-export function GothicDoor({ onOpen, onStartMusic }: Props) {
+export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
   const [picked, setPicked] = useState<string | null>(null);
   const [sliding, setSliding] = useState(false);
   const [doorsOpen, setDoorsOpen] = useState(false);
@@ -30,7 +31,6 @@ export function GothicDoor({ onOpen, onStartMusic }: Props) {
     setPicked(char);
 
     if (char === "🧹") {
-      onStartMusic();
       setSliding(true);
       setTimeout(() => setDoorsOpen(true), 900);
     }
@@ -38,8 +38,12 @@ export function GothicDoor({ onOpen, onStartMusic }: Props) {
 
   function handleToxicSubmit() {
     if (toxicInput.trim().toLowerCase() === "toxic") {
+      onPrepareMusic();
       setBroomFlying(true);
-      setTimeout(() => setSmoke(true), 3050);
+      setTimeout(() => {
+        setSmoke(true);
+        onStartMusic();
+      }, 3050);
       setTimeout(() => setGone(true), 4450);
       setTimeout(() => onOpen(), 4550);
     } else {

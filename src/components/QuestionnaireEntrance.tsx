@@ -20,6 +20,21 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
   const [musicStarted, setMusicStarted] = useState(false);
   const [musicMuted, setMusicMuted] = useState(false);
 
+  function prepareMusic() {
+    const audio = audioRef.current;
+    if (!audio || musicStarted) return;
+
+    audio.volume = 0.05;
+    audio.muted = true;
+    void audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.muted = false;
+    }).catch(() => {
+      // Playback can still be started from the music control if blocked.
+    });
+  }
+
   function startMusic() {
     const audio = audioRef.current;
     if (!audio) return;
@@ -90,6 +105,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
         <GothicDoor
           key={`door-${loopKey}`}
           onOpen={() => setStage("lights")}
+          onPrepareMusic={prepareMusic}
           onStartMusic={startMusic}
         />
       )}
