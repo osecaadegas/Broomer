@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 function getConfig() {
@@ -12,6 +13,24 @@ function getConfig() {
   }
 
   return { url, publishableKey };
+}
+
+export function createPublicSupabaseClient() {
+  const { url, publishableKey } = getConfig();
+  return createClient(url, publishableKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+export function createSecretSupabaseClient() {
+  const { url } = getConfig();
+  const secretKey =
+    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secretKey) return null;
+
+  return createClient(url, secretKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
 
 export async function createServerSupabaseClient() {
@@ -34,12 +53,12 @@ export async function createServerSupabaseClient() {
   });
 }
 
-export async function getAuthorizedSupabase() {
+export async function getAdminSupabase() {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user?.app_metadata.broomer_authorized !== true) return null;
+  if (user?.app_metadata.role !== "admin") return null;
   return { supabase, user };
 }

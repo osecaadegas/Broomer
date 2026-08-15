@@ -3,11 +3,11 @@ import { getAdminSupabase } from "@/lib/supabase/server";
 import type { SupabaseQuestionRow } from "@/lib/supabase/types";
 import { toQuestionFromSupabase } from "@/lib/questionnaire";
 import { SiteHeader } from "@/components/SiteHeader";
-import { QuestionManager } from "@/components/QuestionManager";
+import { ResponseList } from "@/components/ResponseList";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
+export default async function ResponsesPage() {
   const admin = await getAdminSupabase();
   if (!admin) redirect("/admin/login");
 
@@ -26,13 +26,13 @@ export default async function AdminPage() {
       <div className="mx-auto max-w-2xl px-4 pb-16 sm:px-6">
         <header className="py-8">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Manage questions
+            Their answers
           </h1>
           <p className="mt-1 text-sm text-slate-600 sm:text-base">
-            Add, edit, reorder, or remove the questions in your questionnaire.
+            The latest submission is ready to read, with older ones just above it.
           </p>
         </header>
-        <QuestionManager initialQuestions={initial} />
+        <ResponseList questions={initial} />
       </div>
     </main>
   );

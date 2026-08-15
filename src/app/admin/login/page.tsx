@@ -1,23 +1,21 @@
 import { redirect } from "next/navigation";
 import {
   createServerSupabaseClient,
-  getAuthorizedSupabase,
+  getAdminSupabase,
 } from "@/lib/supabase/server";
 
 async function signIn(formData: FormData) {
   "use server";
 
-  const emailValue = formData.get("email");
-  const passwordValue = formData.get("password");
-  const email = typeof emailValue === "string" ? emailValue.trim() : "";
-  const password = typeof passwordValue === "string" ? passwordValue : "";
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (error || data.user?.app_metadata.broomer_authorized !== true) {
+  if (error || data.user?.app_metadata.role !== "admin") {
     await supabase.auth.signOut();
     redirect("/admin/login?error=invalid");
   }
@@ -27,54 +25,51 @@ async function signIn(formData: FormData) {
 
 export default async function AdminLoginPage({
   searchParams,
-}: Readonly<{
+}: {
   searchParams: Promise<{ error?: string }>;
-}>) {
-  const authorized = await getAuthorizedSupabase();
-  if (authorized) redirect("/admin");
+}) {
+  const admin = await getAdminSupabase();
+  if (admin) redirect("/admin");
 
   const { error } = await searchParams;
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-[#f3f1eb] px-5 text-[#20231f]">
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
       <form
         action={signIn}
-        className="w-full max-w-sm border-t-2 border-[#20231f] py-8"
+        className="w-full max-w-sm rounded-lg border border-slate-700 bg-slate-900 p-6 shadow-xl"
       >
-        <p className="text-xs font-semibold uppercase text-[#667064]">
-          Broomer
-        </p>
-        <h1 className="mt-3 font-serif text-4xl">Private Workspace</h1>
+        <h1 className="text-2xl font-bold text-white">Admin sign in</h1>
         <div className="mt-6 space-y-4">
-          <label className="block text-sm font-medium">
-            <span>Email</span>
+          <label className="block text-sm font-medium text-slate-200">
+            Email
             <input
               name="email"
               type="email"
               autoComplete="email"
               required
-              className="mt-1 min-h-11 w-full border border-[#858d82] bg-white px-3 py-2"
+              className="mt-1 w-full rounded-md border border-slate-600 bg-slate-950 px-3 py-2 text-white"
             />
           </label>
-          <label className="block text-sm font-medium">
-            <span>Password</span>
+          <label className="block text-sm font-medium text-slate-200">
+            Password
             <input
               name="password"
               type="password"
               autoComplete="current-password"
               required
-              className="mt-1 min-h-11 w-full border border-[#858d82] bg-white px-3 py-2"
+              className="mt-1 w-full rounded-md border border-slate-600 bg-slate-950 px-3 py-2 text-white"
             />
           </label>
         </div>
         {error && (
-          <p className="mt-4 text-sm text-[#9b2d2d]">
-            Sign-in failed. Check your credentials and try again.
+          <p className="mt-4 text-sm text-red-300">
+            Invalid credentials or this account is not an administrator.
           </p>
         )}
         <button
           type="submit"
-          className="mt-6 min-h-11 w-full bg-[#20231f] px-4 py-2 font-semibold text-white hover:bg-[#353b34]"
+          className="mt-6 w-full rounded-md bg-fuchsia-700 px-4 py-2 font-semibold text-white hover:bg-fuchsia-600"
         >
           Sign in
         </button>
