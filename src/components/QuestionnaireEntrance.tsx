@@ -7,6 +7,7 @@ import { GothicDoor } from "@/components/GothicDoor";
 import { GothicDoorClose } from "@/components/GothicDoorClose";
 import { KissFinale } from "@/components/KissFinale";
 import { Questionnaire } from "@/components/Questionnaire";
+import { YappingChat } from "@/components/YappingChat";
 
 interface Props {
   questions: Question[];
@@ -18,7 +19,9 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
   const finaleAnimationDoneRef = useRef(false);
   const finaleSoundDoneRef = useRef(false);
   const finaleStartedRef = useRef(false);
-  const [stage, setStage] = useState<"door" | "lights" | "questions">("door");
+  const [stage, setStage] = useState<
+    "door" | "lights" | "questions" | "chat"
+  >("door");
   const [lightsOn, setLightsOn] = useState(false);
   const [closing, setClosing] = useState(false);
   const [finale, setFinale] = useState(false);
@@ -32,13 +35,16 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
 
     audio.volume = 0.01;
     audio.muted = true;
-    void audio.play().then(() => {
-      audio.pause();
-      audio.currentTime = 0;
-      audio.muted = false;
-    }).catch(() => {
-      // Playback can still be started from the music control if blocked.
-    });
+    void audio
+      .play()
+      .then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = false;
+      })
+      .catch(() => {
+        // Playback can still be started from the music control if blocked.
+      });
   }
 
   function startMusic() {
@@ -47,12 +53,15 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
 
     audio.volume = 0.01;
     audio.muted = false;
-    void audio.play().then(() => {
-      setMusicStarted(true);
-      setMusicMuted(false);
-    }).catch(() => {
-      // Browsers may still block playback when user media settings forbid it.
-    });
+    void audio
+      .play()
+      .then(() => {
+        setMusicStarted(true);
+        setMusicMuted(false);
+      })
+      .catch(() => {
+        // Browsers may still block playback when user media settings forbid it.
+      });
   }
 
   function toggleMusic() {
@@ -75,14 +84,17 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
     finaleStartedRef.current = false;
     audio.volume = 0.55;
     audio.muted = true;
-    void audio.play().then(() => {
-      if (finaleStartedRef.current) return;
-      audio.pause();
-      audio.currentTime = 0;
-      audio.muted = false;
-    }).catch(() => {
-      // The visual finale still completes if media playback is unavailable.
-    });
+    void audio
+      .play()
+      .then(() => {
+        if (finaleStartedRef.current) return;
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = false;
+      })
+      .catch(() => {
+        // The visual finale still completes if media playback is unavailable.
+      });
   }
 
   function completeFinalePart(part: "animation" | "sound") {
@@ -144,7 +156,9 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
         <button
           type="button"
           onClick={toggleMusic}
-          aria-label={musicMuted ? "Turn background music on" : "Mute background music"}
+          aria-label={
+            musicMuted ? "Turn background music on" : "Mute background music"
+          }
           title={musicMuted ? "Turn music on" : "Mute music"}
           className="fixed bottom-4 right-4 z-[70] grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-black/55 text-base text-stone-200 shadow-lg shadow-black/30 backdrop-blur-md transition hover:border-white/30 hover:bg-black/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a84c]"
         >
@@ -158,10 +172,12 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
         <GothicDoor
           key={`door-${loopKey}`}
           onOpen={() => setStage("lights")}
+          onYapping={() => setStage("chat")}
           onPrepareMusic={prepareMusic}
           onStartMusic={startMusic}
         />
       )}
+      {stage === "chat" && <YappingChat onBack={() => setStage("door")} />}
       {stage === "lights" && <DiabolicalLights onChoose={handleLights} />}
       {stage === "questions" && (
         <div className="relative z-10 w-full animate-question-reveal">
@@ -174,9 +190,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
         </div>
       )}
       {finale && (
-        <KissFinale
-          onAnimationDone={() => completeFinalePart("animation")}
-        />
+        <KissFinale onAnimationDone={() => completeFinalePart("animation")} />
       )}
       {closing && <GothicDoorClose onDone={handleClosed} />}
     </>

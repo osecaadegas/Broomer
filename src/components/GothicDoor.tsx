@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 interface Props {
   onOpen: () => void;
+  onYapping: () => void;
   onPrepareMusic: () => void;
   onStartMusic: () => void;
 }
@@ -16,7 +17,12 @@ const emojis = [
   { char: "🧹", label: "broom" },
 ];
 
-export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
+export function GothicDoor({
+  onOpen,
+  onYapping,
+  onPrepareMusic,
+  onStartMusic,
+}: Props) {
   const [picked, setPicked] = useState<string | null>(null);
   const [sliding, setSliding] = useState(false);
   const [doorsOpen, setDoorsOpen] = useState(false);
@@ -37,7 +43,10 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
   }
 
   function handleToxicSubmit() {
-    if (toxicInput.trim().toLowerCase() === "toxic") {
+    const answer = toxicInput.trim().toLowerCase();
+    if (answer === "yapping") {
+      onYapping();
+    } else if (answer === "toxic") {
       onPrepareMusic();
       setBroomFlying(true);
       setTimeout(() => {
@@ -91,10 +100,29 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
             }}
           />
           <div className="pointer-events-none absolute -top-px left-0 right-0 h-40">
-            <svg viewBox="0 0 400 160" fill="none" className="absolute bottom-0 left-0 h-full w-full" preserveAspectRatio="none">
-              <path d="M0 160 L0 80 Q0 20 80 10 Q140 0 200 40 Q260 0 320 10 Q400 20 400 80 L400 160 Z" fill="#0c0609" stroke="rgba(140,110,50,0.12)" strokeWidth="1.5" />
-              <path d="M200 40 L200 120" stroke="rgba(140,110,50,0.08)" strokeWidth="1" />
-              <path d="M140 25 Q200 80 260 25" stroke="rgba(140,110,50,0.06)" strokeWidth="1" fill="none" />
+            <svg
+              viewBox="0 0 400 160"
+              fill="none"
+              className="absolute bottom-0 left-0 h-full w-full"
+              preserveAspectRatio="none"
+            >
+              <path
+                d="M0 160 L0 80 Q0 20 80 10 Q140 0 200 40 Q260 0 320 10 Q400 20 400 80 L400 160 Z"
+                fill="#0c0609"
+                stroke="rgba(140,110,50,0.12)"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M200 40 L200 120"
+                stroke="rgba(140,110,50,0.08)"
+                strokeWidth="1"
+              />
+              <path
+                d="M140 25 Q200 80 260 25"
+                stroke="rgba(140,110,50,0.06)"
+                strokeWidth="1"
+                fill="none"
+              />
             </svg>
           </div>
           <div className="pointer-events-none absolute inset-y-0 left-[15%] w-[3px] bg-gradient-to-b from-transparent via-[#2a1a10]/30 to-transparent" />
@@ -103,10 +131,18 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
           <div className="pointer-events-none absolute inset-x-0 top-[50%] h-[3px] bg-gradient-to-r from-[#2a1a10]/30 via-[#3a2a1a]/40 to-[#2a1a10]/30" />
           <div className="pointer-events-none absolute inset-x-0 top-[80%] h-[3px] bg-gradient-to-r from-transparent via-[#2a1a10]/25 to-transparent" />
           {[20, 50, 80].map((top) => (
-            <div key={top} className="pointer-events-none absolute left-[15%] h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-[#3a2a1a]/40 bg-[#1a100a]" style={{ top: `${top}%` }} />
+            <div
+              key={top}
+              className="pointer-events-none absolute left-[15%] h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-[#3a2a1a]/40 bg-[#1a100a]"
+              style={{ top: `${top}%` }}
+            />
           ))}
           {[20, 50, 80].map((top) => (
-            <div key={top} className="pointer-events-none absolute right-[15%] h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-[#3a2a1a]/40 bg-[#1a100a]" style={{ top: `${top}%` }} />
+            <div
+              key={top}
+              className="pointer-events-none absolute right-[15%] h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-[#3a2a1a]/40 bg-[#1a100a]"
+              style={{ top: `${top}%` }}
+            />
           ))}
           <div className="absolute right-6 top-1/2 -translate-y-1/2">
             <div className="h-14 w-14 rounded-full border-2 border-[#3a2a1a]/50 bg-transparent shadow-[inset_0_2px_8px_rgba(0,0,0,0.6),0_0_16px_rgba(0,0,0,0.4)]" />
@@ -132,10 +168,29 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
             }}
           />
           <div className="pointer-events-none absolute -top-px left-0 right-0 h-40">
-            <svg viewBox="0 0 400 160" fill="none" className="absolute bottom-0 left-0 h-full w-full" preserveAspectRatio="none">
-              <path d="M0 160 L0 80 Q0 20 80 10 Q140 0 200 40 Q260 0 320 10 Q400 20 400 80 L400 160 Z" fill="#0c0609" stroke="rgba(140,110,50,0.12)" strokeWidth="1.5" />
-              <path d="M200 40 L200 120" stroke="rgba(140,110,50,0.08)" strokeWidth="1" />
-              <path d="M140 25 Q200 80 260 25" stroke="rgba(140,110,50,0.06)" strokeWidth="1" fill="none" />
+            <svg
+              viewBox="0 0 400 160"
+              fill="none"
+              className="absolute bottom-0 left-0 h-full w-full"
+              preserveAspectRatio="none"
+            >
+              <path
+                d="M0 160 L0 80 Q0 20 80 10 Q140 0 200 40 Q260 0 320 10 Q400 20 400 80 L400 160 Z"
+                fill="#0c0609"
+                stroke="rgba(140,110,50,0.12)"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M200 40 L200 120"
+                stroke="rgba(140,110,50,0.08)"
+                strokeWidth="1"
+              />
+              <path
+                d="M140 25 Q200 80 260 25"
+                stroke="rgba(140,110,50,0.06)"
+                strokeWidth="1"
+                fill="none"
+              />
             </svg>
           </div>
           <div className="pointer-events-none absolute inset-y-0 left-[15%] w-[3px] bg-gradient-to-b from-transparent via-[#2a1a10]/30 to-transparent" />
@@ -144,10 +199,18 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
           <div className="pointer-events-none absolute inset-x-0 top-[50%] h-[3px] bg-gradient-to-r from-[#2a1a10]/30 via-[#3a2a1a]/40 to-[#2a1a10]/30" />
           <div className="pointer-events-none absolute inset-x-0 top-[80%] h-[3px] bg-gradient-to-r from-transparent via-[#2a1a10]/25 to-transparent" />
           {[20, 50, 80].map((top) => (
-            <div key={top} className="pointer-events-none absolute left-[15%] h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-[#3a2a1a]/40 bg-[#1a100a]" style={{ top: `${top}%` }} />
+            <div
+              key={top}
+              className="pointer-events-none absolute left-[15%] h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-[#3a2a1a]/40 bg-[#1a100a]"
+              style={{ top: `${top}%` }}
+            />
           ))}
           {[20, 50, 80].map((top) => (
-            <div key={top} className="pointer-events-none absolute right-[15%] h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-[#3a2a1a]/40 bg-[#1a100a]" style={{ top: `${top}%` }} />
+            <div
+              key={top}
+              className="pointer-events-none absolute right-[15%] h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-[#3a2a1a]/40 bg-[#1a100a]"
+              style={{ top: `${top}%` }}
+            />
           ))}
           <div className="absolute left-6 top-1/2 -translate-y-1/2">
             <div className="h-14 w-14 rounded-full border-2 border-[#3a2a1a]/50 bg-transparent shadow-[inset_0_2px_8px_rgba(0,0,0,0.6),0_0_16px_rgba(0,0,0,0.4)]" />
@@ -161,8 +224,20 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
       <div className="pointer-events-none absolute inset-y-0 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center">
         <div className="mt-4 flex flex-col items-center">
           <svg viewBox="0 0 40 50" className="h-10 w-10" fill="none">
-            <path d="M20 2 L26 18 L38 22 L26 26 L28 42 L20 34 L12 42 L14 26 L2 22 L14 18 Z" fill="rgba(180,140,60,0.15)" stroke="rgba(180,140,60,0.25)" strokeWidth="1" />
-            <circle cx="20" cy="22" r="4" fill="rgba(180,140,60,0.1)" stroke="rgba(180,140,60,0.2)" strokeWidth="0.8" />
+            <path
+              d="M20 2 L26 18 L38 22 L26 26 L28 42 L20 34 L12 42 L14 26 L2 22 L14 18 Z"
+              fill="rgba(180,140,60,0.15)"
+              stroke="rgba(180,140,60,0.25)"
+              strokeWidth="1"
+            />
+            <circle
+              cx="20"
+              cy="22"
+              r="4"
+              fill="rgba(180,140,60,0.1)"
+              stroke="rgba(180,140,60,0.2)"
+              strokeWidth="0.8"
+            />
           </svg>
         </div>
         <div className="h-28 w-px bg-gradient-to-b from-[#c9a84c]/15 via-[#c9a84c]/25 to-[#c9a84c]/10" />
@@ -172,8 +247,20 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
         <div className="h-28 w-px bg-gradient-to-b from-[#c9a84c]/10 via-[#c9a84c]/25 to-[#c9a84c]/15" />
         <div className="mb-4 flex flex-col items-center">
           <svg viewBox="0 0 40 50" className="h-10 w-10 rotate-180" fill="none">
-            <path d="M20 2 L26 18 L38 22 L26 26 L28 42 L20 34 L12 42 L14 26 L2 22 L14 18 Z" fill="rgba(180,140,60,0.15)" stroke="rgba(180,140,60,0.25)" strokeWidth="1" />
-            <circle cx="20" cy="22" r="4" fill="rgba(180,140,60,0.1)" stroke="rgba(180,140,60,0.2)" strokeWidth="0.8" />
+            <path
+              d="M20 2 L26 18 L38 22 L26 26 L28 42 L20 34 L12 42 L14 26 L2 22 L14 18 Z"
+              fill="rgba(180,140,60,0.15)"
+              stroke="rgba(180,140,60,0.25)"
+              strokeWidth="1"
+            />
+            <circle
+              cx="20"
+              cy="22"
+              r="4"
+              fill="rgba(180,140,60,0.1)"
+              stroke="rgba(180,140,60,0.2)"
+              strokeWidth="0.8"
+            />
           </svg>
         </div>
       </div>
@@ -259,7 +346,10 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
 
       {/* FLYING BROOM (phase 3) */}
       {broomFlying && !smoke && (
-        <div aria-hidden className="pointer-events-none absolute inset-0 z-50 overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-50 overflow-hidden"
+        >
           <div className="animate-broom-flight absolute top-1/2">
             <div className="animate-broom-jiggle">
               <Image
@@ -286,10 +376,22 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
                 "linear-gradient(to top, rgba(20,35,20,0.95) 0%, rgba(30,50,30,0.8) 30%, rgba(25,40,35,0.6) 60%, transparent 100%)",
             }}
           />
-          <div className="animate-smoke absolute -bottom-24 left-[15%] h-[30rem] w-[30rem] rounded-full bg-[#1a2e1a]/50 blur-[100px]" style={{ animationDelay: "0.05s" }} />
-          <div className="animate-smoke absolute -bottom-16 right-[10%] h-[28rem] w-[28rem] rounded-full bg-[#1e321e]/50 blur-[90px]" style={{ animationDelay: "0.12s" }} />
-          <div className="animate-smoke absolute bottom-0 left-1/2 h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-[#223828]/40 blur-[80px]" style={{ animationDelay: "0.08s" }} />
-          <div className="animate-smoke absolute bottom-10 left-[35%] h-64 w-64 rounded-full bg-[#1a2e1a]/30 blur-[60px]" style={{ animationDelay: "0.18s" }} />
+          <div
+            className="animate-smoke absolute -bottom-24 left-[15%] h-[30rem] w-[30rem] rounded-full bg-[#1a2e1a]/50 blur-[100px]"
+            style={{ animationDelay: "0.05s" }}
+          />
+          <div
+            className="animate-smoke absolute -bottom-16 right-[10%] h-[28rem] w-[28rem] rounded-full bg-[#1e321e]/50 blur-[90px]"
+            style={{ animationDelay: "0.12s" }}
+          />
+          <div
+            className="animate-smoke absolute bottom-0 left-1/2 h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-[#223828]/40 blur-[80px]"
+            style={{ animationDelay: "0.08s" }}
+          />
+          <div
+            className="animate-smoke absolute bottom-10 left-[35%] h-64 w-64 rounded-full bg-[#1a2e1a]/30 blur-[60px]"
+            style={{ animationDelay: "0.18s" }}
+          />
         </div>
       )}
     </div>

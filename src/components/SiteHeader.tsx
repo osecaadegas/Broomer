@@ -8,6 +8,7 @@ const links = [
   { href: "/", label: "Survey" },
   { href: "/admin", label: "Questions" },
   { href: "/admin/responses", label: "Answers" },
+  { href: "/admin/chat", label: "Chat" },
 ];
 
 export function SiteHeader() {

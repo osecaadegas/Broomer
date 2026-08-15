@@ -22,6 +22,14 @@ export function createPublicSupabaseClient() {
   });
 }
 
+export function createChatSupabaseClient(tokenHash: string) {
+  const { url, publishableKey } = getConfig();
+  return createClient(url, publishableKey, {
+    global: { headers: { "x-chat-token-hash": tokenHash } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 export function createSecretSupabaseClient() {
   const { url } = getConfig();
   const secretKey =
