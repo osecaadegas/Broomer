@@ -9,6 +9,7 @@ interface ChatMessageRow {
   sender: "visitor" | "admin";
   body: string | null;
   gif_data: string | null;
+  gif_url: string | null;
   disappearing: boolean;
   seen_at: string | null;
   expires_at: string | null;
@@ -19,6 +20,7 @@ interface MessagePayload {
   token?: unknown;
   body?: unknown;
   gifData?: unknown;
+  gifUrl?: unknown;
   disappearing?: unknown;
 }
 
@@ -38,6 +40,7 @@ function serializeMessages(rows: ChatMessageRow[]) {
     sender: row.sender,
     body: row.body,
     gifData: row.gif_data,
+    gifUrl: row.gif_url,
     disappearing: row.disappearing,
     seenAt: row.seen_at,
     expiresAt: row.expires_at,
@@ -53,14 +56,34 @@ function isValidGifData(value: unknown): value is string {
   );
 }
 
+function isValidGiphyUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && /^media\d*\.giphy\.com$/.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function parseMessage(payload: MessagePayload) {
-  const messageBody = typeof payload.body === "string" ? payload.body.trim() : "";
+  const messageBody =
+    typeof payload.body === "string" ? payload.body.trim() : "";
   const gifData = payload.gifData ?? null;
-  if (messageBody.length > 2000 || (messageBody === "" && gifData === null)) {
+  const gifUrl = payload.gifUrl ?? null;
+  if (
+    messageBody.length > 2000 ||
+    (messageBody === "" && gifData === null && gifUrl === null)
+  ) {
     return { error: "Add a message or GIF" } as const;
   }
   if (gifData !== null && !isValidGifData(gifData)) {
-    return { error: "GIF must be a valid GIF file no larger than 1 MB" } as const;
+    return {
+      error: "GIF must be a valid GIF file no larger than 1 MB",
+    } as const;
+  }
+  if (gifUrl !== null && !isValidGiphyUrl(gifUrl)) {
+    return { error: "GIF URL must come from GIPHY" } as const;
   }
   if (
     payload.disappearing !== undefined &&
@@ -71,6 +94,7 @@ function parseMessage(payload: MessagePayload) {
   return {
     messageBody,
     gifData,
+    gifUrl,
     disappearing: payload.disappearing === true,
   } as const;
 }
@@ -128,7 +152,7 @@ async function loadMessages(
   const { data, error } = await supabase
     .from("chat_messages")
     .select(
-      "id, sender, body, gif_data, disappearing, seen_at, expires_at, created_at",
+      "id, sender, body, gif_data, gif_url, disappearing, seen_at, expires_at, created_at",
     )
     .eq("conversation_id", conversationId)
     .order("created_at")
@@ -140,7 +164,10 @@ async function loadMessages(
 export async function GET(request: Request) {
   const token = request.headers.get("x-chat-token");
   if (!isValidToken(token)) {
-    return NextResponse.json({ error: "Invalid conversation token" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid conversation token" },
+      { status: 400 },
+    );
   }
 
   const conversation = await getConversationId(token);
@@ -153,7 +180,10 @@ export async function GET(request: Request) {
   const expiresAt = new Date(seenAt.getTime() + 10 * 60 * 1000);
   const { error: seenError } = await conversation.supabase
     .from("chat_messages")
-    .update({ seen_at: seenAt.toISOString(), expires_at: expiresAt.toISOString() })
+    .update({
+      seen_at: seenAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    })
     .eq("conversation_id", conversation.conversationId)
     .eq("sender", "admin")
     .eq("disappearing", true)
@@ -200,13 +230,14 @@ export async function POST(request: Request) {
   const { error: messageError } = await conversation.supabase
     .from("chat_messages")
     .insert({
-    conversation_id: conversation.conversationId,
-    sender: "visitor",
-    body: message.messageBody || null,
-    gif_data: message.gifData,
-    disappearing: message.disappearing,
-    created_at: createdAt,
-  });
+      conversation_id: conversation.conversationId,
+      sender: "visitor",
+      body: message.messageBody || null,
+      gif_data: message.gifData,
+      gif_url: message.gifUrl,
+      disappearing: message.disappearing,
+      created_at: createdAt,
+    });
   if (messageError) {
     if (conversation.createdConversation) {
       await conversation.supabase

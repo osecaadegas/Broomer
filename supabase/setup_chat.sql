@@ -13,6 +13,7 @@ create table if not exists public.chat_messages (
   sender text not null check (sender in ('visitor', 'admin')),
   body text,
   gif_data text,
+  gif_url text,
   disappearing boolean not null default false,
   seen_at timestamptz,
   expires_at timestamptz,
@@ -20,6 +21,7 @@ create table if not exists public.chat_messages (
 );
 
 alter table public.chat_messages add column if not exists gif_data text;
+alter table public.chat_messages add column if not exists gif_url text;
 alter table public.chat_messages add column if not exists disappearing boolean not null default false;
 alter table public.chat_messages add column if not exists seen_at timestamptz;
 alter table public.chat_messages add column if not exists expires_at timestamptz;
@@ -32,6 +34,10 @@ alter table public.chat_messages add constraint chat_messages_content_check chec
     gif_data is not null
     and char_length(gif_data) <= 1400000
     and gif_data ~ '^data:image/gif;base64,[A-Za-z0-9+/=]+$'
+  )
+  or (
+    gif_url is not null
+    and gif_url ~ '^https://media[0-9]*\.giphy\.com/'
   )
 );
 alter table public.chat_messages drop constraint if exists chat_messages_expiry_check;

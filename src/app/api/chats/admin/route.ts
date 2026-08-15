@@ -8,6 +8,7 @@ interface ChatMessageRow {
   sender: "visitor" | "admin";
   body: string | null;
   gif_data: string | null;
+  gif_url: string | null;
   disappearing: boolean;
   seen_at: string | null;
   expires_at: string | null;
@@ -38,6 +39,7 @@ function serializeConversation(row: ConversationRow) {
         sender: message.sender,
         body: message.body,
         gifData: message.gif_data,
+        gifUrl: message.gif_url,
         disappearing: message.disappearing,
         seenAt: message.seen_at,
         expiresAt: message.expires_at,
@@ -47,12 +49,14 @@ function serializeConversation(row: ConversationRow) {
 }
 
 async function loadConversations(
-  supabase: NonNullable<Awaited<ReturnType<typeof getAdminSupabase>>>["supabase"],
+  supabase: NonNullable<
+    Awaited<ReturnType<typeof getAdminSupabase>>
+  >["supabase"],
 ) {
   const { data, error } = await supabase
     .from("chat_conversations")
     .select(
-      "id, created_at, last_message_at, chat_messages(id, sender, body, gif_data, disappearing, seen_at, expires_at, created_at)",
+      "id, created_at, last_message_at, chat_messages(id, sender, body, gif_data, gif_url, disappearing, seen_at, expires_at, created_at)",
     )
     .order("last_message_at", { ascending: false })
     .order("id", { ascending: false });
@@ -70,23 +74,41 @@ function isValidGifData(value: unknown): value is string {
   );
 }
 
+function isValidGiphyUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && /^media\d*\.giphy\.com$/.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: Request) {
   const admin = await getAdminSupabase();
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rawConversationId = new URL(request.url).searchParams.get("conversationId");
+  const rawConversationId = new URL(request.url).searchParams.get(
+    "conversationId",
+  );
   if (rawConversationId !== null) {
     const conversationId = Number(rawConversationId);
     if (!Number.isSafeInteger(conversationId)) {
-      return NextResponse.json({ error: "Invalid conversation" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid conversation" },
+        { status: 400 },
+      );
     }
     const seenAt = new Date();
     const expiresAt = new Date(seenAt.getTime() + 10 * 60 * 1000);
     const { error: seenError } = await admin.supabase
       .from("chat_messages")
-      .update({ seen_at: seenAt.toISOString(), expires_at: expiresAt.toISOString() })
+      .update({
+        seen_at: seenAt.toISOString(),
+        expires_at: expiresAt.toISOString(),
+      })
       .eq("conversation_id", conversationId)
       .eq("sender", "visitor")
       .eq("disappearing", true)
@@ -122,14 +144,23 @@ export async function POST(request: Request) {
     conversationId?: unknown;
     body?: unknown;
     gifData?: unknown;
+    gifUrl?: unknown;
     disappearing?: unknown;
   };
   if (!Number.isSafeInteger(payload.conversationId)) {
-    return NextResponse.json({ error: "Invalid conversation" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid conversation" },
+      { status: 400 },
+    );
   }
-  const messageBody = typeof payload.body === "string" ? payload.body.trim() : "";
+  const messageBody =
+    typeof payload.body === "string" ? payload.body.trim() : "";
   const gifData = payload.gifData ?? null;
-  if (messageBody.length > 2000 || (messageBody === "" && gifData === null)) {
+  const gifUrl = payload.gifUrl ?? null;
+  if (
+    messageBody.length > 2000 ||
+    (messageBody === "" && gifData === null && gifUrl === null)
+  ) {
     return NextResponse.json(
       { error: "Add a message or GIF" },
       { status: 400 },
@@ -141,11 +172,20 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  if (gifUrl !== null && !isValidGiphyUrl(gifUrl)) {
+    return NextResponse.json(
+      { error: "GIF URL must come from GIPHY" },
+      { status: 400 },
+    );
+  }
   if (
     payload.disappearing !== undefined &&
     typeof payload.disappearing !== "boolean"
   ) {
-    return NextResponse.json({ error: "Invalid disappearing mode" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid disappearing mode" },
+      { status: 400 },
+    );
   }
 
   const conversationId = payload.conversationId as number;
@@ -157,6 +197,7 @@ export async function POST(request: Request) {
       sender: "admin",
       body: messageBody || null,
       gif_data: gifData,
+      gif_url: gifUrl,
       disappearing: payload.disappearing === true,
       created_at: createdAt,
     });

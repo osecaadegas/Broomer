@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import type { KeyboardEvent, ReactNode, SyntheticEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import { GiphyPicker } from "@/components/GiphyPicker";
 
 const CHAT_TOKEN_KEY = "broomer-yapping-token";
 const EMOJIS = ["😂", "❤️", "🥹", "😭", "😈", "🤭", "🔥", "👀", "💀", "✨"];
@@ -12,6 +12,7 @@ interface ChatMessage {
   sender: "visitor" | "admin";
   body: string | null;
   gifData: string | null;
+  gifUrl: string | null;
   disappearing: boolean;
   seenAt: string | null;
   expiresAt: string | null;
@@ -35,9 +36,11 @@ export function YappingChat({ onBack }: Readonly<Props>) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [gifData, setGifData] = useState<string | null>(null);
+  const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [gifName, setGifName] = useState("");
   const [disappearing, setDisappearing] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [gifLibraryOpen, setGifLibraryOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +70,9 @@ export function YappingChat({ onBack }: Readonly<Props>) {
       } catch (loadError) {
         if (!cancelled) {
           setError(
-            loadError instanceof Error ? loadError.message : "Could not load chat",
+            loadError instanceof Error
+              ? loadError.message
+              : "Could not load chat",
           );
         }
       } finally {
@@ -91,7 +96,7 @@ export function YappingChat({ onBack }: Readonly<Props>) {
   async function sendMessage(event?: SyntheticEvent<HTMLFormElement>) {
     event?.preventDefault();
     const body = draft.trim();
-    if ((!body && !gifData) || sending) return;
+    if ((!body && !gifData && !gifUrl) || sending) return;
 
     setSending(true);
     setError(null);
@@ -103,6 +108,7 @@ export function YappingChat({ onBack }: Readonly<Props>) {
           token: tokenRef.current,
           body,
           gifData,
+          gifUrl,
           disappearing,
         }),
       });
@@ -116,11 +122,15 @@ export function YappingChat({ onBack }: Readonly<Props>) {
       setMessages(data.messages ?? []);
       setDraft("");
       setGifData(null);
+      setGifUrl(null);
       setGifName("");
       setEmojiOpen(false);
+      setGifLibraryOpen(false);
     } catch (sendError) {
       setError(
-        sendError instanceof Error ? sendError.message : "Could not send message",
+        sendError instanceof Error
+          ? sendError.message
+          : "Could not send message",
       );
     } finally {
       setSending(false);
@@ -144,6 +154,7 @@ export function YappingChat({ onBack }: Readonly<Props>) {
     reader.onload = () => {
       if (typeof reader.result !== "string") return;
       setGifData(reader.result);
+      setGifUrl(null);
       setGifName(file.name);
       setError(null);
     };
@@ -154,15 +165,19 @@ export function YappingChat({ onBack }: Readonly<Props>) {
   let messageHistory: ReactNode;
   if (loading) {
     messageHistory = (
-      <p className="self-center rounded-md bg-white/90 px-3 py-1.5 text-xs text-[#66746d] shadow-sm">
+      <p className="self-center border border-[#8b5b79]/30 bg-[#160e19]/90 px-3 py-1.5 text-xs text-stone-500 shadow-sm">
         Loading conversation...
       </p>
     );
   } else if (messages.length === 0) {
     messageHistory = (
       <div className="mb-auto mt-[18vh] self-center text-center">
-        <p className="text-xl font-semibold text-[#23463d]">You chose yapping.</p>
-        <p className="mt-1 text-sm text-[#66746d]">Say it all. This chat is saved.</p>
+        <p className="font-serif text-xl italic text-[#e6c4d4]">
+          You chose yapping.
+        </p>
+        <p className="mt-1 text-sm text-stone-500">
+          Say it all. This chat is saved.
+        </p>
       </div>
     );
   } else {
@@ -171,17 +186,15 @@ export function YappingChat({ onBack }: Readonly<Props>) {
         key={message.id}
         className={`max-w-[85%] rounded-lg px-3 py-2 shadow-sm sm:max-w-[70%] ${
           message.sender === "visitor"
-            ? "self-end rounded-tr-sm bg-[#d9fdd3]"
-            : "self-start rounded-tl-sm bg-white"
+            ? "self-end rounded-tr-sm border border-[#8d4267]/40 bg-[#341528] text-stone-100"
+            : "self-start rounded-tl-sm border border-[#6e5577]/35 bg-[#1b1220] text-stone-200"
         }`}
       >
-        {message.gifData && (
-          <Image
-            src={message.gifData}
+        {(message.gifData || message.gifUrl) && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={message.gifData ?? message.gifUrl ?? ""}
             alt="Shared GIF"
-            width={360}
-            height={240}
-            unoptimized
             className="mb-1 h-auto max-h-72 w-full rounded-md object-contain"
           />
         )}
@@ -191,13 +204,16 @@ export function YappingChat({ onBack }: Readonly<Props>) {
           </p>
         )}
         {message.disappearing && (
-          <p className="mt-1 text-[0.65rem] text-[#587068]">
-            ◷ {message.seenAt ? "Deletes 10 min after seen" : "Timer starts when seen"}
+          <p className="mt-1 text-[0.65rem] text-[#b58a9f]">
+            ◷{" "}
+            {message.seenAt
+              ? "Deletes 10 min after seen"
+              : "Timer starts when seen"}
           </p>
         )}
         <time
           dateTime={message.createdAt}
-          className="mt-0.5 block text-right text-[0.65rem] text-[#6d7b74]"
+          className="mt-0.5 block text-right text-[0.65rem] text-stone-500"
         >
           {new Intl.DateTimeFormat(undefined, {
             hour: "2-digit",
@@ -209,33 +225,32 @@ export function YappingChat({ onBack }: Readonly<Props>) {
   }
 
   return (
-    <section className="fixed inset-0 z-[80] flex min-h-svh flex-col bg-[#efeae2] text-[#17221d]">
-      <header className="flex h-16 shrink-0 items-center gap-3 bg-[#176b5b] px-3 text-white shadow-sm sm:px-5">
+    <section className="fixed inset-0 z-[80] flex min-h-svh flex-col bg-[#08060d] text-stone-100">
+      <header className="flex h-16 shrink-0 items-center gap-3 border-b border-[#8b5b79]/30 bg-[#120a14]/95 px-3 text-stone-100 shadow-[0_0.5rem_2rem_rgba(0,0,0,0.55)] backdrop-blur-xl sm:px-5">
         <button
           type="button"
           onClick={onBack}
           aria-label="Back to entrance"
           title="Back"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-2xl transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="grid h-10 w-10 shrink-0 place-items-center text-2xl text-[#d8b566] transition hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d8b566]"
         >
           <span aria-hidden>←</span>
         </button>
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#d9fdd3] text-lg font-bold text-[#176b5b]">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#d8b566]/35 bg-[#2b1423] font-serif text-lg italic text-[#efadc8] shadow-[0_0_1.25rem_rgba(178,66,113,0.18)]">
           Y
         </div>
         <div className="min-w-0 text-left">
-          <h1 className="truncate text-base font-semibold">Yapping</h1>
-          <p className="truncate text-xs text-white/75">private conversation</p>
+          <h1 className="truncate font-serif text-base italic text-[#efadc8]">Yapping</h1>
+          <p className="truncate text-xs text-stone-500">private conversation</p>
         </div>
       </header>
 
       <div
         className="min-h-0 flex-1 overflow-y-auto px-3 py-5 sm:px-6"
         style={{
-          backgroundColor: "#efeae2",
+          backgroundColor: "#08060d",
           backgroundImage:
-            "radial-gradient(circle at 1px 1px, rgba(23,107,91,0.08) 1px, transparent 0)",
-          backgroundSize: "22px 22px",
+            "linear-gradient(rgba(8,6,13,0.78),rgba(8,6,13,0.9)), repeating-linear-gradient(45deg, rgba(174,104,139,0.04) 0 1px, transparent 1px 18px)",
         }}
       >
         <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end gap-2">
@@ -244,9 +259,12 @@ export function YappingChat({ onBack }: Readonly<Props>) {
         </div>
       </div>
 
-      <footer className="shrink-0 border-t border-black/5 bg-[#f5f3ef] px-2 py-2 sm:px-4 sm:py-3">
+      <footer className="shrink-0 border-t border-[#8b5b79]/25 bg-[#100a13]/95 px-2 py-2 backdrop-blur-xl sm:px-4 sm:py-3">
         {error && (
-          <p role="alert" className="mx-auto mb-2 max-w-3xl text-center text-xs text-red-700">
+          <p
+            role="alert"
+            className="mx-auto mb-2 max-w-3xl text-center text-xs text-red-300"
+          >
             {error}
           </p>
         )}
@@ -254,54 +272,73 @@ export function YappingChat({ onBack }: Readonly<Props>) {
           onSubmit={sendMessage}
           className="relative mx-auto flex w-full max-w-3xl flex-col gap-2"
         >
-          {gifData && (
-            <div className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-xs text-[#52625b] shadow-sm">
+          {(gifData || gifUrl) && (
+            <div className="flex items-center justify-between gap-3 border border-[#8b5b79]/30 bg-[#1b101c] px-3 py-2 text-xs text-stone-400 shadow-sm">
               <span className="truncate">GIF: {gifName}</span>
               <button
                 type="button"
                 onClick={() => {
                   setGifData(null);
+                  setGifUrl(null);
                   setGifName("");
                 }}
                 aria-label="Remove GIF"
                 title="Remove GIF"
-                className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-black/5"
+                className="grid h-7 w-7 shrink-0 place-items-center hover:bg-white/5 hover:text-white"
               >
                 ×
               </button>
             </div>
           )}
           {emojiOpen && (
-            <div className="absolute bottom-14 left-0 z-10 grid grid-cols-5 gap-1 rounded-lg border border-black/10 bg-white p-2 shadow-lg">
+            <div className="absolute bottom-14 left-0 z-10 grid grid-cols-5 gap-1 border border-[#8b5b79]/40 bg-[#160e19] p-2 shadow-[0_1rem_3rem_rgba(0,0,0,0.7)]">
               {EMOJIS.map((emoji) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => setDraft((current) => `${current}${emoji}`)}
-                  className="grid h-9 w-9 place-items-center rounded-md text-xl hover:bg-[#efeae2]"
+                  className="grid h-9 w-9 place-items-center text-xl hover:bg-white/5"
                 >
                   {emoji}
                 </button>
               ))}
             </div>
           )}
+          {gifLibraryOpen && (
+            <GiphyPicker
+              onSelect={(url, title) => {
+                setGifUrl(url);
+                setGifData(null);
+                setGifName(title);
+                setGifLibraryOpen(false);
+              }}
+              onUpload={() => {
+                setGifLibraryOpen(false);
+                gifInputRef.current?.click();
+              }}
+              onClose={() => setGifLibraryOpen(false)}
+            />
+          )}
           <div className="flex items-end gap-2">
-            <div className="flex min-h-11 items-center gap-0.5 rounded-2xl border border-black/10 bg-white pl-1">
+            <div className="flex min-h-11 items-center gap-0.5 rounded-sm border border-[#8b5b79]/35 bg-[#1a101c] pl-1">
               <button
                 type="button"
                 onClick={() => setEmojiOpen((current) => !current)}
                 aria-label="Choose emoji"
                 title="Emoji"
-                className="grid h-9 w-9 place-items-center rounded-full text-lg hover:bg-black/5"
+                className="grid h-9 w-9 place-items-center text-lg text-[#c9a2b5] hover:bg-white/5 hover:text-white"
               >
                 ☺
               </button>
               <button
                 type="button"
-                onClick={() => gifInputRef.current?.click()}
-                aria-label="Attach GIF"
-                title="Attach GIF"
-                className="grid h-9 w-9 place-items-center rounded-full text-xs font-bold hover:bg-black/5"
+                onClick={() => {
+                  setEmojiOpen(false);
+                  setGifLibraryOpen((current) => !current);
+                }}
+                aria-label="Open GIF library"
+                title="GIF library"
+                className="grid h-9 w-9 place-items-center text-xs font-bold text-[#d8b566] hover:bg-white/5"
               >
                 GIF
               </button>
@@ -311,8 +348,10 @@ export function YappingChat({ onBack }: Readonly<Props>) {
                 aria-pressed={disappearing}
                 aria-label="Toggle disappearing message"
                 title="Delete 10 minutes after seen"
-                className={`grid h-9 w-9 place-items-center rounded-full text-lg ${
-                  disappearing ? "bg-[#d9fdd3] text-[#176b5b]" : "hover:bg-black/5"
+                className={`grid h-9 w-9 place-items-center text-lg ${
+                  disappearing
+                    ? "bg-[#4a1f38] text-[#efadc8]"
+                    : "text-[#c9a2b5] hover:bg-white/5"
                 }`}
               >
                 ◷
@@ -336,20 +375,20 @@ export function YappingChat({ onBack }: Readonly<Props>) {
               onKeyDown={handleDraftKeyDown}
               placeholder="Message"
               aria-label="Message"
-              className="max-h-32 min-h-11 min-w-0 flex-1 resize-none rounded-2xl border border-black/10 bg-white px-4 py-2.5 text-base outline-none placeholder:text-[#87918c] focus:border-[#1d8f78] focus:ring-2 focus:ring-[#1d8f78]/15"
+              className="max-h-32 min-h-11 min-w-0 flex-1 resize-none rounded-sm border border-[#8b5b79]/35 bg-[#1a101c] px-4 py-2.5 text-base text-stone-100 outline-none placeholder:text-stone-600 focus:border-[#c985a6]/70 focus:ring-2 focus:ring-[#a73d6b]/20"
             />
             <button
               type="submit"
-              disabled={(draft.trim() === "" && !gifData) || sending}
+              disabled={(draft.trim() === "" && !gifData && !gifUrl) || sending}
               aria-label="Send message"
               title="Send"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#1d8f78] text-lg text-white shadow-sm transition hover:bg-[#177461] disabled:cursor-not-allowed disabled:opacity-45"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#d8b566]/35 bg-[#6e163e] text-lg text-white shadow-[0_0_1rem_rgba(167,61,107,0.25)] transition hover:bg-[#861d48] disabled:cursor-not-allowed disabled:opacity-45"
             >
               <span aria-hidden>➤</span>
             </button>
           </div>
           {disappearing && (
-            <p className="px-2 text-[0.65rem] text-[#66746d]">
+            <p className="px-2 text-[0.65rem] text-[#b58a9f]">
               This message deletes 10 minutes after it is seen.
             </p>
           )}
