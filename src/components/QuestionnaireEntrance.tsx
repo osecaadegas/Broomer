@@ -24,7 +24,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
     const audio = audioRef.current;
     if (!audio || musicStarted) return;
 
-    audio.volume = 0.05;
+    audio.volume = 0.01;
     audio.muted = true;
     void audio.play().then(() => {
       audio.pause();
@@ -39,7 +39,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
     const audio = audioRef.current;
     if (!audio) return;
 
-    audio.volume = 0.05;
+    audio.volume = 0.01;
     audio.muted = false;
     void audio.play().then(() => {
       setMusicStarted(true);
