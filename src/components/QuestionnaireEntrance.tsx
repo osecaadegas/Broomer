@@ -5,6 +5,7 @@ import type { Question } from "@/lib/questionnaire";
 import { DiabolicalLights } from "@/components/DiabolicalLights";
 import { GothicDoor } from "@/components/GothicDoor";
 import { GothicDoorClose } from "@/components/GothicDoorClose";
+import { KissFinale } from "@/components/KissFinale";
 import { Questionnaire } from "@/components/Questionnaire";
 
 interface Props {
@@ -13,9 +14,14 @@ interface Props {
 
 export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const kissAudioRef = useRef<HTMLAudioElement>(null);
+  const finaleAnimationDoneRef = useRef(false);
+  const finaleSoundDoneRef = useRef(false);
+  const finaleStartedRef = useRef(false);
   const [stage, setStage] = useState<"door" | "lights" | "questions">("door");
   const [lightsOn, setLightsOn] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [finale, setFinale] = useState(false);
   const [loopKey, setLoopKey] = useState(0);
   const [musicStarted, setMusicStarted] = useState(false);
   const [musicMuted, setMusicMuted] = useState(false);
@@ -62,12 +68,52 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
     setMusicMuted(audio.muted);
   }
 
+  function prepareFinale() {
+    const audio = kissAudioRef.current;
+    if (!audio) return;
+
+    finaleStartedRef.current = false;
+    audio.volume = 0.55;
+    audio.muted = true;
+    void audio.play().then(() => {
+      if (finaleStartedRef.current) return;
+      audio.pause();
+      audio.currentTime = 0;
+      audio.muted = false;
+    }).catch(() => {
+      // The visual finale still completes if media playback is unavailable.
+    });
+  }
+
+  function completeFinalePart(part: "animation" | "sound") {
+    if (part === "animation") finaleAnimationDoneRef.current = true;
+    if (part === "sound") finaleSoundDoneRef.current = true;
+    if (!finaleAnimationDoneRef.current || !finaleSoundDoneRef.current) return;
+
+    setFinale(false);
+    setClosing(true);
+  }
+
   function handleSubmitted() {
-    // Let the ending animation play, then close the doors for the loop.
-    setTimeout(() => setClosing(true), 5000);
+    const audio = kissAudioRef.current;
+    finaleStartedRef.current = true;
+    finaleAnimationDoneRef.current = false;
+    finaleSoundDoneRef.current = false;
+    setFinale(true);
+
+    if (!audio) {
+      completeFinalePart("sound");
+      return;
+    }
+
+    audio.currentTime = 0;
+    audio.volume = 0.55;
+    audio.muted = false;
+    void audio.play().catch(() => completeFinalePart("sound"));
   }
 
   function handleClosed() {
+    finaleStartedRef.current = false;
     setClosing(false);
     setStage("door");
     setLightsOn(false);
@@ -86,6 +132,13 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
         src="/Mozart%20-%20Symphony%20No.%2040%20(Molto%20Allegro).mp3"
         loop
         preload="auto"
+      />
+      <audio
+        ref={kissAudioRef}
+        src="/Kiss%20Sound%20Effect.mp3"
+        preload="auto"
+        onEnded={() => completeFinalePart("sound")}
+        onError={() => completeFinalePart("sound")}
       />
       {musicStarted && (
         <button
@@ -115,9 +168,15 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
           <Questionnaire
             key={loopKey}
             questions={questions}
+            onPrepareFinale={prepareFinale}
             onSubmitted={handleSubmitted}
           />
         </div>
+      )}
+      {finale && (
+        <KissFinale
+          onAnimationDone={() => completeFinalePart("animation")}
+        />
       )}
       {closing && <GothicDoorClose onDone={handleClosed} />}
     </>

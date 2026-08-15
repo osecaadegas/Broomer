@@ -405,6 +405,75 @@ body {
   animation: ending-heart 0.5s ease-out 1.4s both;
 }
 
+@keyframes kiss-cloud-expand {
+  0% {
+    opacity: 0;
+    transform: scale(0.12);
+    filter: blur(34px);
+  }
+  22% {
+    opacity: 0.86;
+  }
+  72% {
+    opacity: 0.72;
+    transform: scale(1.18);
+    filter: blur(52px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.58);
+    filter: blur(68px);
+  }
+}
+
+@keyframes kiss-zoom-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.08) rotate(-8deg);
+  }
+  18% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 1;
+    transform: scale(1.08) rotate(1.5deg);
+  }
+  82% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.18) rotate(0deg);
+  }
+}
+
+.animate-kiss-cloud {
+  background: radial-gradient(
+    circle,
+    rgba(255, 145, 196, 0.92) 0%,
+    rgba(221, 55, 125, 0.7) 42%,
+    rgba(112, 16, 72, 0.18) 70%,
+    transparent 100%
+  );
+  animation: kiss-cloud-expand 5s cubic-bezier(0.2, 0.68, 0.24, 1) both;
+}
+
+.animate-kiss-cloud-soft {
+  background: radial-gradient(
+    circle,
+    rgba(255, 195, 220, 0.58) 0%,
+    rgba(190, 45, 111, 0.35) 48%,
+    transparent 76%
+  );
+  animation: kiss-cloud-expand 5s cubic-bezier(0.2, 0.68, 0.24, 1) both;
+}
+
+.animate-kiss-zoom {
+  animation: kiss-zoom-in 5s cubic-bezier(0.2, 0.78, 0.28, 1) both;
+  will-change: transform, opacity;
+}
+
 @keyframes slide-close-left {
   0% {
     transform: translateX(-100%);

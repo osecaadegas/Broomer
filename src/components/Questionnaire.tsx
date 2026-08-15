@@ -22,6 +22,7 @@ type Answer = string | string[];
 
 interface Props {
   questions: Question[];
+  onPrepareFinale?: () => void;
   onSubmitted?: () => void;
 }
 
@@ -34,7 +35,11 @@ const cardShell =
 const accentBar =
   "h-1.5 w-full bg-gradient-to-r from-[#7c173e] via-[#b45577] to-[#5b3377]";
 
-export function Questionnaire({ questions, onSubmitted }: Props) {
+export function Questionnaire({
+  questions,
+  onPrepareFinale,
+  onSubmitted,
+}: Props) {
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [current, setCurrent] = useState(0);
@@ -201,6 +206,7 @@ export function Questionnaire({ questions, onSubmitted }: Props) {
       return;
     }
 
+    onPrepareFinale?.();
     setSubmitting(true);
     setSubmitError(null);
     try {
