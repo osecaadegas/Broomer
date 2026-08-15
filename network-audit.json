@@ -1,0 +1,8 @@
+[
+  {
+    "hostname": "application-domain",
+    "requests": 11,
+    "purpose": "HTML and same-origin static assets",
+    "required": true
+  }
+]

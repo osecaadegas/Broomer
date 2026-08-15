@@ -1,39 +1,29 @@
 import { redirect } from "next/navigation";
-import { getAdminSupabase } from "@/lib/supabase/server";
-import type { SupabaseQuestionRow } from "@/lib/supabase/types";
-import { toQuestionFromSupabase } from "@/lib/questionnaire";
+import { getAuthorizedSupabase } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/SiteHeader";
-import { QuestionManager } from "@/components/QuestionManager";
+import { SessionLock } from "@/components/SessionLock";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const admin = await getAdminSupabase();
-  if (!admin) redirect("/admin/login");
-
-  const { data, error } = await admin.supabase
-    .from("questions")
-    .select("*")
-    .order("position")
-    .order("id");
-  if (error) throw error;
-
-  const initial = (data as SupabaseQuestionRow[]).map(toQuestionFromSupabase);
+  const authorized = await getAuthorizedSupabase();
+  if (!authorized) redirect("/admin/login");
 
   return (
-    <main className="min-h-screen">
-      <SiteHeader />
-      <div className="mx-auto max-w-2xl px-4 pb-16 sm:px-6">
-        <header className="py-8">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Manage questions
-          </h1>
-          <p className="mt-1 text-sm text-slate-600 sm:text-base">
-            Add, edit, reorder, or remove the questions in your questionnaire.
+    <SessionLock>
+      <main className="min-h-svh bg-[#f3f1eb] text-[#20231f]">
+        <SiteHeader />
+        <section className="mx-auto max-w-3xl px-5 py-16">
+          <p className="text-xs font-semibold uppercase text-[#667064]">
+            Authenticated
           </p>
-        </header>
-        <QuestionManager initialQuestions={initial} />
-      </div>
-    </main>
+          <h1 className="mt-3 font-serif text-4xl">Private Workspace</h1>
+          <p className="mt-5 max-w-xl leading-7 text-[#596057]">
+            Messaging and temporary-data features are unavailable while the
+            end-to-end encryption protocol is being completed and verified.
+          </p>
+        </section>
+      </main>
+    </SessionLock>
   );
 }
