@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const sentences = [
   { text: "I need to confess you something....", duration: 6000 },
@@ -146,7 +147,7 @@ export function MoodSelfieInterlude({ onComplete }: Readonly<Props>) {
     captureAfterDelay();
   }
 
-  return (
+  return createPortal(
     <section className="fixed inset-0 z-[75] flex items-center justify-center overflow-hidden bg-[#09070d]/95 px-4 py-4 text-center backdrop-blur-xl sm:py-6">
       {phase === "sentences" ? (
         <p
@@ -209,12 +210,13 @@ export function MoodSelfieInterlude({ onComplete }: Readonly<Props>) {
             )}
           </div>
           {cameraAccepted && phase !== "unavailable" && (
-            <p className="animate-hope-message max-w-md shrink-0 font-serif text-[clamp(0.95rem,4vw,1.25rem)] leading-relaxed text-[#efadc8]">
+            <p className="animate-hope-message max-w-md shrink-0 px-2 font-serif text-[clamp(0.95rem,4vw,1.25rem)] leading-relaxed text-[#efadc8] drop-shadow-[0_0.4rem_1rem_rgba(0,0,0,0.9)]">
               {finalMessage}
             </p>
           )}
         </div>
       )}
-    </section>
+    </section>,
+    document.body,
   );
 }
