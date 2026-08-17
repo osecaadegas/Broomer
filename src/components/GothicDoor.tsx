@@ -9,11 +9,11 @@ interface Props {
   onStartMusic: () => void;
 }
 
-const emojis = [
-  { char: "🚗", label: "car" },
-  { char: "✈️", label: "plane" },
-  { char: "🚲", label: "bike" },
-  { char: "🧹", label: "broom" },
+const rides = [
+  { value: "uno", char: null, image: "/UNO_reverse_icon.png", label: "UNO reverse card" },
+  { value: "✈️", char: "✈️", image: null, label: "plane" },
+  { value: "🚲", char: "🚲", image: null, label: "bike" },
+  { value: "🧹", char: "🧹", image: null, label: "broom" },
 ];
 
 const PLANE_QUOTE_DELAY_MS = 3100;
@@ -252,9 +252,9 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Readonly<Pr
             Choose your ride
           </p>
           <div className="grid grid-cols-2 gap-3">
-            {emojis.map((emoji) => {
-              const isValid = emoji.char === "🧹" || emoji.char === "✈️";
-              const isWrong = picked === emoji.char && !isValid;
+            {rides.map((ride) => {
+              const isValid = ride.value === "🧹" || ride.value === "✈️";
+              const isWrong = picked === ride.value && !isValid;
               let selectionClass =
                 "border-[#2a1a10]/40 bg-[#0c060a] text-2xl hover:border-[#3a2a1a]/60 hover:bg-[#140e10] sm:text-3xl";
               if (isWrong) {
@@ -266,13 +266,25 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Readonly<Pr
               }
               return (
                 <button
-                  key={emoji.char}
+                  key={ride.value}
                   type="button"
-                  onClick={() => handlePick(emoji.char)}
-                  aria-label={emoji.label}
+                  onClick={() => handlePick(ride.value)}
+                  aria-label={ride.label}
                   className={`group relative flex h-16 w-16 items-center justify-center rounded-lg border transition-all duration-200 sm:h-20 sm:w-20 ${selectionClass}`}
                 >
-                  {emoji.char}
+                  {ride.image ? (
+                    <Image
+                      src={ride.image}
+                      alt=""
+                      width={404}
+                      height={608}
+                      loading="eager"
+                      sizes="40px"
+                      className="pointer-events-none h-9 w-auto object-contain sm:h-10"
+                    />
+                  ) : (
+                    ride.char
+                  )}
                   {isValid && !sliding && (
                     <span className="pointer-events-none absolute inset-0 rounded-lg bg-[#c9a84c]/[0.03] animate-pulse" />
                   )}
