@@ -23,3 +23,10 @@ export interface SupabaseResponseRow {
   answers: Record<string, unknown>;
   created_at: string;
 }
+
+export interface SupabaseAppSettingsRow {
+  id: boolean;
+  plane_password: string;
+  quote_of_day: string;
+  updated_at: string;
+}

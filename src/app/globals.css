@@ -208,6 +208,47 @@ body {
   transform-origin: 55% 65%;
 }
 
+@keyframes plane-quote-flight {
+  0% {
+    opacity: 0;
+    transform: translate3d(-38vw, 20vh, 0) rotate(-7deg) scale(0.58);
+  }
+  7% {
+    opacity: 1;
+  }
+  14% {
+    transform: translate3d(-12vw, 2vh, 0) rotate(-5deg) scale(0.64);
+  }
+  28% {
+    transform: translate3d(10vw, -30vh, 0) rotate(-2deg) scale(0.72);
+  }
+  42% {
+    transform: translate3d(27vw, -22vh, 0) rotate(4deg) scale(0.8);
+  }
+  56% {
+    transform: translate3d(38vw, 5vh, 0) rotate(7deg) scale(0.9);
+  }
+  66% {
+    transform: translate3d(48vw, -7vh, 0) rotate(0deg) scale(1);
+  }
+  78% {
+    transform: translate3d(67vw, -13vh, 0) rotate(-5deg) scale(0.96);
+  }
+  91% {
+    opacity: 1;
+    transform: translate3d(96vw, -4vh, 0) rotate(3deg) scale(0.88);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(128vw, 10vh, 0) rotate(7deg) scale(0.76);
+  }
+}
+
+.animate-plane-quote-flight {
+  animation: plane-quote-flight 5.4s linear both;
+  will-change: transform, opacity;
+}
+
 .animate-question-reveal {
   animation: question-reveal 0.12s ease-out both;
 }
@@ -381,6 +422,10 @@ body {
 
   .animate-broom-flight {
     animation-duration: 0.8s;
+  }
+
+  .animate-plane-quote-flight {
+    animation-duration: 5.4s;
   }
 }
 

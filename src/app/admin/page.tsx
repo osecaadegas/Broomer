@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
 import { getAdminSupabase } from "@/lib/supabase/server";
-import type { SupabaseQuestionRow } from "@/lib/supabase/types";
+import type {
+  SupabaseAppSettingsRow,
+  SupabaseQuestionRow,
+} from "@/lib/supabase/types";
 import { toQuestionFromSupabase } from "@/lib/questionnaire";
 import { SiteHeader } from "@/components/SiteHeader";
 import { QuestionManager } from "@/components/QuestionManager";
+import { PlaneGateSettings } from "@/components/PlaneGateSettings";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +15,17 @@ export default async function AdminPage() {
   const admin = await getAdminSupabase();
   if (!admin) redirect("/admin/login");
 
-  const { data, error } = await admin.supabase
-    .from("questions")
-    .select("*")
-    .order("position")
-    .order("id");
-  if (error) throw error;
+  const [questionsResult, settingsResult] = await Promise.all([
+    admin.supabase.from("questions").select("*").order("position").order("id"),
+    admin.supabase.from("app_settings").select("*").eq("id", true).single(),
+  ]);
+  if (questionsResult.error) throw questionsResult.error;
+  if (settingsResult.error) throw settingsResult.error;
 
-  const initial = (data as SupabaseQuestionRow[]).map(toQuestionFromSupabase);
+  const initial = (questionsResult.data as SupabaseQuestionRow[]).map(
+    toQuestionFromSupabase,
+  );
+  const settings = settingsResult.data as SupabaseAppSettingsRow;
 
   return (
     <main className="min-h-screen">
@@ -32,6 +39,10 @@ export default async function AdminPage() {
             Add, edit, reorder, or remove the questions in your questionnaire.
           </p>
         </header>
+        <PlaneGateSettings
+          initialPassword={settings.plane_password}
+          initialQuote={settings.quote_of_day}
+        />
         <QuestionManager initialQuestions={initial} />
       </div>
     </main>

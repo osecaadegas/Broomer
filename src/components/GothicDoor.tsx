@@ -16,12 +16,22 @@ const emojis = [
   { char: "🧹", label: "broom" },
 ];
 
-export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
+const PLANE_QUOTE_DELAY_MS = 3100;
+const PLANE_QUOTE_TYPE_MS = 2100;
+const PLANE_FLIGHT_MS = 5400;
+
+export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Readonly<Props>) {
   const [picked, setPicked] = useState<string | null>(null);
   const [sliding, setSliding] = useState(false);
   const [doorsOpen, setDoorsOpen] = useState(false);
   const [toxicInput, setToxicInput] = useState("");
   const [toxicWrong, setToxicWrong] = useState(false);
+  const [planePassword, setPlanePassword] = useState("");
+  const [planeError, setPlaneError] = useState<string | null>(null);
+  const [planeLoading, setPlaneLoading] = useState(false);
+  const [planeQuote, setPlaneQuote] = useState<string | null>(null);
+  const [typedPlaneQuote, setTypedPlaneQuote] = useState("");
+  const [planeFlightDone, setPlaneFlightDone] = useState(false);
   const [broomFlying, setBroomFlying] = useState(false);
   const [smoke, setSmoke] = useState(false);
   const [gone, setGone] = useState(false);
@@ -30,9 +40,36 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
     if (sliding) return;
     setPicked(char);
 
-    if (char === "🧹") {
+    if (char === "🧹" || char === "✈️") {
       setSliding(true);
       setTimeout(() => setDoorsOpen(true), 900);
+    }
+  }
+
+  async function handlePlaneSubmit() {
+    if (!/^\d{3}$/.test(planePassword)) {
+      setPlaneError("Enter all three digits");
+      return;
+    }
+
+    setPlaneLoading(true);
+    setPlaneError(null);
+    try {
+      const response = await fetch("/api/plane-gate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: planePassword }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to unlock the gate");
+      setTypedPlaneQuote("");
+      setPlaneFlightDone(false);
+      setPlaneQuote(data.quote);
+    } catch (error_) {
+      setPlanePassword("");
+      setPlaneError(error_ instanceof Error ? error_.message : "Unable to unlock the gate");
+    } finally {
+      setPlaneLoading(false);
     }
   }
 
@@ -60,6 +97,36 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
       document.body.style.overflow = "";
     };
   }, [gone]);
+
+  useEffect(() => {
+    if (!planeQuote) return;
+
+    let animationFrame = 0;
+    let typingStartedAt: number | null = null;
+
+    const typingTimer = window.setTimeout(() => {
+      typingStartedAt = performance.now();
+      const typeQuote = (now: number) => {
+        const elapsed = now - (typingStartedAt ?? now);
+        const progress = Math.min(1, elapsed / PLANE_QUOTE_TYPE_MS);
+        const characterCount = Math.ceil(progress * planeQuote.length);
+        setTypedPlaneQuote(planeQuote.slice(0, characterCount));
+        if (progress < 1) animationFrame = requestAnimationFrame(typeQuote);
+      };
+      animationFrame = requestAnimationFrame(typeQuote);
+    }, PLANE_QUOTE_DELAY_MS);
+
+    const flightTimer = window.setTimeout(() => {
+      setTypedPlaneQuote(planeQuote);
+      setPlaneFlightDone(true);
+    }, PLANE_FLIGHT_MS);
+
+    return () => {
+      window.clearTimeout(typingTimer);
+      window.clearTimeout(flightTimer);
+      cancelAnimationFrame(animationFrame);
+    };
+  }, [planeQuote]);
 
   if (gone) return null;
 
@@ -186,31 +253,34 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
           </p>
           <div className="grid grid-cols-2 gap-3">
             {emojis.map((emoji) => {
-              const isBroom = emoji.char === "🧹";
-              const isWrong = picked === emoji.char && !isBroom;
+              const isValid = emoji.char === "🧹" || emoji.char === "✈️";
+              const isWrong = picked === emoji.char && !isValid;
+              let selectionClass =
+                "border-[#2a1a10]/40 bg-[#0c060a] text-2xl hover:border-[#3a2a1a]/60 hover:bg-[#140e10] sm:text-3xl";
+              if (isWrong) {
+                selectionClass =
+                  "border-red-900/50 bg-red-950/30 text-2xl sm:text-3xl";
+              } else if (isValid) {
+                selectionClass =
+                  "border-[#c9a84c]/25 bg-[#0c060a] text-2xl hover:border-[#c9a84c]/60 hover:bg-[#140e10] hover:shadow-[0_0_20px_rgba(201,168,76,0.12)] sm:text-3xl";
+              }
               return (
                 <button
                   key={emoji.char}
                   type="button"
                   onClick={() => handlePick(emoji.char)}
                   aria-label={emoji.label}
-                  className={`group relative flex h-16 w-16 items-center justify-center rounded-lg border transition-all duration-200 sm:h-20 sm:w-20 ${
-                    isWrong
-                      ? "border-red-900/50 bg-red-950/30 text-2xl sm:text-3xl"
-                      : isBroom
-                        ? "border-[#c9a84c]/25 bg-[#0c060a] text-2xl hover:border-[#c9a84c]/60 hover:bg-[#140e10] hover:shadow-[0_0_20px_rgba(201,168,76,0.12)] sm:text-3xl"
-                        : "border-[#2a1a10]/40 bg-[#0c060a] text-2xl hover:border-[#3a2a1a]/60 hover:bg-[#140e10] sm:text-3xl"
-                  }`}
+                  className={`group relative flex h-16 w-16 items-center justify-center rounded-lg border transition-all duration-200 sm:h-20 sm:w-20 ${selectionClass}`}
                 >
                   {emoji.char}
-                  {isBroom && !sliding && (
+                  {isValid && !sliding && (
                     <span className="pointer-events-none absolute inset-0 rounded-lg bg-[#c9a84c]/[0.03] animate-pulse" />
                   )}
                 </button>
               );
             })}
           </div>
-          {picked !== null && picked !== "🧹" && (
+          {picked !== null && picked !== "🧹" && picked !== "✈️" && (
             <p className="animate-card-in text-xs font-medium text-red-800/80">
               Wrong pick… Try again
             </p>
@@ -219,7 +289,7 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
       )}
 
       {/* TOXIC WORD INPUT (phase 2 — after doors open) */}
-      {doorsOpen && !broomFlying && !smoke && (
+      {doorsOpen && picked === "🧹" && !broomFlying && !smoke && (
         <div className="pointer-events-auto relative z-40 flex flex-col items-center gap-4 animate-card-in">
           <p className="text-lg font-semibold tracking-wide text-stone-200">
             Stay .....
@@ -253,6 +323,95 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Props) {
             <p className="animate-card-in text-xs font-medium text-red-700/80">
               Nope, try again…
             </p>
+          )}
+        </div>
+      )}
+
+      {doorsOpen && picked === "✈️" && (
+        <div className="pointer-events-auto relative z-40 flex w-[min(90vw,36rem)] flex-col items-center gap-4 text-center animate-card-in">
+          {planeQuote ? (
+            <>
+              <div
+                aria-hidden
+                className="pointer-events-none fixed inset-0 z-50 overflow-hidden"
+              >
+                <div className="animate-plane-quote-flight absolute left-0 top-1/2">
+                  <Image
+                    src="/plane.png"
+                    alt=""
+                    width={1536}
+                    height={1024}
+                    priority
+                    sizes="(max-width: 640px) 56vw, 360px"
+                    className="h-auto w-[min(56vw,22rem)] object-contain drop-shadow-[0_1rem_1.5rem_rgba(0,0,0,0.55)]"
+                  />
+                </div>
+              </div>
+              <p className={`text-xs uppercase tracking-[0.25em] text-[#8a7a60] transition-opacity duration-500 ${typedPlaneQuote ? "opacity-100" : "opacity-0"}`}>
+                Quote of the day
+              </p>
+              <blockquote
+                aria-live="polite"
+                aria-label={planeFlightDone ? planeQuote : "Quote is being revealed"}
+                className={`min-h-24 text-xl font-medium leading-relaxed text-stone-200 transition-opacity duration-300 sm:text-2xl ${typedPlaneQuote ? "opacity-100" : "opacity-0"}`}
+              >
+                <span aria-hidden>&ldquo;{typedPlaneQuote}</span>
+                {!planeFlightDone && typedPlaneQuote && (
+                  <span aria-hidden className="ml-0.5 inline-block h-[1.1em] w-px animate-pulse bg-[#dfc77d] align-[-0.15em]" />
+                )}
+                <span aria-hidden>{planeFlightDone ? "”" : ""}</span>
+              </blockquote>
+              {planeFlightDone && (
+                <button
+                  type="button"
+                  onClick={onOpen}
+                  className="mt-2 animate-card-in rounded-lg border border-[#c9a84c]/40 bg-[#20180e]/70 px-5 py-2.5 text-sm font-semibold text-[#dfc77d] transition hover:border-[#c9a84c]/70 hover:bg-[#2a2012]"
+                >
+                  Continue
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-lg font-semibold tracking-wide text-stone-200">
+                Enter the flight code
+              </p>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void handlePlaneSubmit();
+                }}
+                className="flex flex-col items-center gap-3"
+              >
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  autoFocus
+                  maxLength={3}
+                  pattern="[0-9]{3}"
+                  aria-label="Three-digit flight code"
+                  value={planePassword}
+                  onChange={(event) => {
+                    setPlanePassword(event.target.value.replace(/\D/g, "").slice(0, 3));
+                    setPlaneError(null);
+                  }}
+                  className="w-40 rounded-lg border border-[#c9a84c]/35 bg-[#100c08]/85 px-4 py-3 text-center font-mono text-lg tracking-[0.6em] text-stone-100 shadow-inner shadow-black/40 outline-none transition focus:border-[#c9a84c]/70 focus:ring-2 focus:ring-[#c9a84c]/20"
+                />
+                <button
+                  type="submit"
+                  disabled={planeLoading}
+                  className="rounded-lg border border-[#c9a84c]/40 bg-[#20180e]/70 px-5 py-2.5 text-sm font-semibold text-[#dfc77d] transition hover:border-[#c9a84c]/70 hover:bg-[#2a2012] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {planeLoading ? "Checking..." : "Unlock"}
+                </button>
+              </form>
+              {planeError && (
+                <p className="animate-card-in text-xs font-medium text-red-700/90">
+                  {planeError}
+                </p>
+              )}
+            </>
           )}
         </div>
       )}

@@ -24,6 +24,18 @@ create table if not exists public.responses (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.app_settings (
+  id boolean primary key default true check (id),
+  plane_password varchar(3) not null default '123'
+    check (plane_password ~ '^[0-9]{3}$'),
+  quote_of_day text not null default 'The sky is not the limit. Your mind is.',
+  updated_at timestamptz not null default now()
+);
+
+insert into public.app_settings (id)
+values (true)
+on conflict (id) do nothing;
+
 create index if not exists questions_position_id_idx
   on public.questions (position, id);
 create index if not exists responses_created_at_id_idx
@@ -31,12 +43,14 @@ create index if not exists responses_created_at_id_idx
 
 alter table public.questions enable row level security;
 alter table public.responses enable row level security;
+alter table public.app_settings enable row level security;
 
 grant usage on schema public to anon, authenticated;
 grant select on public.questions to anon, authenticated;
 grant insert, update, delete on public.questions to authenticated;
 grant insert on public.responses to anon, authenticated;
 grant select, delete on public.responses to authenticated;
+grant select, update on public.app_settings to authenticated;
 grant usage, select on sequence public.questions_id_seq to authenticated;
 grant usage, select on sequence public.responses_id_seq to anon, authenticated;
 
@@ -73,6 +87,35 @@ drop policy if exists "Admins can delete responses" on public.responses;
 create policy "Admins can delete responses"
   on public.responses for delete to authenticated
   using ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+drop policy if exists "Admins can read app settings" on public.app_settings;
+create policy "Admins can read app settings"
+  on public.app_settings for select to authenticated
+  using ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+drop policy if exists "Admins can update app settings" on public.app_settings;
+create policy "Admins can update app settings"
+  on public.app_settings for update to authenticated
+  using ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+  with check ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+create or replace function public.verify_plane_gate(candidate text)
+returns table (quote text)
+language sql
+security definer
+set search_path = ''
+as $$
+  select settings.quote_of_day
+  from public.app_settings as settings
+  where settings.id = true
+    and candidate ~ '^[0-9]{3}$'
+    and settings.plane_password = candidate;
+$$;
+
+revoke execute on function public.verify_plane_gate(text) from public;
+grant execute on function public.verify_plane_gate(text) to anon, authenticated;
+
+notify pgrst, 'reload schema';
 
 do $$
 declare
