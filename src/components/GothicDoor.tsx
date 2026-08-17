@@ -21,6 +21,39 @@ const PLANE_QUOTE_DELAY_MS = 3100;
 const PLANE_QUOTE_TYPE_MS = 2100;
 const PLANE_FLIGHT_MS = 5400;
 
+function isEntryRide(value: string): boolean {
+  return value === "🧹" || value === "✈️" || value === "uno";
+}
+
+function getRideSelectionClass(isValid: boolean, isWrong: boolean): string {
+  if (isWrong) {
+    return "border-red-900/50 bg-red-950/30 text-2xl sm:text-3xl";
+  }
+  if (isValid) {
+    return "border-[#c9a84c]/25 bg-[#0c060a] text-2xl hover:border-[#c9a84c]/60 hover:bg-[#140e10] hover:shadow-[0_0_20px_rgba(201,168,76,0.12)] sm:text-3xl";
+  }
+  return "border-[#2a1a10]/40 bg-[#0c060a] text-2xl hover:border-[#3a2a1a]/60 hover:bg-[#140e10] sm:text-3xl";
+}
+
+function beginRideSelection(
+  value: string,
+  sliding: boolean,
+  setPicked: (value: string) => void,
+  setSliding: (value: boolean) => void,
+  setDoorsOpen: (value: boolean) => void,
+  onUno: () => void,
+) {
+  if (sliding) return;
+  setPicked(value);
+  if (!isEntryRide(value)) return;
+
+  setSliding(true);
+  setTimeout(() => {
+    if (value === "uno") onUno();
+    else setDoorsOpen(true);
+  }, 900);
+}
+
 export function GothicDoor({ onOpen, onUno, onPrepareMusic, onStartMusic }: Readonly<Props>) {
   const [picked, setPicked] = useState<string | null>(null);
   const [sliding, setSliding] = useState(false);
@@ -38,16 +71,14 @@ export function GothicDoor({ onOpen, onUno, onPrepareMusic, onStartMusic }: Read
   const [gone, setGone] = useState(false);
 
   function handlePick(char: string) {
-    if (sliding) return;
-    setPicked(char);
-
-    if (char === "🧹" || char === "✈️" || char === "uno") {
-      setSliding(true);
-      setTimeout(() => {
-        if (char === "uno") onUno();
-        else setDoorsOpen(true);
-      }, 900);
-    }
+    beginRideSelection(
+      char,
+      sliding,
+      setPicked,
+      setSliding,
+      setDoorsOpen,
+      onUno,
+    );
   }
 
   async function handlePlaneSubmit() {
@@ -229,7 +260,7 @@ export function GothicDoor({ onOpen, onUno, onPrepareMusic, onStartMusic }: Read
       </div>
 
       {/* CENTER SEAM */}
-      <div className="pointer-events-none absolute inset-y-0 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center">
+      <div className="pointer-events-none absolute inset-0 z-50 flex flex-col items-center">
         <div className="mt-4 flex flex-col items-center">
           <svg viewBox="0 0 40 50" className="h-10 w-10" fill="none">
             <path d="M20 2 L26 18 L38 22 L26 26 L28 42 L20 34 L12 42 L14 26 L2 22 L14 18 Z" fill="rgba(180,140,60,0.15)" stroke="rgba(180,140,60,0.25)" strokeWidth="1" />
@@ -237,9 +268,16 @@ export function GothicDoor({ onOpen, onUno, onPrepareMusic, onStartMusic }: Read
           </svg>
         </div>
         <div className="h-28 w-px bg-gradient-to-b from-[#c9a84c]/15 via-[#c9a84c]/25 to-[#c9a84c]/10" />
-        <div className="grid h-14 w-14 place-items-center rounded-full border border-[#c9a84c]/20 bg-[#0c0609] shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(201,168,76,0.1)]">
+        <button
+          type="button"
+          onClick={() => window.location.assign("/admin")}
+          aria-label="Open admin dashboard"
+          title="Admin dashboard"
+          tabIndex={sliding ? -1 : 0}
+          className={`grid h-14 w-14 place-items-center rounded-full border border-[#c9a84c]/20 bg-[#0c0609] shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(201,168,76,0.1)] transition hover:border-[#c9a84c]/50 hover:bg-[#17100c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#c9a84c] ${sliding ? "pointer-events-none" : "pointer-events-auto"}`}
+        >
           <span className="text-xl">⚜️</span>
-        </div>
+        </button>
         <div className="h-28 w-px bg-gradient-to-b from-[#c9a84c]/10 via-[#c9a84c]/25 to-[#c9a84c]/15" />
         <div className="mb-4 flex flex-col items-center">
           <svg viewBox="0 0 40 50" className="h-10 w-10 rotate-180" fill="none">
@@ -257,17 +295,9 @@ export function GothicDoor({ onOpen, onUno, onPrepareMusic, onStartMusic }: Read
           </p>
           <div className="grid grid-cols-2 gap-3">
             {rides.map((ride) => {
-              const isValid = ride.value === "🧹" || ride.value === "✈️" || ride.value === "uno";
+              const isValid = isEntryRide(ride.value);
               const isWrong = picked === ride.value && !isValid;
-              let selectionClass =
-                "border-[#2a1a10]/40 bg-[#0c060a] text-2xl hover:border-[#3a2a1a]/60 hover:bg-[#140e10] sm:text-3xl";
-              if (isWrong) {
-                selectionClass =
-                  "border-red-900/50 bg-red-950/30 text-2xl sm:text-3xl";
-              } else if (isValid) {
-                selectionClass =
-                  "border-[#c9a84c]/25 bg-[#0c060a] text-2xl hover:border-[#c9a84c]/60 hover:bg-[#140e10] hover:shadow-[0_0_20px_rgba(201,168,76,0.12)] sm:text-3xl";
-              }
+              const selectionClass = getRideSelectionClass(isValid, isWrong);
               return (
                 <button
                   key={ride.value}
