@@ -12,7 +12,11 @@ interface Props {
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
 
-export function PlaneGateSettings({ initialPassword, initialUnoPassword, initialQuote }: Readonly<Props>) {
+export function PlaneGateSettings({
+  initialPassword,
+  initialUnoPassword,
+  initialQuote,
+}: Readonly<Props>) {
   const [password, setPassword] = useState(initialPassword);
   const [unoPassword, setUnoPassword] = useState(initialUnoPassword);
   const [quote, setQuote] = useState(initialQuote);
@@ -20,7 +24,9 @@ export function PlaneGateSettings({ initialPassword, initialUnoPassword, initial
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
+  async function handleSubmit(
+    event: SyntheticEvent<HTMLFormElement, SubmitEvent>,
+  ) {
     event.preventDefault();
     setSaving(true);
     setMessage(null);
@@ -37,24 +43,30 @@ export function PlaneGateSettings({ initialPassword, initialUnoPassword, initial
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to save settings");
+      if (!response.ok)
+        throw new Error(data.error || "Failed to save settings");
       setPassword(data.settings.plane_password);
       setUnoPassword(data.settings.uno_password);
       setQuote(data.settings.quote_of_day);
       setMessage("Entrance settings updated.");
     } catch (error_) {
-      setError(error_ instanceof Error ? error_.message : "Failed to save settings");
+      setError(
+        error_ instanceof Error ? error_.message : "Failed to save settings",
+      );
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <section className="mb-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-slate-900">Entrance settings</h2>
+        <h2 className="text-lg font-semibold text-slate-900">
+          Access codes and quote
+        </h2>
         <p className="mt-1 text-sm text-slate-600">
-          Set the plane and UNO editor codes, plus the quote revealed after entry.
+          Set the plane and UNO editor codes, plus the quote revealed after
+          entry.
         </p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -70,7 +82,9 @@ export function PlaneGateSettings({ initialPassword, initialUnoPassword, initial
             pattern="[0-9]{3}"
             required
             value={password}
-            onChange={(event) => setPassword(event.target.value.replace(/\D/g, "").slice(0, 3))}
+            onChange={(event) =>
+              setPassword(event.target.value.replace(/\D/g, "").slice(0, 3))
+            }
             className={`${inputClass} max-w-32 font-mono tracking-[0.35em]`}
           />
         </label>

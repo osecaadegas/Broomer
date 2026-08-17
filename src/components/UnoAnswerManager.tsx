@@ -33,7 +33,10 @@ function initialAnswer(question: SupabaseUnoQuestionRow): Answer {
 export function UnoAnswerManager({ questions }: Readonly<Props>) {
   const [answers, setAnswers] = useState<Record<string, Answer>>(() =>
     Object.fromEntries(
-      questions.map((question) => [String(question.id), initialAnswer(question)]),
+      questions.map((question) => [
+        String(question.id),
+        initialAnswer(question),
+      ]),
     ),
   );
   const [saving, setSaving] = useState(false);
@@ -71,14 +74,16 @@ export function UnoAnswerManager({ questions }: Readonly<Props>) {
       if (!response.ok) throw new Error(data.error || "Unable to save answers");
       setMessage("Plane answers saved.");
     } catch (error_) {
-      setError(error_ instanceof Error ? error_.message : "Unable to save answers");
+      setError(
+        error_ instanceof Error ? error_.message : "Unable to save answers",
+      );
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <section className="mb-10 border-y border-slate-200 py-7">
+    <section>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">
@@ -116,7 +121,9 @@ export function UnoAnswerManager({ questions }: Readonly<Props>) {
               <fieldset key={question.id} className="min-w-0">
                 <legend className="text-sm font-semibold text-slate-800">
                   {index + 1}. {question.prompt}
-                  {question.required && <span className="ml-1 text-red-500">*</span>}
+                  {question.required && (
+                    <span className="ml-1 text-red-500">*</span>
+                  )}
                 </legend>
 
                 <div className="mt-2.5">
@@ -124,7 +131,9 @@ export function UnoAnswerManager({ questions }: Readonly<Props>) {
                     <textarea
                       rows={4}
                       value={typeof value === "string" ? value : ""}
-                      onChange={(event) => setAnswer(question.id, event.target.value)}
+                      onChange={(event) =>
+                        setAnswer(question.id, event.target.value)
+                      }
                       className={`${inputClass} resize-y`}
                     />
                   )}
@@ -132,7 +141,9 @@ export function UnoAnswerManager({ questions }: Readonly<Props>) {
                     <input
                       type="text"
                       value={typeof value === "string" ? value : ""}
-                      onChange={(event) => setAnswer(question.id, event.target.value)}
+                      onChange={(event) =>
+                        setAnswer(question.id, event.target.value)
+                      }
                       className={inputClass}
                     />
                   )}
@@ -140,7 +151,9 @@ export function UnoAnswerManager({ questions }: Readonly<Props>) {
                     <input
                       type="number"
                       value={typeof value === "string" ? value : ""}
-                      onChange={(event) => setAnswer(question.id, event.target.value)}
+                      onChange={(event) =>
+                        setAnswer(question.id, event.target.value)
+                      }
                       className={inputClass}
                     />
                   )}
@@ -148,26 +161,35 @@ export function UnoAnswerManager({ questions }: Readonly<Props>) {
                     <input
                       type="datetime-local"
                       value={typeof value === "string" ? value : ""}
-                      onChange={(event) => setAnswer(question.id, event.target.value)}
+                      onChange={(event) =>
+                        setAnswer(question.id, event.target.value)
+                      }
                       className={inputClass}
                     />
                   )}
                   {question.type === "rating" && (
                     <select
                       value={typeof value === "string" ? value : ""}
-                      onChange={(event) => setAnswer(question.id, event.target.value)}
+                      onChange={(event) =>
+                        setAnswer(question.id, event.target.value)
+                      }
                       className={inputClass}
                     >
                       <option value="">Select a rating</option>
                       {[1, 2, 3, 4, 5].map((rating) => (
-                        <option key={rating} value={String(rating)}>{rating} / 5</option>
+                        <option key={rating} value={String(rating)}>
+                          {rating} / 5
+                        </option>
                       ))}
                     </select>
                   )}
                   {question.type === "single" && (
                     <div className="grid gap-2 sm:grid-cols-2">
                       {options.map((option) => (
-                        <label key={option} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700">
+                        <label
+                          key={option}
+                          className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700"
+                        >
                           <input
                             type="radio"
                             name={`uno-${question.id}`}
@@ -183,9 +205,13 @@ export function UnoAnswerManager({ questions }: Readonly<Props>) {
                   {question.type === "multiple" && (
                     <div className="grid gap-2 sm:grid-cols-2">
                       {options.map((option) => {
-                        const selected = Array.isArray(value) && value.includes(option);
+                        const selected =
+                          Array.isArray(value) && value.includes(option);
                         return (
-                          <label key={option} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700">
+                          <label
+                            key={option}
+                            className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700"
+                          >
                             <input
                               type="checkbox"
                               checked={selected}
@@ -205,8 +231,12 @@ export function UnoAnswerManager({ questions }: Readonly<Props>) {
         </div>
       )}
 
-      {message && <p className="mt-4 text-sm font-medium text-emerald-700">{message}</p>}
-      {error && <p className="mt-4 text-sm font-medium text-red-700">{error}</p>}
+      {message && (
+        <p className="mt-4 text-sm font-medium text-emerald-700">{message}</p>
+      )}
+      {error && (
+        <p className="mt-4 text-sm font-medium text-red-700">{error}</p>
+      )}
     </section>
   );
 }
