@@ -176,7 +176,7 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
           </div>
           <h1 className="mt-5 text-2xl font-semibold text-stone-100">Questions ready</h1>
           <p className="mt-2 text-sm text-stone-400">
-            The questionnaire has been replaced with your questions.
+            Your questions are ready for the admin to answer.
           </p>
           <button
             type="button"
@@ -254,7 +254,7 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
               Set the questions
             </h1>
             <p className="mt-2 text-sm text-stone-400">
-              Publishing replaces the current questionnaire.
+              These questions stay separate from the broom questionnaire.
             </p>
           </div>
           <button

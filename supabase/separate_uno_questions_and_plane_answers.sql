@@ -1,43 +1,9 @@
-alter table public.app_settings
-  add column if not exists uno_password varchar(3) not null default '456';
-
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_constraint
-    where conname = 'app_settings_uno_password_check'
-      and conrelid = 'public.app_settings'::regclass
-  ) then
-    alter table public.app_settings
-      add constraint app_settings_uno_password_check
-      check (uno_password ~ '^[0-9]{3}$');
-  end if;
-end
-$$;
-
-create or replace function public.verify_uno_gate(candidate text)
-returns boolean
-language sql
-security definer
-set search_path = ''
-as $$
-  select exists (
-    select 1
-    from public.app_settings as settings
-    where settings.id = true
-      and candidate ~ '^[0-9]{3}$'
-      and settings.uno_password = candidate
-  );
-$$;
-
-revoke execute on function public.verify_uno_gate(text) from public;
-grant execute on function public.verify_uno_gate(text) to anon, authenticated;
-
 create table if not exists public.uno_questions (
   id serial primary key,
   prompt text not null check (length(btrim(prompt)) between 1 and 500),
-  type varchar(24) not null check (type in ('short', 'long', 'single', 'multiple', 'rating', 'number', 'datetime')),
+  type varchar(24) not null check (
+    type in ('short', 'long', 'single', 'multiple', 'rating', 'number', 'datetime')
+  ),
   options jsonb not null default '[]'::jsonb check (jsonb_typeof(options) = 'array'),
   required boolean not null default false,
   position integer not null,
@@ -46,17 +12,22 @@ create table if not exists public.uno_questions (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists uno_questions_position_id_idx on public.uno_questions (position, id);
+create index if not exists uno_questions_position_id_idx
+  on public.uno_questions (position, id);
+
 alter table public.uno_questions enable row level security;
+
 grant select, update on public.uno_questions to authenticated;
 grant usage, select on sequence public.uno_questions_id_seq to authenticated;
 
 drop policy if exists "Admins can read UNO questions" on public.uno_questions;
-create policy "Admins can read UNO questions" on public.uno_questions for select to authenticated
+create policy "Admins can read UNO questions"
+  on public.uno_questions for select to authenticated
   using ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 drop policy if exists "Admins can update UNO answers" on public.uno_questions;
-create policy "Admins can update UNO answers" on public.uno_questions for update to authenticated
+create policy "Admins can update UNO answers"
+  on public.uno_questions for update to authenticated
   using ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
   with check ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
@@ -127,18 +98,34 @@ language sql
 security definer
 set search_path = ''
 as $$
-  select settings.quote_of_day,
-    coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'id', question.id, 'question', question.prompt, 'type', question.type,
-        'options', question.options, 'answer', question.answer
-      ) order by question.position, question.id)
-      from public.uno_questions as question
-      where question.answer is not null
-        and question.answer <> 'null'::jsonb
-        and not (jsonb_typeof(question.answer) = 'string' and btrim(question.answer #>> '{}') = '')
-        and not (jsonb_typeof(question.answer) = 'array' and jsonb_array_length(question.answer) = 0)
-    ), '[]'::jsonb)
+  select
+    settings.quote_of_day,
+    coalesce(
+      (
+        select jsonb_agg(
+          jsonb_build_object(
+            'id', question.id,
+            'question', question.prompt,
+            'type', question.type,
+            'options', question.options,
+            'answer', question.answer
+          )
+          order by question.position, question.id
+        )
+        from public.uno_questions as question
+        where question.answer is not null
+          and question.answer <> 'null'::jsonb
+          and not (
+            jsonb_typeof(question.answer) = 'string'
+            and btrim(question.answer #>> '{}') = ''
+          )
+          and not (
+            jsonb_typeof(question.answer) = 'array'
+            and jsonb_array_length(question.answer) = 0
+          )
+      ),
+      '[]'::jsonb
+    )
   from public.app_settings as settings
   where settings.id = true
     and candidate ~ '^[0-9]{3}$'

@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { PlaneAnswerReveal } from "@/components/PlaneAnswerReveal";
+import type { PlaneAnswer } from "@/lib/supabase/types";
 
 interface Props {
   onOpen: () => void;
@@ -64,6 +66,7 @@ export function GothicDoor({ onOpen, onUno, onPrepareMusic, onStartMusic }: Read
   const [planeError, setPlaneError] = useState<string | null>(null);
   const [planeLoading, setPlaneLoading] = useState(false);
   const [planeQuote, setPlaneQuote] = useState<string | null>(null);
+  const [planeAnswers, setPlaneAnswers] = useState<PlaneAnswer[]>([]);
   const [typedPlaneQuote, setTypedPlaneQuote] = useState("");
   const [planeFlightDone, setPlaneFlightDone] = useState(false);
   const [broomFlying, setBroomFlying] = useState(false);
@@ -99,6 +102,7 @@ export function GothicDoor({ onOpen, onUno, onPrepareMusic, onStartMusic }: Read
       if (!response.ok) throw new Error(data.error || "Unable to unlock the gate");
       setTypedPlaneQuote("");
       setPlaneFlightDone(false);
+      setPlaneAnswers(Array.isArray(data.answers) ? data.answers : []);
       setPlaneQuote(data.quote);
     } catch (error_) {
       setPlanePassword("");
@@ -408,13 +412,10 @@ export function GothicDoor({ onOpen, onUno, onPrepareMusic, onStartMusic }: Read
                 <span aria-hidden>{planeFlightDone ? "”" : ""}</span>
               </blockquote>
               {planeFlightDone && (
-                <button
-                  type="button"
-                  onClick={onOpen}
-                  className="mt-2 animate-card-in rounded-lg border border-[#c9a84c]/40 bg-[#20180e]/70 px-5 py-2.5 text-sm font-semibold text-[#dfc77d] transition hover:border-[#c9a84c]/70 hover:bg-[#2a2012]"
-                >
-                  Continue
-                </button>
+                <PlaneAnswerReveal
+                  answers={planeAnswers}
+                  onDone={() => window.location.reload()}
+                />
               )}
             </>
           ) : (

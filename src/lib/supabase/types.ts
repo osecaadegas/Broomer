@@ -31,3 +31,23 @@ export interface SupabaseAppSettingsRow {
   quote_of_day: string;
   updated_at: string;
 }
+
+export interface SupabaseUnoQuestionRow {
+  id: number;
+  prompt: string;
+  type: string;
+  options: unknown;
+  required: boolean;
+  position: number;
+  answer: unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlaneAnswer {
+  id: number;
+  question: string;
+  type: string;
+  options: string[];
+  answer: string | string[];
+}
