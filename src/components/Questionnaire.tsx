@@ -25,6 +25,7 @@ type Answer = string | string[];
 
 interface Props {
   questions: Question[];
+  lightsOn?: boolean;
   onPrepareFinale?: () => void;
   onSubmitted?: () => void;
 }
@@ -38,8 +39,16 @@ const cardShell =
 const accentBar =
   "h-1.5 w-full bg-gradient-to-r from-[#7c173e] via-[#b45577] to-[#5b3377]";
 
+function getAtmosphereWhisper(index: number, lightsOn: boolean): string | null {
+  if (index === 0 || index % 3 !== 0) return null;
+  return lightsOn
+    ? "The candle leans closer."
+    : "Something shifts beyond the card.";
+}
+
 export function Questionnaire({
   questions,
+  lightsOn = false,
   onPrepareFinale,
   onSubmitted,
 }: Props) {
@@ -70,6 +79,7 @@ export function Questionnaire({
   const currentSafe = Math.min(current, Math.max(0, total - 1));
   const question = visible[currentSafe];
   const isLast = currentSafe === total - 1;
+  const atmosphereWhisper = getAtmosphereWhisper(currentSafe, lightsOn);
 
   function isEmpty(id: number): boolean {
     const value = answers[String(id)];
@@ -261,10 +271,7 @@ export function Questionnaire({
     setMoodInterludeCompleted(false);
   }
 
-  function finishMoodInterlude(
-    selfie: string | null,
-    moodTalk: string | null,
-  ) {
+  function finishMoodInterlude(selfie: string | null, moodTalk: string | null) {
     if (selfie) {
       setAnswers((previous) => ({
         ...previous,
@@ -388,288 +395,311 @@ export function Questionnaire({
 
   return (
     <>
-      {moodInterlude && <MoodSelfieInterlude onComplete={finishMoodInterlude} />}
+      {moodInterlude && (
+        <MoodSelfieInterlude onComplete={finishMoodInterlude} />
+      )}
       <form
         onSubmit={handleSubmit}
         noValidate
-        className={`${cardShell} relative`}
+        className={`${cardShell} relative ${
+          lightsOn
+            ? "border-[#c9a84c]/35 shadow-[#3f260f]/30"
+            : "border-[#765083]/35 shadow-[#120719]/70"
+        }`}
       >
-      <FlyingEmojis mode={emojiMode} />
-      <div className={accentBar} />
-      <div
-        key={question.id}
-        className="animate-card-in relative z-10 p-6 sm:p-8"
-      >
-        {question.prompt ? (
-          <h2 className="text-xl font-semibold leading-snug text-stone-100">
-            {question.prompt}
-            {question.required && (
-              <span className="ml-1 text-red-400" title="Required">
-                *
-              </span>
-            )}
-          </h2>
-        ) : null}
+        <FlyingEmojis mode={emojiMode} />
+        <div
+          className={
+            lightsOn
+              ? "h-1.5 w-full bg-gradient-to-r from-[#6f3c16] via-[#d0aa55] to-[#7b4820]"
+              : accentBar
+          }
+        />
+        <div
+          key={question.id}
+          className="animate-card-in relative z-10 p-6 sm:p-8"
+        >
+          {question.prompt ? (
+            <h2 className="text-xl font-semibold leading-snug text-stone-100">
+              {question.prompt}
+              {question.required && (
+                <span className="ml-1 text-red-400" title="Required">
+                  *
+                </span>
+              )}
+            </h2>
+          ) : null}
 
-        <div className="mt-6">
-          <div className={question.prompt ? "mt-5" : ""}>
-            {question.type === "short" && (
-              <input
-                type="text"
-                className={inputClass}
-                placeholder={question.placeholder || "Type your answer…"}
-                value={typeof value === "string" ? value : ""}
-                onChange={(e) => setAnswer(question.id, e.target.value)}
-              />
-            )}
+          {atmosphereWhisper && (
+            <p
+              aria-hidden
+              className={`mt-2 animate-card-in font-serif text-xs italic ${
+                lightsOn ? "text-[#ad925a]/70" : "text-[#9375a0]/65"
+              }`}
+            >
+              {atmosphereWhisper}
+            </p>
+          )}
 
-            {question.type === "long" && (
-              <textarea
-                rows={4}
-                className={`${inputClass} resize-y`}
-                placeholder={question.placeholder || "Type your answer…"}
-                value={typeof value === "string" ? value : ""}
-                onChange={(e) => setAnswer(question.id, e.target.value)}
-              />
-            )}
+          <div className="mt-6">
+            <div className={question.prompt ? "mt-5" : ""}>
+              {question.type === "short" && (
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder={question.placeholder || "Type your answer…"}
+                  value={typeof value === "string" ? value : ""}
+                  onChange={(e) => setAnswer(question.id, e.target.value)}
+                />
+              )}
 
-            {question.type === "number" && (
-              <input
-                type="number"
-                inputMode="numeric"
-                className={inputClass}
-                placeholder={question.placeholder || "Enter a number"}
-                value={typeof value === "string" ? value : ""}
-                onChange={(e) => setAnswer(question.id, e.target.value)}
-              />
-            )}
+              {question.type === "long" && (
+                <textarea
+                  rows={4}
+                  className={`${inputClass} resize-y`}
+                  placeholder={question.placeholder || "Type your answer…"}
+                  value={typeof value === "string" ? value : ""}
+                  onChange={(e) => setAnswer(question.id, e.target.value)}
+                />
+              )}
 
-            {question.type === "rating" && (
-              <div>
-                <div className="flex flex-wrap gap-2">
-                  {scale.map((rating, ratingIndex) => {
-                    const selected =
-                      typeof value === "string" && value === String(rating);
-                    const animateMoodRating = currentSafe === 0 && rating > 2;
+              {question.type === "number" && (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  className={inputClass}
+                  placeholder={question.placeholder || "Enter a number"}
+                  value={typeof value === "string" ? value : ""}
+                  onChange={(e) => setAnswer(question.id, e.target.value)}
+                />
+              )}
+
+              {question.type === "rating" && (
+                <div>
+                  <div className="flex flex-wrap gap-2">
+                    {scale.map((rating, ratingIndex) => {
+                      const selected =
+                        typeof value === "string" && value === String(rating);
+                      const animateMoodRating = currentSafe === 0 && rating > 2;
+                      return (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setAnswer(question.id, String(rating))}
+                          aria-label={`Rate ${rating} out of ${scale[scale.length - 1]}`}
+                          aria-pressed={selected}
+                          className={`h-11 w-11 rounded-xl border text-sm font-semibold transition ${
+                            animateMoodRating ? "animate-mood-rating" : ""
+                          } ${
+                            selected
+                              ? "border-[#c56d91] bg-gradient-to-br from-[#8e204b] to-[#654075] text-white shadow-md shadow-black/30"
+                              : "border-white/10 bg-black/20 text-stone-300 hover:border-[#b45577]/60 hover:bg-[#311728] hover:text-[#f0becf]"
+                          }`}
+                          style={
+                            animateMoodRating
+                              ? {
+                                  animationDelay: `${Math.max(0, ratingIndex - 2) * 70}ms`,
+                                }
+                              : undefined
+                          }
+                        >
+                          {rating}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 text-xs text-stone-500">
+                    1 = low, {scale[scale.length - 1]} = high
+                  </p>
+                </div>
+              )}
+
+              {hasOptions(question.type) && (
+                <div className="space-y-2">
+                  {question.options.map((option, optionIndex) => {
+                    const isSingle = question.type === "single";
+                    const selected = isSingle
+                      ? value === option
+                      : Array.isArray(value) && value.includes(option);
+                    return (
+                      <label
+                        key={`${question.id}-${optionIndex}`}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm transition ${
+                          selected
+                            ? "border-[#c56d91] bg-[#3a1930] text-[#fde7ee] ring-1 ring-[#b45577]/70"
+                            : "border-white/10 bg-black/15 text-stone-300 hover:border-[#a94f74]/55 hover:bg-[#281521]"
+                        }`}
+                      >
+                        <input
+                          type={isSingle ? "radio" : "checkbox"}
+                          name={
+                            isSingle
+                              ? `question-${question.id}`
+                              : `question-${question.id}-${optionIndex}`
+                          }
+                          value={option}
+                          checked={!!selected}
+                          onChange={() =>
+                            isSingle
+                              ? setAnswer(question.id, option)
+                              : toggleMultiple(question.id, option)
+                          }
+                          className="h-4 w-4 shrink-0 accent-[#a82d5c]"
+                        />
+                        <span className="select-none">{option}</span>
+                      </label>
+                    );
+                  })}
+
+                  {question.type === "single" &&
+                    question.followUpOption &&
+                    value === question.followUpOption && (
+                      <textarea
+                        rows={3}
+                        className={`${inputClass} animate-card-in resize-y`}
+                        placeholder={
+                          question.followUpPlaceholder || "Tell us more…"
+                        }
+                        value={
+                          typeof followUpValue === "string" ? followUpValue : ""
+                        }
+                        onChange={(e) =>
+                          setAnswers((prev) => ({
+                            ...prev,
+                            [followUpKey]: e.target.value,
+                          }))
+                        }
+                      />
+                    )}
+
+                  {question.multipleMax != null && (
+                    <p className="mt-1 text-xs text-stone-500">
+                      Pick exactly {question.multipleMax} (
+                      {selectedOptions.length}/{question.multipleMax})
+                      {selectedOptions.length >= question.multipleMax
+                        ? " — max reached, deselect one to swap"
+                        : ""}
+                    </p>
+                  )}
+
+                  {isMonsterQuestion && reachedMax && !hasMonster && (
+                    <p className="mt-3 animate-card-in rounded-xl border border-[#c56d91]/40 bg-[#3a1930]/80 px-4 py-3 text-sm font-medium text-[#f0becf]">
+                      Are you sure about leaving Monster outside? 😢🥤
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {showResponse && (
+                <p className="mt-4 animate-card-in text-center text-sm italic text-[#bd91a2]">
+                  {question.responseText}
+                </p>
+              )}
+
+              {question.type === "runaway" && (
+                <div className="relative h-40 select-none">
+                  <button
+                    type="button"
+                    onClick={() => setAnswer(question.id, "Yes")}
+                    aria-pressed={value === "Yes"}
+                    className={`h-11 rounded-xl border px-7 text-sm font-semibold transition ${
+                      value === "Yes"
+                        ? "border-[#c56d91] bg-gradient-to-br from-[#8e204b] to-[#654075] text-white shadow-md shadow-black/30"
+                        : "border-white/10 bg-black/20 text-stone-300 hover:border-[#b45577]/60 hover:bg-[#311728] hover:text-[#f0becf]"
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onPointerEnter={dodgeNo}
+                    onPointerDown={dodgeNo}
+                    onFocus={dodgeNo}
+                    aria-label="No"
+                    className="absolute h-11 rounded-xl border border-white/10 bg-black/20 px-7 text-sm font-semibold text-stone-300 transition-all duration-150 ease-out"
+                    style={{ left: `${noPos.left}%`, top: `${noPos.top}%` }}
+                  >
+                    No
+                  </button>
+                </div>
+              )}
+
+              {question.type === "image" && (
+                <div className="grid grid-cols-2 gap-3">
+                  {question.options.map((src, index) => {
+                    const selected = value === src;
                     return (
                       <button
-                        key={rating}
+                        key={`${question.id}-${index}`}
                         type="button"
-                        onClick={() => setAnswer(question.id, String(rating))}
-                        aria-label={`Rate ${rating} out of ${scale[scale.length - 1]}`}
+                        onClick={() => setAnswer(question.id, src)}
                         aria-pressed={selected}
-                        className={`h-11 w-11 rounded-xl border text-sm font-semibold transition ${
-                          animateMoodRating ? "animate-mood-rating" : ""
-                        } ${
+                        className={`flex items-center justify-center rounded-2xl border p-3 transition ${
                           selected
-                            ? "border-[#c56d91] bg-gradient-to-br from-[#8e204b] to-[#654075] text-white shadow-md shadow-black/30"
-                            : "border-white/10 bg-black/20 text-stone-300 hover:border-[#b45577]/60 hover:bg-[#311728] hover:text-[#f0becf]"
+                            ? "border-[#c56d91] bg-[#3a1930] ring-2 ring-[#b45577]/70"
+                            : "border-white/10 bg-black/15 hover:border-[#b45577]/55 hover:bg-[#281521]"
                         }`}
-                        style={
-                          animateMoodRating
-                            ? {
-                                animationDelay: `${Math.max(0, ratingIndex - 2) * 70}ms`,
-                              }
-                            : undefined
-                        }
                       >
-                        {rating}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={src}
+                          alt={`Choice ${index + 1}`}
+                          className="h-40 w-auto max-w-full object-contain"
+                        />
                       </button>
                     );
                   })}
                 </div>
-                <p className="mt-2 text-xs text-stone-500">
-                  1 = low, {scale[scale.length - 1]} = high
-                </p>
-              </div>
-            )}
+              )}
 
-            {hasOptions(question.type) && (
-              <div className="space-y-2">
-                {question.options.map((option, optionIndex) => {
-                  const isSingle = question.type === "single";
-                  const selected = isSingle
-                    ? value === option
-                    : Array.isArray(value) && value.includes(option);
-                  return (
-                    <label
-                      key={`${question.id}-${optionIndex}`}
-                      className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm transition ${
-                        selected
-                          ? "border-[#c56d91] bg-[#3a1930] text-[#fde7ee] ring-1 ring-[#b45577]/70"
-                          : "border-white/10 bg-black/15 text-stone-300 hover:border-[#a94f74]/55 hover:bg-[#281521]"
-                      }`}
-                    >
-                      <input
-                        type={isSingle ? "radio" : "checkbox"}
-                        name={
-                          isSingle
-                            ? `question-${question.id}`
-                            : `question-${question.id}-${optionIndex}`
-                        }
-                        value={option}
-                        checked={!!selected}
-                        onChange={() =>
-                          isSingle
-                            ? setAnswer(question.id, option)
-                            : toggleMultiple(question.id, option)
-                        }
-                        className="h-4 w-4 shrink-0 accent-[#a82d5c]"
-                      />
-                      <span className="select-none">{option}</span>
-                    </label>
-                  );
-                })}
+              {question.type === "datetime" && (
+                <input
+                  type="datetime-local"
+                  className={inputClass}
+                  value={typeof value === "string" ? value : ""}
+                  onChange={(e) => setAnswer(question.id, e.target.value)}
+                />
+              )}
+            </div>
 
-                {question.type === "single" &&
-                  question.followUpOption &&
-                  value === question.followUpOption && (
-                    <textarea
-                      rows={3}
-                      className={`${inputClass} animate-card-in resize-y`}
-                      placeholder={
-                        question.followUpPlaceholder || "Tell us more…"
-                      }
-                      value={
-                        typeof followUpValue === "string" ? followUpValue : ""
-                      }
-                      onChange={(e) =>
-                        setAnswers((prev) => ({
-                          ...prev,
-                          [followUpKey]: e.target.value,
-                        }))
-                      }
-                    />
-                  )}
-
-                {question.multipleMax != null && (
-                  <p className="mt-1 text-xs text-stone-500">
-                    Pick exactly {question.multipleMax} (
-                    {selectedOptions.length}/{question.multipleMax})
-                    {selectedOptions.length >= question.multipleMax
-                      ? " — max reached, deselect one to swap"
-                      : ""}
-                  </p>
-                )}
-
-                {isMonsterQuestion && reachedMax && !hasMonster && (
-                  <p className="mt-3 animate-card-in rounded-xl border border-[#c56d91]/40 bg-[#3a1930]/80 px-4 py-3 text-sm font-medium text-[#f0becf]">
-                    Are you sure about leaving Monster outside? 😢🥤
-                  </p>
-                )}
-              </div>
-            )}
-
-            {showResponse && (
-              <p className="mt-4 animate-card-in text-center text-sm italic text-[#bd91a2]">
-                {question.responseText}
+            {errors[String(question.id)] && (
+              <p className="mt-3 text-sm font-medium text-red-400">
+                {errors[String(question.id)]}
               </p>
             )}
-
-            {question.type === "runaway" && (
-              <div className="relative h-40 select-none">
-                <button
-                  type="button"
-                  onClick={() => setAnswer(question.id, "Yes")}
-                  aria-pressed={value === "Yes"}
-                  className={`h-11 rounded-xl border px-7 text-sm font-semibold transition ${
-                    value === "Yes"
-                      ? "border-[#c56d91] bg-gradient-to-br from-[#8e204b] to-[#654075] text-white shadow-md shadow-black/30"
-                      : "border-white/10 bg-black/20 text-stone-300 hover:border-[#b45577]/60 hover:bg-[#311728] hover:text-[#f0becf]"
-                  }`}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  onPointerEnter={dodgeNo}
-                  onPointerDown={dodgeNo}
-                  onFocus={dodgeNo}
-                  aria-label="No"
-                  className="absolute h-11 rounded-xl border border-white/10 bg-black/20 px-7 text-sm font-semibold text-stone-300 transition-all duration-150 ease-out"
-                  style={{ left: `${noPos.left}%`, top: `${noPos.top}%` }}
-                >
-                  No
-                </button>
-              </div>
-            )}
-
-            {question.type === "image" && (
-              <div className="grid grid-cols-2 gap-3">
-                {question.options.map((src, index) => {
-                  const selected = value === src;
-                  return (
-                    <button
-                      key={`${question.id}-${index}`}
-                      type="button"
-                      onClick={() => setAnswer(question.id, src)}
-                      aria-pressed={selected}
-                      className={`flex items-center justify-center rounded-2xl border p-3 transition ${
-                        selected
-                          ? "border-[#c56d91] bg-[#3a1930] ring-2 ring-[#b45577]/70"
-                          : "border-white/10 bg-black/15 hover:border-[#b45577]/55 hover:bg-[#281521]"
-                      }`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={src}
-                        alt={`Choice ${index + 1}`}
-                        className="h-40 w-auto max-w-full object-contain"
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {question.type === "datetime" && (
-              <input
-                type="datetime-local"
-                className={inputClass}
-                value={typeof value === "string" ? value : ""}
-                onChange={(e) => setAnswer(question.id, e.target.value)}
-              />
-            )}
           </div>
 
-          {errors[String(question.id)] && (
-            <p className="mt-3 text-sm font-medium text-red-400">
-              {errors[String(question.id)]}
-            </p>
+          {submitError && (
+            <div className="mt-4 rounded-xl border border-red-500/30 bg-red-950/35 px-4 py-3 text-sm text-red-200">
+              {submitError}
+            </div>
           )}
-        </div>
 
-        {submitError && (
-          <div className="mt-4 rounded-xl border border-red-500/30 bg-red-950/35 px-4 py-3 text-sm text-red-200">
-            {submitError}
-          </div>
-        )}
-
-        <div className="mt-7 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={goBack}
-            disabled={currentSafe === 0}
-            className="inline-flex items-center gap-1 rounded-xl px-3 py-2.5 text-sm font-medium text-stone-400 transition hover:bg-white/5 hover:text-stone-100 disabled:pointer-events-none disabled:invisible"
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-          {showNextButton && (
+          <div className="mt-7 flex items-center gap-3">
             <button
-              type="submit"
-              disabled={
-                submitting ||
-                (requiresExactMultipleChoices && !hasExactMultipleChoices)
-              }
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#861d48] to-[#603a78] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-black/40 transition hover:from-[#a12759] hover:to-[#70448b] disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              onClick={goBack}
+              disabled={currentSafe === 0}
+              className="inline-flex items-center gap-1 rounded-xl px-3 py-2.5 text-sm font-medium text-stone-400 transition hover:bg-white/5 hover:text-stone-100 disabled:pointer-events-none disabled:invisible"
             >
-              {isLast ? (submitting ? "Submitting…" : "Submit") : "Next"}
-              {!isLast && <ChevronRightIcon className="h-4 w-4" />}
+              <ChevronLeftIcon className="h-4 w-4" />
+              Back
             </button>
-          )}
+            {showNextButton && (
+              <button
+                type="submit"
+                disabled={
+                  submitting ||
+                  (requiresExactMultipleChoices && !hasExactMultipleChoices)
+                }
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#861d48] to-[#603a78] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-black/40 transition hover:from-[#a12759] hover:to-[#70448b] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLast ? (submitting ? "Submitting…" : "Submit") : "Next"}
+                {!isLast && <ChevronRightIcon className="h-4 w-4" />}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
       </form>
     </>
   );

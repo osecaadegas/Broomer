@@ -39,7 +39,8 @@ export async function POST(request: Request) {
         return (
           typeof (item as Record<string, unknown>).question === "string" &&
           (typeof answer === "string" ||
-            (Array.isArray(answer) && answer.every((value) => typeof value === "string")))
+            (Array.isArray(answer) &&
+              answer.every((value) => typeof value === "string")))
         );
       })
     : [];

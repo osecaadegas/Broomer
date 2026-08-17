@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { getAdminSupabase } from "@/lib/supabase/server";
 import type { SupabaseUnoQuestionRow } from "@/lib/supabase/types";
 
-function isValidAnswer(question: SupabaseUnoQuestionRow, answer: unknown): boolean {
+function isValidAnswer(
+  question: SupabaseUnoQuestionRow,
+  answer: unknown,
+): boolean {
   if (answer === null || answer === "") return !question.required;
   if (question.type === "multiple") {
     return (
       Array.isArray(answer) &&
-      answer.every(
-        (value) => typeof value === "string" && value.length <= 500,
-      )
+      answer.every((value) => typeof value === "string" && value.length <= 500)
     );
   }
   return typeof answer === "string" && answer.length <= 4000;
@@ -32,7 +33,11 @@ export async function PUT(request: Request) {
     typeof body === "object" && body !== null
       ? (body as { answers?: unknown }).answers
       : null;
-  if (typeof answers !== "object" || answers === null || Array.isArray(answers)) {
+  if (
+    typeof answers !== "object" ||
+    answers === null ||
+    Array.isArray(answers)
+  ) {
     return NextResponse.json({ error: "Invalid answers" }, { status: 400 });
   }
 

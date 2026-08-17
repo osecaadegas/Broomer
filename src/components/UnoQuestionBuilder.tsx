@@ -75,12 +75,15 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
         body: JSON.stringify({ password }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unable to unlock editor");
+      if (!response.ok)
+        throw new Error(data.error || "Unable to unlock editor");
       setQuestions([createDraft()]);
       setUnlocked(true);
     } catch (error_) {
       setPassword("");
-      setError(error_ instanceof Error ? error_.message : "Unable to unlock editor");
+      setError(
+        error_ instanceof Error ? error_.message : "Unable to unlock editor",
+      );
     } finally {
       setChecking(false);
     }
@@ -158,10 +161,15 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
         body: JSON.stringify({ password, questions: cleaned }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unable to publish questions");
+      if (!response.ok)
+        throw new Error(data.error || "Unable to publish questions");
       setPublished(true);
     } catch (error_) {
-      setError(error_ instanceof Error ? error_.message : "Unable to publish questions");
+      setError(
+        error_ instanceof Error
+          ? error_.message
+          : "Unable to publish questions",
+      );
     } finally {
       setPublishing(false);
     }
@@ -172,9 +180,13 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
       <div className="fixed inset-0 z-50 grid place-items-center bg-[#08060d] px-4">
         <div className="w-full max-w-sm text-center animate-card-in">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-full border border-[#c9a84c]/30 bg-[#17100c]">
-            <span className="text-3xl" aria-hidden>✓</span>
+            <span className="text-3xl" aria-hidden>
+              ✓
+            </span>
           </div>
-          <h1 className="mt-5 text-2xl font-semibold text-stone-100">Questions ready</h1>
+          <h1 className="mt-5 text-2xl font-semibold text-stone-100">
+            Questions ready
+          </h1>
           <p className="mt-2 text-sm text-stone-400">
             Your questions are ready for the admin to answer.
           </p>
@@ -205,9 +217,16 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
               className="h-16 w-auto"
             />
           </div>
-          <h1 className="mt-5 text-2xl font-semibold text-stone-100">Your turn</h1>
-          <p className="mt-2 text-sm text-stone-400">Enter the UNO editor code.</p>
-          <form onSubmit={unlock} className="mt-6 flex flex-col items-center gap-3">
+          <h1 className="mt-5 text-2xl font-semibold text-stone-100">
+            Your turn
+          </h1>
+          <p className="mt-2 text-sm text-stone-400">
+            Enter the UNO editor code.
+          </p>
+          <form
+            onSubmit={unlock}
+            className="mt-6 flex flex-col items-center gap-3"
+          >
             <input
               type="password"
               inputMode="numeric"
@@ -249,7 +268,9 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
       <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
         <header className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-[#a98a4d]">UNO reverse</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#a98a4d]">
+              UNO reverse
+            </p>
             <h1 className="mt-2 text-2xl font-semibold text-stone-100 sm:text-3xl">
               Set the questions
             </h1>
@@ -277,13 +298,35 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
                   Question {index + 1}
                 </span>
                 <div className="flex items-center gap-1">
-                  <button type="button" onClick={() => moveQuestion(index, -1)} disabled={index === 0} aria-label="Move question up" className="grid h-8 w-8 place-items-center rounded-md text-stone-500 hover:bg-white/5 hover:text-stone-200 disabled:opacity-25">
+                  <button
+                    type="button"
+                    onClick={() => moveQuestion(index, -1)}
+                    disabled={index === 0}
+                    aria-label="Move question up"
+                    className="grid h-8 w-8 place-items-center rounded-md text-stone-500 hover:bg-white/5 hover:text-stone-200 disabled:opacity-25"
+                  >
                     <ChevronUpIcon className="h-4 w-4" />
                   </button>
-                  <button type="button" onClick={() => moveQuestion(index, 1)} disabled={index === questions.length - 1} aria-label="Move question down" className="grid h-8 w-8 place-items-center rounded-md text-stone-500 hover:bg-white/5 hover:text-stone-200 disabled:opacity-25">
+                  <button
+                    type="button"
+                    onClick={() => moveQuestion(index, 1)}
+                    disabled={index === questions.length - 1}
+                    aria-label="Move question down"
+                    className="grid h-8 w-8 place-items-center rounded-md text-stone-500 hover:bg-white/5 hover:text-stone-200 disabled:opacity-25"
+                  >
                     <ChevronDownIcon className="h-4 w-4" />
                   </button>
-                  <button type="button" onClick={() => setQuestions((current) => current.filter((item) => item.key !== question.key))} disabled={questions.length === 1} aria-label="Delete question" className="grid h-8 w-8 place-items-center rounded-md text-stone-500 hover:bg-red-950/40 hover:text-red-400 disabled:opacity-25">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setQuestions((current) =>
+                        current.filter((item) => item.key !== question.key),
+                      )
+                    }
+                    disabled={questions.length === 1}
+                    aria-label="Delete question"
+                    className="grid h-8 w-8 place-items-center rounded-md text-stone-500 hover:bg-red-950/40 hover:text-red-400 disabled:opacity-25"
+                  >
                     <TrashIcon className="h-4 w-4" />
                   </button>
                 </div>
@@ -296,25 +339,35 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
                   placeholder="Write your question..."
                   aria-label={`Question ${index + 1} text`}
                   value={question.prompt}
-                  onChange={(event) => updateQuestion(question.key, { prompt: event.target.value })}
+                  onChange={(event) =>
+                    updateQuestion(question.key, { prompt: event.target.value })
+                  }
                   className={`${inputClass} resize-y`}
                 />
                 <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                   <select
                     aria-label={`Question ${index + 1} answer type`}
                     value={question.type}
-                    onChange={(event) => changeType(question, event.target.value as QuestionType)}
+                    onChange={(event) =>
+                      changeType(question, event.target.value as QuestionType)
+                    }
                     className={inputClass}
                   >
                     {AUTHOR_TYPES.map((type) => (
-                      <option key={type} value={type}>{QUESTION_TYPE_LABELS[type]}</option>
+                      <option key={type} value={type}>
+                        {QUESTION_TYPE_LABELS[type]}
+                      </option>
                     ))}
                   </select>
                   <label className="flex items-center gap-2 text-sm text-stone-400">
                     <input
                       type="checkbox"
                       checked={question.required}
-                      onChange={(event) => updateQuestion(question.key, { required: event.target.checked })}
+                      onChange={(event) =>
+                        updateQuestion(question.key, {
+                          required: event.target.checked,
+                        })
+                      }
                       className="h-4 w-4 accent-[#c9a84c]"
                     />
                     <span>Required</span>
@@ -324,18 +377,34 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
                 {hasOptions(question.type) && (
                   <div className="space-y-2">
                     {question.options.map((option, optionIndex) => (
-                      <div key={`${question.key}-${optionIndex}`} className="flex gap-2">
+                      <div
+                        key={`${question.key}-${optionIndex}`}
+                        className="flex gap-2"
+                      >
                         <input
                           value={option}
                           maxLength={120}
                           aria-label={`Question ${index + 1} option ${optionIndex + 1}`}
                           placeholder={`Option ${optionIndex + 1}`}
-                          onChange={(event) => updateOption(question.key, optionIndex, event.target.value)}
+                          onChange={(event) =>
+                            updateOption(
+                              question.key,
+                              optionIndex,
+                              event.target.value,
+                            )
+                          }
                           className={inputClass}
                         />
                         <button
                           type="button"
-                          onClick={() => updateQuestion(question.key, { options: question.options.filter((_, currentIndex) => currentIndex !== optionIndex) })}
+                          onClick={() =>
+                            updateQuestion(question.key, {
+                              options: question.options.filter(
+                                (_, currentIndex) =>
+                                  currentIndex !== optionIndex,
+                              ),
+                            })
+                          }
                           disabled={question.options.length <= 2}
                           aria-label={`Remove option ${optionIndex + 1}`}
                           className="grid h-10 w-10 shrink-0 place-items-center rounded-md text-stone-500 hover:bg-red-950/40 hover:text-red-400 disabled:opacity-25"
@@ -347,7 +416,11 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
                     {question.options.length < 12 && (
                       <button
                         type="button"
-                        onClick={() => updateQuestion(question.key, { options: [...question.options, ""] })}
+                        onClick={() =>
+                          updateQuestion(question.key, {
+                            options: [...question.options, ""],
+                          })
+                        }
                         className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-[#c9a84c] hover:bg-[#c9a84c]/5"
                       >
                         <PlusIcon className="h-4 w-4" /> Add option
@@ -369,7 +442,9 @@ export function UnoQuestionBuilder({ onCancel }: Readonly<Props>) {
         <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
-            onClick={() => setQuestions((current) => [...current, createDraft()])}
+            onClick={() =>
+              setQuestions((current) => [...current, createDraft()])
+            }
             disabled={questions.length >= 30}
             className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/10 px-4 py-2.5 text-sm font-semibold text-stone-300 transition hover:border-white/20 hover:bg-white/5 disabled:opacity-40"
           >
