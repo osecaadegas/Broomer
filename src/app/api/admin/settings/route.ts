@@ -34,13 +34,20 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { planePassword, quoteOfDay } = (body ?? {}) as {
+  const { planePassword, unoPassword, quoteOfDay } = (body ?? {}) as {
     planePassword?: unknown;
+    unoPassword?: unknown;
     quoteOfDay?: unknown;
   };
   if (typeof planePassword !== "string" || !/^\d{3}$/.test(planePassword)) {
     return NextResponse.json(
       { error: "Password must contain exactly three digits" },
+      { status: 400 },
+    );
+  }
+  if (typeof unoPassword !== "string" || !/^\d{3}$/.test(unoPassword)) {
+    return NextResponse.json(
+      { error: "UNO password must contain exactly three digits" },
       { status: 400 },
     );
   }
@@ -57,6 +64,7 @@ export async function PATCH(request: Request) {
     .from("app_settings")
     .update({
       plane_password: planePassword,
+      uno_password: unoPassword,
       quote_of_day: quote,
       updated_at: new Date().toISOString(),
     })

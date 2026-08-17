@@ -7,6 +7,7 @@ import { GothicDoor } from "@/components/GothicDoor";
 import { GothicDoorClose } from "@/components/GothicDoorClose";
 import { KissFinale } from "@/components/KissFinale";
 import { Questionnaire } from "@/components/Questionnaire";
+import { UnoQuestionBuilder } from "@/components/UnoQuestionBuilder";
 
 interface Props {
   questions: Question[];
@@ -18,7 +19,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
   const finaleAnimationDoneRef = useRef(false);
   const finaleSoundDoneRef = useRef(false);
   const finaleStartedRef = useRef(false);
-  const [stage, setStage] = useState<"door" | "lights" | "questions">("door");
+  const [stage, setStage] = useState<"door" | "lights" | "questions" | "author">("door");
   const [lightsOn, setLightsOn] = useState(false);
   const [closing, setClosing] = useState(false);
   const [finale, setFinale] = useState(false);
@@ -158,11 +159,15 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
         <GothicDoor
           key={`door-${loopKey}`}
           onOpen={() => setStage("lights")}
+          onUno={() => setStage("author")}
           onPrepareMusic={prepareMusic}
           onStartMusic={startMusic}
         />
       )}
       {stage === "lights" && <DiabolicalLights onChoose={handleLights} />}
+      {stage === "author" && (
+        <UnoQuestionBuilder onCancel={() => window.location.reload()} />
+      )}
       {stage === "questions" && (
         <div className="relative z-10 w-full animate-question-reveal">
           <Questionnaire

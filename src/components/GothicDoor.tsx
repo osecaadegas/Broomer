@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 interface Props {
   onOpen: () => void;
+  onUno: () => void;
   onPrepareMusic: () => void;
   onStartMusic: () => void;
 }
@@ -20,7 +21,7 @@ const PLANE_QUOTE_DELAY_MS = 3100;
 const PLANE_QUOTE_TYPE_MS = 2100;
 const PLANE_FLIGHT_MS = 5400;
 
-export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Readonly<Props>) {
+export function GothicDoor({ onOpen, onUno, onPrepareMusic, onStartMusic }: Readonly<Props>) {
   const [picked, setPicked] = useState<string | null>(null);
   const [sliding, setSliding] = useState(false);
   const [doorsOpen, setDoorsOpen] = useState(false);
@@ -40,9 +41,12 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Readonly<Pr
     if (sliding) return;
     setPicked(char);
 
-    if (char === "🧹" || char === "✈️") {
+    if (char === "🧹" || char === "✈️" || char === "uno") {
       setSliding(true);
-      setTimeout(() => setDoorsOpen(true), 900);
+      setTimeout(() => {
+        if (char === "uno") onUno();
+        else setDoorsOpen(true);
+      }, 900);
     }
   }
 
@@ -253,7 +257,7 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Readonly<Pr
           </p>
           <div className="grid grid-cols-2 gap-3">
             {rides.map((ride) => {
-              const isValid = ride.value === "🧹" || ride.value === "✈️";
+              const isValid = ride.value === "🧹" || ride.value === "✈️" || ride.value === "uno";
               const isWrong = picked === ride.value && !isValid;
               let selectionClass =
                 "border-[#2a1a10]/40 bg-[#0c060a] text-2xl hover:border-[#3a2a1a]/60 hover:bg-[#140e10] sm:text-3xl";
@@ -292,7 +296,7 @@ export function GothicDoor({ onOpen, onPrepareMusic, onStartMusic }: Readonly<Pr
               );
             })}
           </div>
-          {picked !== null && picked !== "🧹" && picked !== "✈️" && (
+          {picked !== null && picked !== "🧹" && picked !== "✈️" && picked !== "uno" && (
             <p className="animate-card-in text-xs font-medium text-red-800/80">
               Wrong pick… Try again
             </p>

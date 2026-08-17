@@ -41,6 +41,7 @@ export default async function AdminPage() {
         </header>
         <PlaneGateSettings
           initialPassword={settings.plane_password}
+          initialUnoPassword={settings.uno_password}
           initialQuote={settings.quote_of_day}
         />
         <QuestionManager initialQuestions={initial} />

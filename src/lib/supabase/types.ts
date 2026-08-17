@@ -27,6 +27,7 @@ export interface SupabaseResponseRow {
 export interface SupabaseAppSettingsRow {
   id: boolean;
   plane_password: string;
+  uno_password: string;
   quote_of_day: string;
   updated_at: string;
 }

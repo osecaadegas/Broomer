@@ -1,24 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 
 interface Props {
   initialPassword: string;
+  initialUnoPassword: string;
   initialQuote: string;
 }
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
 
-export function PlaneGateSettings({ initialPassword, initialQuote }: Props) {
+export function PlaneGateSettings({ initialPassword, initialUnoPassword, initialQuote }: Readonly<Props>) {
   const [password, setPassword] = useState(initialPassword);
+  const [unoPassword, setUnoPassword] = useState(initialUnoPassword);
   const [quote, setQuote] = useState(initialQuote);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
     setSaving(true);
     setMessage(null);
@@ -28,15 +30,20 @@ export function PlaneGateSettings({ initialPassword, initialQuote }: Props) {
       const response = await fetch("/api/admin/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planePassword: password, quoteOfDay: quote }),
+        body: JSON.stringify({
+          planePassword: password,
+          unoPassword,
+          quoteOfDay: quote,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to save settings");
       setPassword(data.settings.plane_password);
+      setUnoPassword(data.settings.uno_password);
       setQuote(data.settings.quote_of_day);
-      setMessage("Plane gate updated.");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Failed to save settings");
+      setMessage("Entrance settings updated.");
+    } catch (error_) {
+      setError(error_ instanceof Error ? error_.message : "Failed to save settings");
     } finally {
       setSaving(false);
     }
@@ -45,9 +52,9 @@ export function PlaneGateSettings({ initialPassword, initialQuote }: Props) {
   return (
     <section className="mb-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-slate-900">Plane gate</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Entrance settings</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Set the three-digit password and the quote revealed after entry.
+          Set the plane and UNO editor codes, plus the quote revealed after entry.
         </p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -64,6 +71,24 @@ export function PlaneGateSettings({ initialPassword, initialQuote }: Props) {
             required
             value={password}
             onChange={(event) => setPassword(event.target.value.replace(/\D/g, "").slice(0, 3))}
+            className={`${inputClass} max-w-32 font-mono tracking-[0.35em]`}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            UNO question editor password
+          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={3}
+            pattern="[0-9]{3}"
+            required
+            value={unoPassword}
+            onChange={(event) =>
+              setUnoPassword(event.target.value.replace(/\D/g, "").slice(0, 3))
+            }
             className={`${inputClass} max-w-32 font-mono tracking-[0.35em]`}
           />
         </label>
@@ -86,7 +111,7 @@ export function PlaneGateSettings({ initialPassword, initialQuote }: Props) {
             disabled={saving}
             className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {saving ? "Saving..." : "Save plane gate"}
+            {saving ? "Saving..." : "Save settings"}
           </button>
           {message && <p className="text-sm text-emerald-700">{message}</p>}
           {error && <p className="text-sm text-red-700">{error}</p>}
