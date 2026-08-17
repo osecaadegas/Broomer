@@ -268,6 +268,125 @@ body {
   animation: lights-prelude 0.4s ease-out both;
 }
 
+.ritual-candle {
+  position: relative;
+  width: 2.75rem;
+  min-width: 44px;
+  flex: none;
+  border: 0;
+  background: transparent;
+  transition: filter 250ms ease, transform 250ms ease;
+}
+
+.ritual-candle::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 50%;
+  width: 1.35rem;
+  border: 1px solid rgba(136, 112, 70, 0.28);
+  border-radius: 0.2rem 0.2rem 0.12rem 0.12rem;
+  background: linear-gradient(90deg, #5c5547, #a99c80 48%, #625a4b);
+  box-shadow: inset 0 -0.5rem 0.8rem rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%);
+}
+
+.ritual-candle:hover,
+.ritual-candle:focus-visible {
+  filter: brightness(1.18);
+  transform: translateY(-0.15rem);
+  outline: none;
+}
+
+.ritual-wick {
+  position: absolute;
+  top: -0.38rem;
+  left: 50%;
+  width: 1px;
+  height: 0.42rem;
+  background: #211811;
+}
+
+.ritual-flame {
+  position: absolute;
+  top: -1.35rem;
+  left: 50%;
+  width: 0.72rem;
+  height: 1.15rem;
+  border-radius: 50% 50% 48% 48%;
+  background: radial-gradient(circle at 50% 65%, #fff4b0 0 18%, #e8a83e 38%, #a43b20 68%, transparent 72%);
+  filter: drop-shadow(0 0 0.55rem rgba(232, 168, 62, 0.85));
+  opacity: 0;
+  transform: translateX(-50%) scale(0.4);
+  transform-origin: 50% 100%;
+}
+
+.ritual-candle-lit .ritual-flame {
+  opacity: 1;
+  animation: ritual-flame-dance 0.9s ease-in-out infinite alternate;
+}
+
+.ritual-candle-lit::after {
+  background: linear-gradient(90deg, #786440, #d7bd7e 48%, #75613d);
+  box-shadow: inset 0 -0.5rem 0.8rem rgba(0, 0, 0, 0.22), 0 0 1rem rgba(224, 164, 57, 0.22);
+}
+
+.ritual-candle-awake {
+  filter: drop-shadow(0 0 0.75rem rgba(230, 195, 108, 0.55));
+}
+
+@keyframes ritual-flame-dance {
+  from { transform: translateX(-50%) rotate(-3deg) scale(0.92, 1.04); }
+  to { transform: translateX(-50%) rotate(3deg) scale(1.06, 0.94); }
+}
+
+@keyframes door-shadow-pass {
+  0% { opacity: 0; transform: translateX(-35%) skewX(-10deg); }
+  28% { opacity: 0.34; }
+  72% { opacity: 0.22; }
+  100% { opacity: 0; transform: translateX(135%) skewX(-10deg); }
+}
+
+.door-idle-shadow::before {
+  content: "";
+  position: absolute;
+  inset: 8% auto 8% -22%;
+  width: 28%;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.9), transparent);
+  filter: blur(1.8rem);
+  animation: door-shadow-pass 3.8s ease-in-out both;
+}
+
+@keyframes door-breathe {
+  0%, 100% { opacity: 0; transform: scale(0.96); }
+  45% { opacity: 0.4; transform: scale(1.03); }
+}
+
+.door-idle-breath {
+  background: radial-gradient(ellipse at center, rgba(139, 93, 45, 0.14), transparent 48%);
+  animation: door-breathe 4s ease-in-out both;
+}
+
+@keyframes door-listen {
+  0%, 100% { opacity: 0; }
+  45%, 70% { opacity: 1; }
+}
+
+.door-idle-listen {
+  background: radial-gradient(circle at 50% 48%, rgba(201, 168, 76, 0.12), transparent 8%);
+  animation: door-listen 4s ease-in-out both;
+}
+
+.door-idle-message {
+  animation: door-listen 4s ease-in-out both;
+}
+
+.candle-lighting-enchanted {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(230, 195, 108, 0.16), transparent 30%),
+    radial-gradient(circle at 18% 70%, rgba(95, 42, 120, 0.13), transparent 34%),
+    radial-gradient(circle at 82% 72%, rgba(112, 36, 73, 0.13), transparent 34%);
+}
+
 .diabolical-title {
   color: #e8c66a;
   font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
@@ -417,6 +536,14 @@ body {
   .candle-lighting,
   .animate-broom-jiggle,
   .animate-mood-rating {
+    animation: none;
+  }
+
+  .ritual-candle-lit .ritual-flame,
+  .door-idle-shadow::before,
+  .door-idle-breath,
+  .door-idle-listen,
+  .door-idle-message {
     animation: none;
   }
 

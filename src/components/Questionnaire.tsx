@@ -26,6 +26,7 @@ type Answer = string | string[];
 interface Props {
   questions: Question[];
   lightsOn?: boolean;
+  enchanted?: boolean;
   onPrepareFinale?: () => void;
   onSubmitted?: () => void;
 }
@@ -39,8 +40,37 @@ const cardShell =
 const accentBar =
   "h-1.5 w-full bg-gradient-to-r from-[#7c173e] via-[#b45577] to-[#5b3377]";
 
-function getAtmosphereWhisper(index: number, lightsOn: boolean): string | null {
+function getAtmosphereTheme(lightsOn: boolean, enchanted: boolean) {
+  if (enchanted) {
+    return {
+      card: "border-[#e6c36c]/50 bg-[#17130f]/92 shadow-[#7a4d16]/35",
+      accent:
+        "h-1.5 w-full bg-gradient-to-r from-[#5f2a78] via-[#f0d586] to-[#702449]",
+      whisper: "text-[#e6c36c]/80",
+    };
+  }
+  if (lightsOn) {
+    return {
+      card: "border-[#c9a84c]/35 shadow-[#3f260f]/30",
+      accent:
+        "h-1.5 w-full bg-gradient-to-r from-[#6f3c16] via-[#d0aa55] to-[#7b4820]",
+      whisper: "text-[#ad925a]/70",
+    };
+  }
+  return {
+    card: "border-[#765083]/35 shadow-[#120719]/70",
+    accent: accentBar,
+    whisper: "text-[#9375a0]/65",
+  };
+}
+
+function getAtmosphereWhisper(
+  index: number,
+  lightsOn: boolean,
+  enchanted: boolean,
+): string | null {
   if (index === 0 || index % 3 !== 0) return null;
+  if (enchanted) return "Five flames follow every answer.";
   return lightsOn
     ? "The candle leans closer."
     : "Something shifts beyond the card.";
@@ -49,6 +79,7 @@ function getAtmosphereWhisper(index: number, lightsOn: boolean): string | null {
 export function Questionnaire({
   questions,
   lightsOn = false,
+  enchanted = false,
   onPrepareFinale,
   onSubmitted,
 }: Props) {
@@ -79,7 +110,12 @@ export function Questionnaire({
   const currentSafe = Math.min(current, Math.max(0, total - 1));
   const question = visible[currentSafe];
   const isLast = currentSafe === total - 1;
-  const atmosphereWhisper = getAtmosphereWhisper(currentSafe, lightsOn);
+  const atmosphereWhisper = getAtmosphereWhisper(
+    currentSafe,
+    lightsOn,
+    enchanted,
+  );
+  const atmosphereTheme = getAtmosphereTheme(lightsOn, enchanted);
 
   function isEmpty(id: number): boolean {
     const value = answers[String(id)];
@@ -401,19 +437,11 @@ export function Questionnaire({
       <form
         onSubmit={handleSubmit}
         noValidate
-        className={`${cardShell} relative ${
-          lightsOn
-            ? "border-[#c9a84c]/35 shadow-[#3f260f]/30"
-            : "border-[#765083]/35 shadow-[#120719]/70"
-        }`}
+        className={`${cardShell} relative ${atmosphereTheme.card}`}
       >
         <FlyingEmojis mode={emojiMode} />
         <div
-          className={
-            lightsOn
-              ? "h-1.5 w-full bg-gradient-to-r from-[#6f3c16] via-[#d0aa55] to-[#7b4820]"
-              : accentBar
-          }
+          className={atmosphereTheme.accent}
         />
         <div
           key={question.id}
@@ -433,9 +461,7 @@ export function Questionnaire({
           {atmosphereWhisper && (
             <p
               aria-hidden
-              className={`mt-2 animate-card-in font-serif text-xs italic ${
-                lightsOn ? "text-[#ad925a]/70" : "text-[#9375a0]/65"
-              }`}
+              className={`mt-2 animate-card-in font-serif text-xs italic ${atmosphereTheme.whisper}`}
             >
               {atmosphereWhisper}
             </p>

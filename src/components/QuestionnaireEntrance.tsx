@@ -28,6 +28,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
   const [loopKey, setLoopKey] = useState(0);
   const [musicStarted, setMusicStarted] = useState(false);
   const [musicMuted, setMusicMuted] = useState(false);
+  const [enchanted, setEnchanted] = useState(false);
 
   function prepareMusic() {
     const audio = audioRef.current;
@@ -129,11 +130,14 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
     setClosing(false);
     setStage("door");
     setLightsOn(false);
+    setEnchanted(false);
     setLoopKey((prev) => prev + 1);
   }
 
-  function handleLights(enabled: boolean) {
+  function handleLights(enabled: boolean, spellAwake = false) {
     setLightsOn(enabled);
+    setEnchanted(spellAwake);
+    if (spellAwake) startMusic();
     setStage("questions");
   }
 
@@ -166,7 +170,12 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
         </button>
       )}
       {lightsOn && (
-        <div aria-hidden className="candle-lighting fixed inset-0 z-[1]" />
+        <div
+          aria-hidden
+          className={`candle-lighting fixed inset-0 z-[1] ${
+            enchanted ? "candle-lighting-enchanted" : ""
+          }`}
+        />
       )}
       {stage === "questions" && !lightsOn && (
         <div
@@ -193,6 +202,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
             key={loopKey}
             questions={questions}
             lightsOn={lightsOn}
+            enchanted={enchanted}
             onPrepareFinale={prepareFinale}
             onSubmitted={handleSubmitted}
           />

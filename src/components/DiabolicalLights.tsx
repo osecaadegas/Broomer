@@ -1,13 +1,45 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import type { MouseEvent, PointerEvent } from "react";
 
 interface Props {
-  onChoose: (enabled: boolean) => void;
+  onChoose: (enabled: boolean, enchanted?: boolean) => void;
 }
 
+const SPELL_SEQUENCE = [2, 1, 3, 0, 4] as const;
+const CANDLE_HEIGHTS = [3.25, 3.8, 4.5, 3.8, 3.25] as const;
+
 export function DiabolicalLights({ onChoose }: Readonly<Props>) {
+  const [litCandles, setLitCandles] = useState<number[]>([]);
+  const [spellAwake, setSpellAwake] = useState(false);
+  const [spellMessage, setSpellMessage] = useState<string | null>(null);
+
+  function lightCandle(index: number) {
+    if (spellAwake || litCandles.includes(index)) return;
+
+    const expected = SPELL_SEQUENCE[litCandles.length];
+    if (index !== expected) {
+      setLitCandles(index === SPELL_SEQUENCE[0] ? [index] : []);
+      setSpellMessage("The flames forget the pattern.");
+      return;
+    }
+
+    const next = [...litCandles, index];
+    setLitCandles(next);
+    setSpellMessage(
+      next.length < SPELL_SEQUENCE.length
+        ? "The next flame is listening."
+        : "The room remembers your name.",
+    );
+
+    if (next.length === SPELL_SEQUENCE.length) {
+      setSpellAwake(true);
+      window.setTimeout(() => onChoose(true, true), 1100);
+    }
+  }
+
   function chooseWithPointer(
     enabled: boolean,
     event: PointerEvent<HTMLButtonElement>,
@@ -54,6 +86,40 @@ export function DiabolicalLights({ onChoose }: Readonly<Props>) {
           ON
         </button>
       </fieldset>
+
+      <div
+        className="mt-7 flex h-20 w-full max-w-sm items-end justify-center gap-3 sm:gap-5"
+        aria-label="Five ritual candles"
+      >
+        {[0, 1, 2, 3, 4].map((index) => {
+          const lit = litCandles.includes(index);
+          return (
+            <button
+              key={index}
+              type="button"
+              onClick={() => lightCandle(index)}
+              aria-label={`${lit ? "Lit" : "Unlit"} ritual candle ${index + 1}`}
+              aria-pressed={lit}
+              className={`ritual-candle ${lit ? "ritual-candle-lit" : ""} ${
+                spellAwake ? "ritual-candle-awake" : ""
+              }`}
+              style={{ height: `${CANDLE_HEIGHTS[index]}rem` }}
+            >
+              <span className="ritual-flame" aria-hidden />
+              <span className="ritual-wick" aria-hidden />
+            </button>
+          );
+        })}
+      </div>
+
+      <p
+        aria-live="polite"
+        className={`mt-3 min-h-5 font-serif text-xs italic transition-colors ${
+          spellAwake ? "text-[#f0d586]" : "text-[#9f895d]/75"
+        }`}
+      >
+        {spellMessage}
+      </p>
 
       <Image
         src="/spongebob.png"

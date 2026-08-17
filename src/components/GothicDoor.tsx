@@ -37,6 +37,37 @@ type DoorSymbol = (typeof SYMBOL_SEQUENCE)[number];
 const PLANE_QUOTE_DELAY_MS = 3100;
 const PLANE_QUOTE_TYPE_MS = 2100;
 const PLANE_FLIGHT_MS = 5400;
+const IDLE_MESSAGES = [
+  "A shadow crosses the other side.",
+  "The door exhales.",
+  "Something has been waiting politely.",
+] as const;
+
+function getIdleEventClass(index: number): string {
+  if (index === 0) return "door-idle-shadow";
+  if (index === 1) return "door-idle-breath";
+  return "door-idle-listen";
+}
+
+function DoorIdleEvent({ active, index }: Readonly<{ active: boolean; index: number }>) {
+  if (!active || index < 0) return null;
+
+  return (
+    <>
+      <div
+        key={index}
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 z-30 ${getIdleEventClass(index)}`}
+      />
+      <p
+        aria-live="polite"
+        className="door-idle-message pointer-events-none absolute left-1/2 top-[22%] z-40 -translate-x-1/2 whitespace-nowrap font-serif text-xs italic text-[#9f895d]/70"
+      >
+        {IDLE_MESSAGES[index]}
+      </p>
+    </>
+  );
+}
 
 function isEntryRide(value: string): boolean {
   return (
@@ -98,6 +129,8 @@ export function GothicDoor({
   const [gone, setGone] = useState(false);
   const [symbolProgress, setSymbolProgress] = useState(0);
   const [symbolsAwake, setSymbolsAwake] = useState(false);
+  const [idleEventIndex, setIdleEventIndex] = useState(-1);
+  const [idleEventActive, setIdleEventActive] = useState(false);
 
   function handlePick(char: string) {
     beginRideSelection(
@@ -181,6 +214,40 @@ export function GothicDoor({
   }, [gone]);
 
   useEffect(() => {
+    if (sliding) return;
+
+    let idleTimer = 0;
+    let clearTimer = 0;
+
+    const revealIdleEvent = () => {
+      setIdleEventIndex((current) => (current + 1) % IDLE_MESSAGES.length);
+      setIdleEventActive(true);
+      clearTimer = window.setTimeout(() => {
+        setIdleEventActive(false);
+        idleTimer = window.setTimeout(revealIdleEvent, 10000);
+      }, 4000);
+    };
+
+    const markActive = () => {
+      window.clearTimeout(idleTimer);
+      window.clearTimeout(clearTimer);
+      setIdleEventActive(false);
+      idleTimer = window.setTimeout(revealIdleEvent, 8000);
+    };
+
+    idleTimer = window.setTimeout(revealIdleEvent, 8000);
+    window.addEventListener("pointerdown", markActive);
+    window.addEventListener("keydown", markActive);
+
+    return () => {
+      window.clearTimeout(idleTimer);
+      window.clearTimeout(clearTimer);
+      window.removeEventListener("pointerdown", markActive);
+      window.removeEventListener("keydown", markActive);
+    };
+  }, [sliding]);
+
+  useEffect(() => {
     if (!planeQuote) return;
 
     let animationFrame = 0;
@@ -223,6 +290,7 @@ export function GothicDoor({
             "radial-gradient(ellipse at 50% 35%, rgba(180,140,60,0.15) 0%, transparent 60%)",
         }}
       />
+      <DoorIdleEvent active={idleEventActive} index={idleEventIndex} />
 
       {/* LEFT DOOR */}
       <div
