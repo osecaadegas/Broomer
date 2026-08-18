@@ -57,11 +57,7 @@ function readBroadcastPayload(message: unknown): Record<string, unknown> {
   return record;
 }
 
-function getGameStatus(
-  game: Chess,
-  role: Role | null,
-  ready: boolean,
-): string {
+function getGameStatus(game: Chess, role: Role | null, ready: boolean): string {
   if (!role) return "Finding your seat";
   if (!ready) return role === "w" ? "Waiting for Black" : "Waiting for White";
   if (game.isCheckmate()) {
@@ -151,7 +147,9 @@ export function ChessGame({ onExit }: Readonly<Props>) {
 
     function assignAvailableSeat() {
       if (roleRef.current) return;
-      const states = Object.values(channel.presenceState()).flat() as ChessPresence[];
+      const states = Object.values(
+        channel.presenceState(),
+      ).flat() as ChessPresence[];
       const occupied = new Set(
         states
           .filter((state) => state.playerId !== playerId)
@@ -212,8 +210,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
         setOpponentReady(
           roleRef.current != null &&
             opponents.some(
-              (state) =>
-                state.role === (roleRef.current === "w" ? "b" : "w"),
+              (state) => state.role === (roleRef.current === "w" ? "b" : "w"),
             ),
         );
         const opponent = opponents.find(
@@ -223,7 +220,8 @@ export function ChessGame({ onExit }: Readonly<Props>) {
           typeof opponent?.playerId === "string" ? opponent.playerId : null;
 
         if (!roleRef.current && seatTimerRef.current == null) {
-          const randomDelay = crypto.getRandomValues(new Uint16Array(1))[0] % 350;
+          const randomDelay =
+            crypto.getRandomValues(new Uint16Array(1))[0] % 350;
           seatTimerRef.current = window.setTimeout(() => {
             seatTimerRef.current = null;
             assignAvailableSeat();

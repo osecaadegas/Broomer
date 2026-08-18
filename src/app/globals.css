@@ -371,18 +371,7 @@ body {
 }
 
 .door-idle-shadow::before {
-  content: "";
-  position: absolute;
-  inset: 8% auto 8% -22%;
-  width: 28%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(0, 0, 0, 0.9),
-    transparent
-  );
-  filter: blur(1.8rem);
-  animation: door-shadow-pass 3.8s ease-in-out both;
+  display: none;
 }
 
 @keyframes door-breathe {
@@ -430,25 +419,139 @@ body {
   animation: door-listen 4s ease-in-out both;
 }
 
-.door-person-shadow {
-  display: none;
-}
-
-@keyframes door-shadow-pass-mobile {
+@keyframes dutchman-cross-door {
   0% {
     opacity: 0;
-    transform: translateX(-32vw) scale(0.9);
+    transform: translate3d(-42vw, 2vh, 0) scale(0.88) rotate(-1.5deg);
   }
-  22% {
+  18% {
+    opacity: 0.96;
+  }
+  72% {
     opacity: 0.9;
-  }
-  70% {
-    opacity: 0.72;
   }
   100% {
     opacity: 0;
-    transform: translateX(132vw) scale(1.08);
+    transform: translate3d(142vw, -3vh, 0) scale(1.05) rotate(1.5deg);
   }
+}
+
+@keyframes ghost-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.35deg);
+  }
+  38% {
+    transform: translateY(-0.45rem) rotate(0.45deg);
+  }
+  68% {
+    transform: translateY(0.18rem) rotate(-0.15deg);
+  }
+}
+
+@keyframes dutchman-dark-aura {
+  0%,
+  100% {
+    opacity: 0.54;
+    filter: brightness(0) blur(1rem);
+    transform: scale(1.04) rotate(-0.4deg);
+  }
+  46% {
+    opacity: 0.9;
+    filter: brightness(0) blur(1.75rem);
+    transform: scale(1.13) rotate(0.55deg);
+  }
+  76% {
+    opacity: 0.66;
+    filter: brightness(0) blur(1.3rem);
+    transform: scale(1.08) rotate(-0.2deg);
+  }
+}
+
+@keyframes ghost-smoke-wisp {
+  0% {
+    opacity: 0;
+    transform: translate3d(-12%, 18%, 0) scale(0.72) rotate(-8deg);
+  }
+  28% {
+    opacity: 0.42;
+  }
+  70% {
+    opacity: 0.2;
+    transform: translate3d(10%, -8%, 0) scale(1.12) rotate(5deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(24%, -30%, 0) scale(1.38) rotate(12deg);
+  }
+}
+
+.dutchman-crossing {
+  position: absolute;
+  top: 3%;
+  left: 0;
+  width: clamp(15rem, 27vw, 24rem);
+  aspect-ratio: 2 / 3;
+  animation: dutchman-cross-door 3.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+  will-change: transform, opacity;
+}
+
+.dutchman-ghost {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  animation: ghost-float 2.9s ease-in-out infinite;
+}
+
+.ghost-character {
+  z-index: 3;
+  filter:
+    drop-shadow(0 0 0.28rem rgba(62, 255, 137, 0.4))
+    drop-shadow(0 0 0.8rem rgba(3, 18, 10, 0.94))
+    drop-shadow(0 0 2rem rgba(0, 0, 0, 1));
+}
+
+.ghost-aura {
+  position: absolute;
+  inset: -12%;
+  z-index: 1;
+  background: url("/flyingshadow.png") center / contain no-repeat;
+  filter: brightness(0) blur(1.2rem);
+  opacity: 0.72;
+  animation: dutchman-dark-aura 3.3s ease-in-out infinite;
+  will-change: transform, opacity, filter;
+}
+
+.ghost-smoke {
+  position: absolute;
+  z-index: 0;
+  border-radius: 48% 52% 58% 42%;
+  background: radial-gradient(
+    ellipse,
+    rgba(1, 5, 3, 0.88),
+    rgba(5, 62, 31, 0.22) 45%,
+    transparent 72%
+  );
+  filter: blur(1.4rem);
+  animation: ghost-smoke-wisp 4.8s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.ghost-smoke-one {
+  inset: 18% 28% 35% -18%;
+}
+
+.ghost-smoke-two {
+  inset: 32% -20% 16% 35%;
+  animation-delay: -1.7s;
+  animation-duration: 5.6s;
+}
+
+.ghost-smoke-three {
+  inset: 54% 10% -12% 5%;
+  animation-delay: -3.1s;
+  animation-duration: 6.2s;
 }
 
 @keyframes door-breathe-mobile {
@@ -486,71 +589,9 @@ body {
     bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
 
-  .door-idle-shadow::before {
-    display: none;
-  }
-
-  .door-person-shadow {
-    position: absolute;
-    inset: 0;
-    display: block;
-    animation: door-shadow-pass-mobile 3.8s ease-in-out both;
-    will-change: transform, opacity;
-  }
-
-  .door-person-body {
-    position: absolute;
-    inset: 21% auto 8% -27vw;
-    width: min(36vw, 9rem);
-    background: linear-gradient(
-      90deg,
-      rgba(10, 3, 10, 0.98),
-      rgba(77, 51, 59, 0.94) 48%,
-      rgba(10, 3, 10, 0.98)
-    );
-    clip-path: polygon(
-      38% 0,
-      62% 0,
-      75% 10%,
-      88% 29%,
-      80% 35%,
-      69% 22%,
-      66% 54%,
-      68% 100%,
-      55% 100%,
-      50% 58%,
-      45% 100%,
-      32% 100%,
-      34% 54%,
-      31% 22%,
-      20% 35%,
-      12% 29%,
-      25% 10%
-    );
-    filter:
-      blur(0.12rem)
-      drop-shadow(0 0 0.16rem rgba(237, 202, 137, 0.72))
-      drop-shadow(0 0 0.75rem rgba(177, 113, 55, 0.55))
-      drop-shadow(0 0 1.3rem rgba(0, 0, 0, 0.98));
-  }
-
-  .door-person-head {
-    position: absolute;
-    top: 10%;
-    left: calc(-27vw + min(11vw, 2.75rem));
-    width: min(14vw, 3.5rem);
-    aspect-ratio: 0.82;
-    border-radius: 48% 48% 44% 44%;
-    background: radial-gradient(
-      circle at 48% 42%,
-      rgba(82, 55, 62, 0.94),
-      rgba(10, 3, 10, 0.99) 68%
-    );
-    filter:
-      blur(0.12rem)
-      drop-shadow(0 0 0.14rem rgba(237, 202, 137, 0.72))
-      drop-shadow(0 0 0.65rem rgba(177, 113, 55, 0.55))
-      drop-shadow(0 0 1rem rgba(0, 0, 0, 0.98));
+  .dutchman-crossing {
+    top: 5%;
+    width: min(58vw, 13rem);
   }
 
   .door-idle-breath {
@@ -576,6 +617,20 @@ body {
     color: rgba(223, 199, 125, 0.9);
     font-size: 0.8rem;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dutchman-crossing {
+    animation: door-listen 4s ease-in-out both;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .dutchman-ghost,
+  .ghost-aura,
+  .ghost-smoke {
+    animation: none;
   }
 }
 
@@ -966,4 +1021,3 @@ body {
 .animate-seam-fade-in {
   animation: seam-fade-in 0.6s ease-out 1.4s both;
 }
-

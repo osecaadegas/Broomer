@@ -57,9 +57,20 @@ function DoorIdleEvent({
         className={`pointer-events-none absolute inset-0 z-30 ${getIdleEventClass(index)}`}
       >
         {index === 0 && (
-          <div className="door-person-shadow">
-            <span className="door-person-head" />
-            <span className="door-person-body" />
+          <div className="dutchman-crossing">
+            <div className="dutchman-ghost">
+              <span className="ghost-smoke ghost-smoke-one" />
+              <span className="ghost-smoke ghost-smoke-two" />
+              <span className="ghost-smoke ghost-smoke-three" />
+              <span className="ghost-aura" />
+              <Image
+                src="/flyingshadow.png"
+                alt=""
+                fill
+                sizes="(max-width: 640px) 58vw, 24rem"
+                className="ghost-character object-contain"
+              />
+            </div>
           </div>
         )}
       </div>
