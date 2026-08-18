@@ -86,6 +86,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
   const [opponentReady, setOpponentReady] = useState(false);
   const [selected, setSelected] = useState<Square | null>(null);
   const [legalTargets, setLegalTargets] = useState<Square[]>([]);
+  const [dragging, setDragging] = useState<Square | null>(null);
   const [, forceBoardRender] = useReducer((revision) => revision + 1, 0);
   const [notice, setNotice] = useState<string | null>(null);
   const [compactLandscape, setCompactLandscape] = useState(() =>
@@ -101,6 +102,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
   const joinedAtRef = useRef(Date.now());
   const roleRef = useRef<Role | null>(null);
   const seatTimerRef = useRef<number | null>(null);
+  const suppressClickUntilRef = useRef(0);
 
   useEffect(() => {
     const media = window.matchMedia(
@@ -114,6 +116,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
   function refreshBoard() {
     setSelected(null);
     setLegalTargets([]);
+    setDragging(null);
     forceBoardRender();
   }
 
@@ -133,8 +136,19 @@ export function ChessGame({ onExit }: Readonly<Props>) {
 
     function claimSeat(nextRole: Role) {
       if (roleRef.current) return;
+      const opponentRole = nextRole === "w" ? "b" : "w";
+      const opponent = (
+        Object.values(channel.presenceState()).flat() as ChessPresence[]
+      ).find(
+        (state) =>
+          typeof state.playerId === "string" && state.role === opponentRole,
+      );
       roleRef.current = nextRole;
       setRole(nextRole);
+      setNotice(null);
+      setOpponentReady(opponent != null);
+      opponentIdRef.current =
+        typeof opponent?.playerId === "string" ? opponent.playerId : null;
       void channel.track({
         playerId,
         role: nextRole,
@@ -297,7 +311,33 @@ export function ChessGame({ onExit }: Readonly<Props>) {
     };
   }, [supabase]);
 
+  function getLegalTargets(square: Square): Square[] {
+    return gameRef.current
+      .moves({ square, verbose: true })
+      .map((move) => move.to);
+  }
+
+  function movePiece(from: Square, to: Square): boolean {
+    try {
+      gameRef.current.move({ from, to, promotion: "q" });
+      send("move", {
+        playerId: playerIdRef.current,
+        from,
+        to,
+      });
+      refreshBoard();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function chooseSquare(square: Square) {
+    if (performance.now() < suppressClickUntilRef.current) {
+      suppressClickUntilRef.current = 0;
+      return;
+    }
+
     const game = gameRef.current;
     if (!role || !opponentReady || game.isGameOver() || game.turn() !== role)
       return;
@@ -306,31 +346,55 @@ export function ChessGame({ onExit }: Readonly<Props>) {
     if (!selected) {
       if (piece?.color !== role) return;
       setSelected(square);
-      setLegalTargets(
-        game.moves({ square, verbose: true }).map((move) => move.to),
-      );
+      setLegalTargets(getLegalTargets(square));
       return;
     }
 
-    try {
-      game.move({ from: selected, to: square, promotion: "q" });
-      send("move", {
-        playerId: playerIdRef.current,
-        from: selected,
-        to: square,
-      });
-      refreshBoard();
-    } catch {
+    if (!movePiece(selected, square)) {
       if (piece?.color === role) {
         setSelected(square);
-        setLegalTargets(
-          game.moves({ square, verbose: true }).map((move) => move.to),
-        );
+        setLegalTargets(getLegalTargets(square));
       } else {
         setSelected(null);
         setLegalTargets([]);
       }
     }
+  }
+
+  function beginDrag(square: Square) {
+    const game = gameRef.current;
+    const piece = game.get(square);
+    if (
+      !role ||
+      !opponentReady ||
+      game.isGameOver() ||
+      game.turn() !== role ||
+      piece?.color !== role
+    ) {
+      return;
+    }
+
+    setDragging(square);
+    setSelected(square);
+    setLegalTargets(getLegalTargets(square));
+  }
+
+  function finishDrag(clientX: number, clientY: number) {
+    if (!dragging) return;
+    const target = document
+      .elementFromPoint(clientX, clientY)
+      ?.closest<HTMLElement>("[data-chess-square]")
+      ?.dataset.chessSquare as Square | undefined;
+
+    if (target && target !== dragging) {
+      suppressClickUntilRef.current = performance.now() + 350;
+      if (!movePiece(dragging, target)) {
+        setDragging(null);
+      }
+      return;
+    }
+
+    setDragging(null);
   }
 
   function resetGame() {
@@ -396,9 +460,11 @@ export function ChessGame({ onExit }: Readonly<Props>) {
 
         <div className={`chess-board-shell relative shrink-0 ${boardClass}`}>
           <div
-            className="grid aspect-square w-full grid-cols-8 grid-rows-[repeat(8,minmax(0,1fr))] border border-[#c9a84c]/35 shadow-[0_1.5rem_5rem_rgba(0,0,0,0.65)]"
+            className="grid aspect-square w-full touch-none grid-cols-8 grid-rows-[repeat(8,minmax(0,1fr))] border border-[#c9a84c]/35 shadow-[0_1.5rem_5rem_rgba(0,0,0,0.65)]"
             role="grid"
             aria-label="Chess board"
+            onPointerUp={(event) => finishDrag(event.clientX, event.clientY)}
+            onPointerCancel={() => setDragging(null)}
           >
             {ranks.flatMap((rank, rankIndex) =>
               files.map((file, fileIndex) => {
@@ -411,10 +477,15 @@ export function ChessGame({ onExit }: Readonly<Props>) {
                     key={square}
                     type="button"
                     role="gridcell"
+                    data-chess-square={square}
                     aria-label={getSquareLabel(square, piece)}
                     aria-selected={selected === square}
                     onClick={() => chooseSquare(square)}
-                    className={`relative grid h-full min-h-0 w-full min-w-0 place-items-center overflow-hidden leading-none transition ${dark ? "bg-[#3a2632]" : "bg-[#bfae8e]"} ${selected === square ? "ring-4 ring-inset ring-[#e6c36c]" : ""}`}
+                    onPointerDown={(event) => {
+                      if (event.button !== 0) return;
+                      beginDrag(square);
+                    }}
+                    className={`relative grid h-full min-h-0 w-full min-w-0 place-items-center overflow-hidden leading-none transition ${dark ? "bg-[#3a2632]" : "bg-[#bfae8e]"} ${selected === square ? "ring-4 ring-inset ring-[#e6c36c]" : ""} ${dragging === square ? "cursor-grabbing" : piece?.color === role && canMove ? "cursor-grab" : "cursor-default"}`}
                   >
                     {target && (
                       <span
