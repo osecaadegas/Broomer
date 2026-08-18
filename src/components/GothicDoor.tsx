@@ -79,13 +79,14 @@ function DoorIdleEvent({
   ghostMode: GhostMode;
 }>) {
   if (!active || kind == null || messageIndex < 0) return null;
+  const idleLayer = kind === "ghost" && ghostMode === "peek" ? "z-[18]" : "z-[58]";
 
   return (
     <>
       <div
         key={`${kind}-${messageIndex}`}
         aria-hidden
-        className={`pointer-events-none absolute inset-0 z-[58] ${getIdleEventClass(kind)}`}
+        className={`pointer-events-none absolute inset-0 ${idleLayer} ${getIdleEventClass(kind)}`}
       >
         {kind === "ghost" && (
           <div

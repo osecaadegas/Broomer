@@ -2018,11 +2018,21 @@ body {
 }
 
 .dutchman-peek .ghost-character {
-  opacity: 0.34;
-  filter: saturate(0.82) brightness(0.66)
-    drop-shadow(0 0 0.3rem rgba(91, 255, 203, 0.2))
-    drop-shadow(0 0 1rem rgba(4, 83, 70, 0.48))
+  opacity: 0.62;
+  filter: saturate(0.96) brightness(0.86)
+    drop-shadow(0 0 0.36rem rgba(91, 255, 203, 0.28))
+    drop-shadow(0 0 1.2rem rgba(4, 83, 70, 0.62))
     drop-shadow(0 0 2.2rem rgba(0, 0, 0, 0.96));
+}
+
+.dutchman-peek .ghost-aura {
+  opacity: 0.34;
+  filter: brightness(0) blur(1rem)
+    drop-shadow(0 0 1.1rem rgba(34, 161, 141, 0.38));
+}
+
+.dutchman-peek .ghost-smoke {
+  opacity: 0.72;
 }
 
 .dutchman-ghost {
@@ -2161,15 +2171,15 @@ body {
     transform: translate3d(-50%, -50%, 0) scale(0.86);
   }
   42% {
-    opacity: 0.24;
+    opacity: 0.42;
     transform: translate3d(-50%, -50%, 0) scale(0.94);
   }
   58% {
-    opacity: 0.4;
+    opacity: 0.68;
     transform: translate3d(-50%, -50%, 0) scale(1);
   }
   76% {
-    opacity: 0.18;
+    opacity: 0.34;
     transform: translate3d(-50%, -50%, 0) scale(0.97);
   }
   100% {
