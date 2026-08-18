@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Questionnaire",
   description:
     "A responsive questionnaire builder — add, remove, and answer questions.",
+  icons: {
+    icon: "/broomer.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

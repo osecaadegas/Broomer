@@ -216,7 +216,9 @@ export function QuestionManager({ initialQuestions }: Props) {
       setConfirmId(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete question");
+      setError(
+        err instanceof Error ? err.message : "Failed to delete question",
+      );
     } finally {
       setDeletingId(null);
     }
@@ -246,9 +248,8 @@ export function QuestionManager({ initialQuestions }: Props) {
     <div>
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-slate-600">
-          {questions.length}{" "}
-          {questions.length === 1 ? "question" : "questions"} in this
-          questionnaire
+          {questions.length} {questions.length === 1 ? "question" : "questions"}{" "}
+          in this questionnaire
         </p>
         <button
           type="button"
@@ -367,9 +368,7 @@ export function QuestionManager({ initialQuestions }: Props) {
                 onChange={(e) => setRequired(e.target.checked)}
                 className="h-4 w-4 accent-indigo-600"
               />
-              <span className="text-sm text-slate-700">
-                Mark as required
-              </span>
+              <span className="text-sm text-slate-700">Mark as required</span>
             </label>
 
             <div>
@@ -399,7 +398,8 @@ export function QuestionManager({ initialQuestions }: Props) {
                 ))}
               </select>
               <p className="mt-1.5 text-xs text-slate-400">
-                Candle questions appear only after the complete lights-off spell.
+                Candle questions appear only after the complete lights-off
+                spell.
               </p>
             </div>
           </div>
@@ -423,11 +423,7 @@ export function QuestionManager({ initialQuestions }: Props) {
               disabled={saving}
               className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-60"
             >
-              {saving
-                ? "Saving…"
-                : editingId
-                  ? "Save changes"
-                  : "Add question"}
+              {saving ? "Saving…" : editingId ? "Save changes" : "Add question"}
             </button>
           </div>
         </form>

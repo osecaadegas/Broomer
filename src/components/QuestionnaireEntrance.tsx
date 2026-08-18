@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Question } from "@/lib/questionnaire";
 import { DiabolicalLights } from "@/components/DiabolicalLights";
 import { GothicDoor } from "@/components/GothicDoor";
@@ -12,6 +12,42 @@ import { UnoQuestionBuilder } from "@/components/UnoQuestionBuilder";
 
 interface Props {
   questions: Question[];
+}
+
+const CHESS_BUBBLES = Array.from({ length: 320 }, (_, index) => ({
+  id: index,
+  left: (index * 47 + (index % 11) * 7) % 100,
+  size: 6 + ((index * 13) % 42),
+  delay: (index % 40) * 0.07 - 2.2,
+  duration: 3.8 + ((index * 17) % 18) * 0.055,
+  drift: ((index * 19) % 150) - 75,
+}));
+
+function ChessBubbleTransition() {
+  return (
+    <div
+      aria-hidden
+      className="chess-bubble-transition pointer-events-none fixed inset-0 z-[100] overflow-hidden"
+    >
+      <div className="chess-bubble-water absolute inset-0" />
+      {CHESS_BUBBLES.map((bubble) => (
+        <span
+          key={bubble.id}
+          className="chess-transition-bubble absolute rounded-full"
+          style={
+            {
+              left: `${bubble.left}%`,
+              width: bubble.size,
+              height: bubble.size,
+              animationDelay: `${bubble.delay}s`,
+              animationDuration: `${bubble.duration}s`,
+              "--bubble-drift": `${bubble.drift}px`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
+  );
 }
 
 export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
@@ -30,6 +66,18 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
   const [musicStarted, setMusicStarted] = useState(false);
   const [musicMuted, setMusicMuted] = useState(false);
   const [enchanted, setEnchanted] = useState(false);
+  const [chessRevealing, setChessRevealing] = useState(false);
+
+  useEffect(() => {
+    if (!chessRevealing) return;
+    const timer = window.setTimeout(() => setChessRevealing(false), 4800);
+    return () => window.clearTimeout(timer);
+  }, [chessRevealing]);
+
+  function revealChess() {
+    setChessRevealing(true);
+    setStage("chess");
+  }
 
   function prepareMusic() {
     const audio = audioRef.current;
@@ -189,7 +237,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
           key={`door-${loopKey}`}
           onOpen={() => setStage("lights")}
           onUno={() => setStage("author")}
-          onChess={() => setStage("chess")}
+          onChess={revealChess}
           onPrepareMusic={prepareMusic}
           onStartMusic={startMusic}
         />
@@ -207,7 +255,15 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
       {stage === "author" && (
         <UnoQuestionBuilder onCancel={() => window.location.reload()} />
       )}
-      {stage === "chess" && <ChessGame onExit={() => setStage("door")} />}
+      {stage === "chess" && (
+        <ChessGame
+          onExit={() => {
+            setChessRevealing(false);
+            setStage("door");
+          }}
+        />
+      )}
+      {stage === "chess" && chessRevealing && <ChessBubbleTransition />}
       {stage === "questions" && (
         <div className="relative z-10 w-full animate-question-reveal">
           <Questionnaire

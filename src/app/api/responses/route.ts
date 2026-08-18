@@ -38,82 +38,84 @@ export async function GET() {
   }
 
   const secretSupabase = createSecretSupabaseClient();
-  const serialized = await Promise.all((data as SupabaseResponseRow[]).map(async (row) => {
-    const stored = row.answers ?? {};
-    const answers: Record<string, string | string[]> = {};
-    for (const [key, value] of Object.entries(stored)) {
-      if (
-        key === RESPONSE_QUESTION_SNAPSHOTS_KEY ||
-        key === RESPONSE_MOOD_SELFIE_KEY ||
-        key === RESPONSE_MOOD_SELFIE_PATH_KEY ||
-        key === RESPONSE_MOOD_TALK_KEY
-      ) {
-        continue;
-      }
-      if (typeof value === "string") answers[key] = value;
-      if (
-        Array.isArray(value) &&
-        value.every((item) => typeof item === "string")
-      ) {
-        answers[key] = value;
-      }
-    }
-
-    const rawSnapshots = stored[RESPONSE_QUESTION_SNAPSHOTS_KEY];
-    const questionSnapshots: Record<string, QuestionSnapshot> = {};
-    if (
-      typeof rawSnapshots === "object" &&
-      rawSnapshots !== null &&
-      !Array.isArray(rawSnapshots)
-    ) {
-      for (const [key, value] of Object.entries(rawSnapshots)) {
+  const serialized = await Promise.all(
+    (data as SupabaseResponseRow[]).map(async (row) => {
+      const stored = row.answers ?? {};
+      const answers: Record<string, string | string[]> = {};
+      for (const [key, value] of Object.entries(stored)) {
         if (
-          typeof value !== "object" ||
-          value === null ||
-          Array.isArray(value)
+          key === RESPONSE_QUESTION_SNAPSHOTS_KEY ||
+          key === RESPONSE_MOOD_SELFIE_KEY ||
+          key === RESPONSE_MOOD_SELFIE_PATH_KEY ||
+          key === RESPONSE_MOOD_TALK_KEY
         ) {
           continue;
         }
-        const snapshot = value as Record<string, unknown>;
+        if (typeof value === "string") answers[key] = value;
         if (
-          typeof snapshot.prompt === "string" &&
-          isQuestionType(snapshot.type) &&
-          Array.isArray(snapshot.options) &&
-          snapshot.options.every((option) => typeof option === "string")
+          Array.isArray(value) &&
+          value.every((item) => typeof item === "string")
         ) {
-          questionSnapshots[key] = {
-            prompt: snapshot.prompt,
-            type: snapshot.type,
-            options: snapshot.options,
-          };
+          answers[key] = value;
         }
       }
-    }
 
-    const storedSelfiePath = stored[RESPONSE_MOOD_SELFIE_PATH_KEY];
-    let moodSelfie: string | null =
-      typeof stored[RESPONSE_MOOD_SELFIE_KEY] === "string"
-        ? stored[RESPONSE_MOOD_SELFIE_KEY]
-        : null;
-    if (typeof storedSelfiePath === "string" && secretSupabase) {
-      const { data: signedData } = await secretSupabase.storage
-        .from(MOOD_SELFIE_BUCKET)
-        .createSignedUrl(storedSelfiePath, 15 * 60);
-      moodSelfie = signedData?.signedUrl ?? null;
-    }
+      const rawSnapshots = stored[RESPONSE_QUESTION_SNAPSHOTS_KEY];
+      const questionSnapshots: Record<string, QuestionSnapshot> = {};
+      if (
+        typeof rawSnapshots === "object" &&
+        rawSnapshots !== null &&
+        !Array.isArray(rawSnapshots)
+      ) {
+        for (const [key, value] of Object.entries(rawSnapshots)) {
+          if (
+            typeof value !== "object" ||
+            value === null ||
+            Array.isArray(value)
+          ) {
+            continue;
+          }
+          const snapshot = value as Record<string, unknown>;
+          if (
+            typeof snapshot.prompt === "string" &&
+            isQuestionType(snapshot.type) &&
+            Array.isArray(snapshot.options) &&
+            snapshot.options.every((option) => typeof option === "string")
+          ) {
+            questionSnapshots[key] = {
+              prompt: snapshot.prompt,
+              type: snapshot.type,
+              options: snapshot.options,
+            };
+          }
+        }
+      }
 
-    return {
-      id: row.id,
-      answers,
-      moodSelfie,
-      moodTalk:
-        typeof stored[RESPONSE_MOOD_TALK_KEY] === "string"
-          ? stored[RESPONSE_MOOD_TALK_KEY]
-          : null,
-      questionSnapshots,
-      createdAt: row.created_at,
-    };
-  }));
+      const storedSelfiePath = stored[RESPONSE_MOOD_SELFIE_PATH_KEY];
+      let moodSelfie: string | null =
+        typeof stored[RESPONSE_MOOD_SELFIE_KEY] === "string"
+          ? stored[RESPONSE_MOOD_SELFIE_KEY]
+          : null;
+      if (typeof storedSelfiePath === "string" && secretSupabase) {
+        const { data: signedData } = await secretSupabase.storage
+          .from(MOOD_SELFIE_BUCKET)
+          .createSignedUrl(storedSelfiePath, 15 * 60);
+        moodSelfie = signedData?.signedUrl ?? null;
+      }
+
+      return {
+        id: row.id,
+        answers,
+        moodSelfie,
+        moodTalk:
+          typeof stored[RESPONSE_MOOD_TALK_KEY] === "string"
+            ? stored[RESPONSE_MOOD_TALK_KEY]
+            : null,
+        questionSnapshots,
+        createdAt: row.created_at,
+      };
+    }),
+  );
 
   return NextResponse.json({ responses: serialized });
 }
@@ -207,9 +209,7 @@ export async function POST(request: Request) {
   }
 
   const answerMap: Record<string, string | string[]> = {};
-  for (const [key, value] of Object.entries(
-    rawAnswers,
-  )) {
+  for (const [key, value] of Object.entries(rawAnswers)) {
     if (key.startsWith("__")) continue;
     if (typeof value === "string" && value.trim() !== "") {
       answerMap[key] = value;

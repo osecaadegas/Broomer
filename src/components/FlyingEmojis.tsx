@@ -27,27 +27,31 @@ export function FlyingEmojis({ mode }: Props) {
   const [key, setKey] = useState(0);
 
   useEffect(() => {
-    if (mode === "none") {
-      setParticles([]);
-      return;
-    }
+    const timer = window.setTimeout(() => {
+      if (mode === "none") {
+        setParticles([]);
+        return;
+      }
 
-    const pool = mode === "happy" ? HAPPY_EMOJIS : SAD_EMOJIS;
-    const next: EmojiParticle[] = [];
+      const pool = mode === "happy" ? HAPPY_EMOJIS : SAD_EMOJIS;
+      const next: EmojiParticle[] = [];
 
-    for (let i = 0; i < 20; i++) {
-      next.push({
-        id: i,
-        char: pool[i % pool.length],
-        left: randomBetween(4, 96),
-        duration: randomBetween(2, 4.5),
-        delay: randomBetween(0, 1.5),
-        size: randomBetween(1.4, 2.8),
-      });
-    }
+      for (let i = 0; i < 20; i++) {
+        next.push({
+          id: i,
+          char: pool[i % pool.length],
+          left: randomBetween(4, 96),
+          duration: randomBetween(2, 4.5),
+          delay: randomBetween(0, 1.5),
+          size: randomBetween(1.4, 2.8),
+        });
+      }
 
-    setParticles(next);
-    setKey((prev) => prev + 1);
+      setParticles(next);
+      setKey((prev) => prev + 1);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [mode]);
 
   if (mode === "none" || particles.length === 0) return null;

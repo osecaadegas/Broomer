@@ -1,10 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Chess, type Color, type PieceSymbol, type Square } from "chess.js";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SearchIcon,
+  XIcon,
+} from "@/components/icons";
 
 interface Props {
   onExit: () => void;
@@ -17,6 +23,18 @@ interface ChessPresence {
   playerId?: unknown;
   role?: unknown;
   joinedAt?: unknown;
+}
+
+type PieceView = { color: Color; type: PieceSymbol };
+
+interface GameView {
+  fen: string;
+  turn: Color;
+  inCheck: boolean;
+  isCheckmate: boolean;
+  isDraw: boolean;
+  isGameOver: boolean;
+  pieces: Partial<Record<Square, PieceView>>;
 }
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
@@ -39,7 +57,189 @@ const PIECE_IMAGES: Record<Color, Record<PieceSymbol, string>> = {
     p: "/chess/Black_pieces/Snail_Pawn.png",
   },
 };
+const PIECE_GALLERY = (["w", "b"] as const).flatMap((color) =>
+  (["k", "q", "r", "b", "n", "p"] as const).map((type) => ({
+    color,
+    type,
+  })),
+);
+const PIECE_NAMES: Record<PieceSymbol, string> = {
+  k: "SpongeBob King",
+  q: "Sandy Queen",
+  r: "Mr. Krabs Rook",
+  b: "Squidward Bishop",
+  n: "Patrick Knight",
+  p: "Gary Pawn",
+};
 const CHESS_CHANNEL = "broomer-chess:single-table";
+
+function createGameView(game: Chess): GameView {
+  const pieces: Partial<Record<Square, PieceView>> = {};
+
+  for (const file of FILES) {
+    for (const rank of RANKS) {
+      const square = `${file}${rank}` as Square;
+      const piece = game.get(square);
+      if (piece) pieces[square] = piece;
+    }
+  }
+
+  return {
+    fen: game.fen(),
+    turn: game.turn(),
+    inCheck: game.inCheck(),
+    isCheckmate: game.isCheckmate(),
+    isDraw: game.isDraw(),
+    isGameOver: game.isGameOver(),
+    pieces,
+  };
+}
+
+function PieceGallery({ onClose }: Readonly<{ onClose: () => void }>) {
+  const [pieceIndex, setPieceIndex] = useState(0);
+  const piece = PIECE_GALLERY[pieceIndex];
+  const colorName = piece.color === "w" ? "White" : "Black";
+
+  function selectColor(color: Color) {
+    setPieceIndex(color === "w" ? 0 : 6);
+  }
+
+  function stepPiece(offset: number) {
+    setPieceIndex(
+      (current) =>
+        (current + offset + PIECE_GALLERY.length) % PIECE_GALLERY.length,
+    );
+  }
+
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key === "ArrowLeft") stepPiece(-1);
+      if (event.key === "ArrowRight") stepPiece(1);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="chess-piece-gallery fixed inset-0 z-[95] grid place-items-center p-3 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="piece-gallery-title"
+    >
+      <button
+        type="button"
+        aria-label="Close piece gallery"
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+      />
+      <div className="chess-piece-gallery-panel relative flex max-h-full w-[min(94vw,44rem)] flex-col overflow-hidden">
+        <header className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+          <div>
+            <h2
+              id="piece-gallery-title"
+              className="text-sm font-bold text-[#ffe29a] sm:text-base"
+            >
+              Piece gallery
+            </h2>
+            <p className="text-[10px] text-cyan-100/55 sm:text-xs">
+              The live match stays connected
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close piece gallery"
+            className="chess-gallery-icon-button"
+          >
+            <XIcon className="h-5 w-5" />
+          </button>
+        </header>
+
+        <div className="flex justify-center p-3 pb-1">
+          <div
+            className="chess-gallery-segments grid grid-cols-2"
+            aria-label="Piece color"
+          >
+            {(["w", "b"] as const).map((color) => (
+              <button
+                key={color}
+                type="button"
+                aria-pressed={piece.color === color}
+                onClick={() => selectColor(color)}
+                className="px-5 py-1.5 text-xs font-semibold"
+              >
+                {color === "w" ? "White" : "Black"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid min-h-0 flex-1 grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-1 px-2 sm:grid-cols-[3.25rem_minmax(0,1fr)_3.25rem] sm:px-4">
+          <button
+            type="button"
+            onClick={() => stepPiece(-1)}
+            aria-label="Previous piece"
+            className="chess-gallery-icon-button"
+          >
+            <ChevronLeftIcon className="h-6 w-6" />
+          </button>
+          <figure className="flex min-h-0 flex-col items-center">
+            <div className="chess-gallery-image relative aspect-square w-[min(52vh,25rem,100%)]">
+              <Image
+                key={`${piece.color}-${piece.type}`}
+                src={PIECE_IMAGES[piece.color][piece.type]}
+                alt={`${colorName} ${PIECE_NAMES[piece.type]}`}
+                fill
+                priority
+                sizes="(max-width: 640px) 70vw, 400px"
+                className="animate-card-in object-contain p-[3%] drop-shadow-[0_1rem_1rem_rgba(0,0,0,0.48)]"
+              />
+            </div>
+            <figcaption className="pb-2 text-center">
+              <p className="font-bold text-[#ffe29a]">
+                {PIECE_NAMES[piece.type]}
+              </p>
+              <p className="text-xs text-cyan-100/55">{colorName} set</p>
+            </figcaption>
+          </figure>
+          <button
+            type="button"
+            onClick={() => stepPiece(1)}
+            aria-label="Next piece"
+            className="chess-gallery-icon-button"
+          >
+            <ChevronRightIcon className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="chess-gallery-thumbnails grid grid-cols-6 gap-1 border-t border-white/10 p-2 sm:gap-2 sm:p-3">
+          {PIECE_GALLERY.map((galleryPiece, index) =>
+            galleryPiece.color === piece.color ? (
+              <button
+                key={`${galleryPiece.color}-${galleryPiece.type}`}
+                type="button"
+                aria-label={`View ${PIECE_NAMES[galleryPiece.type]}`}
+                aria-pressed={pieceIndex === index}
+                onClick={() => setPieceIndex(index)}
+                className="relative aspect-square min-w-0 overflow-hidden"
+              >
+                <Image
+                  src={PIECE_IMAGES[galleryPiece.color][galleryPiece.type]}
+                  alt=""
+                  fill
+                  sizes="72px"
+                  className="object-contain p-[8%]"
+                />
+              </button>
+            ) : null,
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function readBroadcastPayload(message: unknown): Record<string, unknown> {
   if (
@@ -57,15 +257,19 @@ function readBroadcastPayload(message: unknown): Record<string, unknown> {
   return record;
 }
 
-function getGameStatus(game: Chess, role: Role | null, ready: boolean): string {
+function getGameStatus(
+  game: GameView,
+  role: Role | null,
+  ready: boolean,
+): string {
   if (!role) return "Finding your seat";
   if (!ready) return role === "w" ? "Waiting for Black" : "Waiting for White";
-  if (game.isCheckmate()) {
-    return `${game.turn() === "w" ? "Black" : "White"} wins by checkmate`;
+  if (game.isCheckmate) {
+    return `${game.turn === "w" ? "Black" : "White"} wins by checkmate`;
   }
-  if (game.isDraw()) return "Draw";
-  const turn = game.turn() === "w" ? "White" : "Black";
-  return game.inCheck() ? `${turn} is in check` : `${turn} to move`;
+  if (game.isDraw) return "Draw";
+  const turn = game.turn === "w" ? "White" : "Black";
+  return game.inCheck ? `${turn} is in check` : `${turn} to move`;
 }
 
 function getSquareLabel(
@@ -79,6 +283,9 @@ function getSquareLabel(
 
 export function ChessGame({ onExit }: Readonly<Props>) {
   const [supabase] = useState(createBrowserSupabaseClient);
+  const [gameView, setGameView] = useState(() =>
+    createGameView(new Chess()),
+  );
   const [role, setRole] = useState<Role | null>(null);
   const [connection, setConnection] = useState<
     "connecting" | "online" | "error"
@@ -87,7 +294,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
   const [selected, setSelected] = useState<Square | null>(null);
   const [legalTargets, setLegalTargets] = useState<Square[]>([]);
   const [dragging, setDragging] = useState<Square | null>(null);
-  const [, forceBoardRender] = useReducer((revision) => revision + 1, 0);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [compactLandscape, setCompactLandscape] = useState(() =>
     typeof window === "undefined"
@@ -98,8 +305,8 @@ export function ChessGame({ onExit }: Readonly<Props>) {
   const gameRef = useRef(new Chess());
   const channelRef = useRef<RealtimeChannel | null>(null);
   const opponentIdRef = useRef<string | null>(null);
-  const playerIdRef = useRef(crypto.randomUUID());
-  const joinedAtRef = useRef(Date.now());
+  const playerIdRef = useRef<string | null>(null);
+  const joinedAtRef = useRef<number | null>(null);
   const roleRef = useRef<Role | null>(null);
   const seatTimerRef = useRef<number | null>(null);
   const suppressClickUntilRef = useRef(0);
@@ -117,7 +324,17 @@ export function ChessGame({ onExit }: Readonly<Props>) {
     setSelected(null);
     setLegalTargets([]);
     setDragging(null);
-    forceBoardRender();
+    setGameView(createGameView(gameRef.current));
+  }
+
+  function getPlayerId() {
+    playerIdRef.current ??= crypto.randomUUID();
+    return playerIdRef.current;
+  }
+
+  function getJoinedAt() {
+    joinedAtRef.current ??= Date.now();
+    return joinedAtRef.current;
   }
 
   function send(event: string, payload: Record<string, unknown>) {
@@ -125,7 +342,8 @@ export function ChessGame({ onExit }: Readonly<Props>) {
   }
 
   useEffect(() => {
-    const playerId = playerIdRef.current;
+    const playerId = getPlayerId();
+    const joinedAt = getJoinedAt();
     const channel = supabase.channel(CHESS_CHANNEL, {
       config: {
         broadcast: { ack: true, self: false },
@@ -152,7 +370,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
       void channel.track({
         playerId,
         role: nextRole,
-        joinedAt: joinedAtRef.current,
+        joinedAt,
       });
       if (nextRole === "b") {
         send("sync-request", { playerId });
@@ -212,7 +430,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
             void channel.track({
               playerId,
               role: null,
-              joinedAt: joinedAtRef.current,
+              joinedAt,
             });
           }
         }
@@ -293,7 +511,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
           void channel.track({
             playerId,
             role: null,
-            joinedAt: joinedAtRef.current,
+            joinedAt,
           });
           return;
         }
@@ -409,11 +627,13 @@ export function ChessGame({ onExit }: Readonly<Props>) {
     setNotice("You resigned.");
   }
 
-  const game = gameRef.current;
   const files = role !== "b" ? FILES : [...FILES].reverse();
   const ranks = role !== "b" ? RANKS : [...RANKS].reverse();
   const canMove =
-    role != null && opponentReady && game.turn() === role && !game.isGameOver();
+    role != null &&
+    opponentReady &&
+    gameView.turn === role &&
+    !gameView.isGameOver;
   let playerLabel = "—";
   if (role === "w") playerLabel = "White";
   if (role === "b") playerLabel = "Black";
@@ -428,30 +648,30 @@ export function ChessGame({ onExit }: Readonly<Props>) {
   }
   const shellClass = compactLandscape
     ? "grid w-[min(calc(100vw-1.5rem),43rem)] grid-cols-[minmax(0,1fr)_7rem] grid-rows-[auto_minmax(0,1fr)] gap-x-3"
-    : "flex w-full flex-col items-center justify-center";
+    : "flex w-fit max-w-full flex-col items-center justify-center";
   const statusClass = compactLandscape
     ? "col-start-1 row-start-1 mb-1 w-[min(calc(100dvh-5rem),calc(100vw-9rem),36rem)] justify-self-center"
     : "mb-2 w-[min(calc(100vw-1.5rem),36rem)] sm:w-[min(calc(100vw-2.5rem),36rem)]";
   const boardClass = compactLandscape
     ? "col-start-1 row-start-2 w-[min(calc(100dvh-5rem),calc(100vw-9rem),36rem)] justify-self-center"
-    : "w-[min(calc(100vw-1.5rem),calc(100dvh-7.5rem),36rem)] sm:w-[min(calc(100vw-2.5rem),calc(100dvh-8rem),36rem)]";
+    : "w-[min(calc(100vw-3rem),calc(100dvh-11rem),36rem)] sm:w-[min(calc(100vw-5rem),calc(100dvh-11.5rem),36rem)]";
   const footerClass = compactLandscape
     ? "col-start-2 row-span-2 row-start-1 mt-0 w-auto flex-col items-stretch justify-center [&>div]:flex-col [&>div]:gap-1.5"
     : "mt-2 w-[min(calc(100vw-1.5rem),36rem)] sm:w-[min(calc(100vw-2.5rem),36rem)]";
 
   return (
-    <section className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-[#07050a] px-3 text-stone-100 sm:px-5">
+    <section className="chess-game-scene chess-game-reveal fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto px-3 text-stone-100 sm:px-5">
       <div className={`chess-game-shell mx-auto ${shellClass}`}>
         <div
-          className={`chess-game-status flex min-h-9 items-center justify-between gap-2 border-y border-white/10 py-1.5 text-xs sm:text-sm ${statusClass}`}
+          className={`chess-game-status flex min-h-12 items-center justify-between gap-2 px-3 py-2 text-xs sm:text-sm ${statusClass}`}
         >
           <div className="min-w-0">
             <p
               className={`truncate ${canMove ? "text-[#ead9ae]" : "text-stone-400"}`}
             >
-              {notice ?? getGameStatus(game, role, opponentReady)}
+              {notice ?? getGameStatus(gameView, role, opponentReady)}
             </p>
-            <p className="mt-0.5 text-[10px] text-stone-600 sm:text-xs">
+            <p className="mt-0.5 text-[10px] text-[#ebd9a8]/80 sm:text-xs">
               {playerLabel} ·{" "}
               <span className={connectionClass}>{connectionLabel}</span>
             </p>
@@ -460,7 +680,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
 
         <div className={`chess-board-shell relative shrink-0 ${boardClass}`}>
           <div
-            className="grid aspect-square w-full touch-none grid-cols-8 grid-rows-[repeat(8,minmax(0,1fr))] border border-[#c9a84c]/35 shadow-[0_1.5rem_5rem_rgba(0,0,0,0.65)]"
+            className="chess-board-grid grid aspect-square w-full touch-none grid-cols-8 grid-rows-[repeat(8,minmax(0,1fr))]"
             role="grid"
             aria-label="Chess board"
             onPointerUp={(event) => finishDrag(event.clientX, event.clientY)}
@@ -469,7 +689,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
             {ranks.flatMap((rank, rankIndex) =>
               files.map((file, fileIndex) => {
                 const square = `${file}${rank}` as Square;
-                const piece = game.get(square);
+                const piece = gameView.pieces[square];
                 const dark = (rankIndex + fileIndex) % 2 === 1;
                 const target = legalTargets.includes(square);
                 return (
@@ -485,7 +705,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
                       if (event.button !== 0) return;
                       beginDrag(square);
                     }}
-                    className={`relative grid h-full min-h-0 w-full min-w-0 place-items-center overflow-hidden leading-none transition ${dark ? "bg-[#3a2632]" : "bg-[#bfae8e]"} ${selected === square ? "ring-4 ring-inset ring-[#e6c36c]" : ""} ${dragging === square ? "cursor-grabbing" : piece?.color === role && canMove ? "cursor-grab" : "cursor-default"}`}
+                    className={`chess-square relative grid h-full min-h-0 w-full min-w-0 place-items-center overflow-hidden leading-none transition ${dark ? "chess-square-dark" : "chess-square-light"} ${selected === square ? "ring-4 ring-inset ring-[#ffdc62]" : ""} ${dragging === square ? "cursor-grabbing" : piece?.color === role && canMove ? "cursor-grab" : "cursor-default"}`}
                   >
                     {target && (
                       <span
@@ -511,21 +731,29 @@ export function ChessGame({ onExit }: Readonly<Props>) {
         </div>
 
         <footer
-          className={`chess-game-footer flex items-center justify-between gap-2 ${footerClass}`}
+          className={`chess-game-footer flex items-center justify-between gap-1 sm:gap-2 ${footerClass}`}
         >
           <button
             type="button"
             onClick={onExit}
-            className="px-3 py-2 text-sm text-stone-500 hover:text-stone-200"
+            className="chess-leave-button whitespace-nowrap px-1.5 py-2 text-[11px] sm:px-3 sm:text-sm"
           >
-            Leave room
+            <span aria-hidden>↪</span> Leave room
           </button>
           <div className="flex gap-2">
             <button
               type="button"
+              onClick={() => setGalleryOpen(true)}
+              className="chess-action-button inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-2 py-2 text-[11px] transition sm:px-3 sm:text-sm"
+            >
+              <SearchIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              Pieces
+            </button>
+            <button
+              type="button"
               onClick={resign}
-              disabled={!opponentReady || game.isGameOver()}
-              className="border border-white/10 px-3 py-2 text-sm text-stone-400 transition hover:border-red-700/50 hover:text-red-300 disabled:opacity-30"
+              disabled={!opponentReady || gameView.isGameOver}
+              className="chess-action-button whitespace-nowrap px-2 py-2 text-[11px] transition disabled:opacity-30 sm:px-4 sm:text-sm"
             >
               Resign
             </button>
@@ -533,13 +761,14 @@ export function ChessGame({ onExit }: Readonly<Props>) {
               type="button"
               onClick={resetGame}
               disabled={!opponentReady}
-              className="border border-[#c9a84c]/30 px-3 py-2 text-sm text-[#d7bd7e] transition hover:border-[#c9a84c]/60 disabled:opacity-30"
+              className="chess-action-button chess-action-primary whitespace-nowrap px-2 py-2 text-[11px] transition disabled:opacity-30 sm:px-4 sm:text-sm"
             >
               New match
             </button>
           </div>
         </footer>
       </div>
+      {galleryOpen && <PieceGallery onClose={() => setGalleryOpen(false)} />}
     </section>
   );
 }

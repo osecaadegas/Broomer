@@ -186,7 +186,9 @@ export function GothicDoor({
     ) {
       setSymbolsAwake(true);
       setSliding(true);
-      navigator.vibrate?.([40, 50, 90]);
+      if (navigator.userActivation?.isActive) {
+        navigator.vibrate?.([40, 50, 90]);
+      }
       window.setTimeout(onChess, 1100);
     }
   }

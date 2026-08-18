@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import {
   hasOptions,
@@ -103,14 +103,6 @@ export function Questionnaire({
       ),
     [questions, answers, enchanted],
   );
-
-  // Keep `current` within the visible list when a conditional answer changes
-  // which questions should be shown.
-  useEffect(() => {
-    if (current >= visible.length) {
-      setCurrent(Math.max(0, visible.length - 1));
-    }
-  }, [visible.length, current]);
 
   const total = visible.length;
   const currentSafe = Math.min(current, Math.max(0, total - 1));
@@ -446,9 +438,7 @@ export function Questionnaire({
         className={`${cardShell} relative ${atmosphereTheme.card}`}
       >
         <FlyingEmojis mode={emojiMode} />
-        <div
-          className={atmosphereTheme.accent}
-        />
+        <div className={atmosphereTheme.accent} />
         <div
           key={question.id}
           className="animate-card-in relative z-10 p-6 sm:p-8"

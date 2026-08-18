@@ -98,6 +98,15 @@ export function XIcon(props: IconProps) {
   );
 }
 
+export function SearchIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </Svg>
+  );
+}
+
 export function ClipboardIcon(props: IconProps) {
   return (
     <Svg {...props}>
