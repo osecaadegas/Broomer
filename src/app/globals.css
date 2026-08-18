@@ -531,17 +531,17 @@ body {
 
 .gate-ambient {
   z-index: 2;
-  opacity: 0.42;
+  opacity: 0.28;
   background:
-    radial-gradient(ellipse at 50% 38%, rgba(42, 6, 18, 0.3), transparent 34%),
-    radial-gradient(ellipse at 50% 50%, rgba(1, 42, 50, 0.08), transparent 26%),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.55), transparent 36%, transparent 64%, rgba(0, 0, 0, 0.55));
+    radial-gradient(ellipse at 50% 38%, rgba(42, 6, 18, 0.18), transparent 34%),
+    radial-gradient(ellipse at 50% 50%, rgba(1, 42, 50, 0.05), transparent 26%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.38), transparent 36%, transparent 64%, rgba(0, 0, 0, 0.38));
   animation: gate-ambient-breath 7.5s ease-in-out infinite;
 }
 
 .gate-film-grain {
   z-index: 31;
-  opacity: 0.045;
+  opacity: 0.026;
   mix-blend-mode: screen;
   background-image:
     radial-gradient(circle at 17% 23%, rgba(255, 255, 255, 0.55) 0 1px, transparent 1px),
@@ -554,8 +554,42 @@ body {
 .gate-heavy-vignette {
   z-index: 32;
   background:
-    radial-gradient(ellipse at center, transparent 0 28%, rgba(1, 0, 2, 0.48) 64%, rgba(0, 0, 0, 0.94) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.62) 9%, rgba(0, 0, 0, 0.18) 23%, transparent 42%, transparent 66%, rgba(0, 0, 0, 0.82) 100%);
+    radial-gradient(ellipse at center, transparent 0 36%, rgba(1, 0, 2, 0.28) 68%, rgba(0, 0, 0, 0.86) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.42) 9%, rgba(0, 0, 0, 0.1) 23%, transparent 44%, transparent 70%, rgba(0, 0, 0, 0.68) 100%);
+}
+
+.gate-edge-smoke {
+  z-index: 36;
+  opacity: 0.58;
+  background:
+    radial-gradient(ellipse at 0% 78%, rgba(110, 126, 121, 0.16), transparent 26%),
+    radial-gradient(ellipse at 100% 76%, rgba(110, 126, 121, 0.14), transparent 28%),
+    radial-gradient(ellipse at 50% 100%, rgba(96, 112, 110, 0.12), transparent 32%),
+    linear-gradient(90deg, rgba(77, 93, 91, 0.11), transparent 12%, transparent 88%, rgba(77, 93, 91, 0.11));
+  filter: blur(1.2rem);
+  animation: gate-edge-smoke-drift 12s ease-in-out infinite;
+}
+
+.gate-edge-smoke::before,
+.gate-edge-smoke::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.gate-edge-smoke::before {
+  background:
+    radial-gradient(ellipse at 5% 92%, rgba(170, 176, 169, 0.16), transparent 18%),
+    radial-gradient(ellipse at 95% 94%, rgba(170, 176, 169, 0.14), transparent 18%);
+  animation: gate-edge-smoke-lift 9s ease-in-out infinite;
+}
+
+.gate-edge-smoke::after {
+  opacity: 0.6;
+  background:
+    linear-gradient(90deg, rgba(138, 151, 145, 0.08), transparent 18%, transparent 82%, rgba(138, 151, 145, 0.08)),
+    radial-gradient(ellipse at 50% 3%, rgba(138, 151, 145, 0.06), transparent 24%);
 }
 
 .gate-beyond {
@@ -606,6 +640,15 @@ body {
 .gate-door {
   transform-style: preserve-3d;
   backface-visibility: hidden;
+  transition: transform 1.15s cubic-bezier(0.72, 0, 0.22, 1);
+}
+
+.gate-idle-peek:not(.gate-opening) .gate-door-left {
+  transform: translate3d(calc(-1 * clamp(0.7rem, 1.35vw, 1.45rem)), 0, 0);
+}
+
+.gate-idle-peek:not(.gate-opening) .gate-door-right {
+  transform: translate3d(clamp(0.7rem, 1.35vw, 1.45rem), 0, 0);
 }
 
 .gate-door-surface {
@@ -616,41 +659,41 @@ body {
     linear-gradient(180deg, #12090d, #090507 48%, #050304);
   box-shadow:
     inset 0 0 0 1px rgba(138, 113, 56, 0.08),
-    inset 0 0 3rem rgba(0, 0, 0, 0.68),
-    inset 0 0 0 0.45rem rgba(0, 0, 0, 0.18),
-    0 0 2rem rgba(0, 0, 0, 0.85);
+    inset 0 0 1.8rem rgba(0, 0, 0, 0.48),
+    inset 0 0 0 0.28rem rgba(0, 0, 0, 0.12),
+    0 0 1.5rem rgba(0, 0, 0, 0.76);
 }
 
 .gate-door-surface-left {
   background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.42), transparent 26%, transparent 72%, rgba(0, 17, 18, 0.16)),
-    radial-gradient(ellipse at 64% 45%, rgba(2, 92, 98, 0.12), transparent 24%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.2), transparent 24%, transparent 74%, rgba(0, 17, 18, 0.1)),
+    radial-gradient(ellipse at 64% 45%, rgba(2, 92, 98, 0.08), transparent 24%),
     url("/gate-door-left-haunted.png") right center / cover no-repeat,
     linear-gradient(180deg, #12090d, #090507 48%, #050304);
 }
 
 .gate-door-surface-right {
   background:
-    linear-gradient(90deg, rgba(0, 17, 18, 0.16), transparent 28%, transparent 74%, rgba(0, 0, 0, 0.42)),
-    radial-gradient(ellipse at 36% 45%, rgba(2, 92, 98, 0.12), transparent 24%),
+    linear-gradient(90deg, rgba(0, 17, 18, 0.1), transparent 26%, transparent 76%, rgba(0, 0, 0, 0.2)),
+    radial-gradient(ellipse at 36% 45%, rgba(2, 92, 98, 0.08), transparent 24%),
     url("/gate-door-right-haunted.png") left center / cover no-repeat,
     linear-gradient(180deg, #12090d, #090507 48%, #050304);
 }
 
 .gate-door-left .gate-door-surface {
   box-shadow:
-    inset -1.4rem 0 2rem rgba(0, 0, 0, 0.74),
+    inset -1rem 0 1.6rem rgba(0, 0, 0, 0.58),
     inset 0 0 0 1px rgba(138, 113, 56, 0.08),
-    inset 0 0 3rem rgba(0, 0, 0, 0.68),
-    0 0 2rem rgba(0, 0, 0, 0.85);
+    inset 0 0 1.7rem rgba(0, 0, 0, 0.5),
+    0 0 1.5rem rgba(0, 0, 0, 0.78);
 }
 
 .gate-door-right .gate-door-surface {
   box-shadow:
-    inset 1.4rem 0 2rem rgba(0, 0, 0, 0.74),
+    inset 1rem 0 1.6rem rgba(0, 0, 0, 0.58),
     inset 0 0 0 1px rgba(138, 113, 56, 0.08),
-    inset 0 0 3rem rgba(0, 0, 0, 0.68),
-    0 0 2rem rgba(0, 0, 0, 0.85);
+    inset 0 0 1.7rem rgba(0, 0, 0, 0.5),
+    0 0 1.5rem rgba(0, 0, 0, 0.78);
 }
 
 .gate-door-surface::before,
@@ -662,7 +705,7 @@ body {
 }
 
 .gate-door-surface::before {
-  opacity: 0.38;
+  opacity: 0.14;
   background:
     linear-gradient(105deg, transparent 0 18%, rgba(138, 113, 56, 0.07) 18.4%, transparent 19% 64%, rgba(0, 0, 0, 0.32) 64.5%, transparent 65%),
     radial-gradient(circle at 18% 28%, rgba(138, 113, 56, 0.09) 0 1px, transparent 2px),
@@ -695,7 +738,7 @@ body {
 }
 
 .gate-door-grain {
-  opacity: 0.045;
+  opacity: 0.014;
   mix-blend-mode: screen;
 }
 
@@ -780,84 +823,6 @@ body {
   bottom: 34%;
   left: 17%;
   transform: rotate(-6deg);
-}
-
-.gate-etched-mark {
-  position: absolute;
-  z-index: 2;
-  pointer-events: none;
-  color: rgba(147, 102, 70, 0.36);
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: clamp(1.2rem, 3.2vw, 4.4rem);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.92),
-    -1px -1px 0 rgba(230, 174, 116, 0.08),
-    1px 1px 0 rgba(0, 0, 0, 0.9),
-    0 0 0.55rem rgba(0, 0, 0, 0.82);
-  mix-blend-mode: screen;
-  filter: blur(0.01rem) saturate(0.6);
-  transform-origin: center;
-}
-
-.gate-etched-six {
-  left: 24%;
-  top: 28%;
-  transform: rotate(-8deg);
-}
-
-.gate-etched-seven-eleven {
-  left: 38%;
-  top: 49%;
-  font-size: clamp(1rem, 2.7vw, 3.45rem);
-  transform: rotate(2deg);
-}
-
-.gate-etched-broomer {
-  left: 46%;
-  bottom: 18%;
-  font-size: clamp(0.82rem, 2.1vw, 2.85rem);
-  letter-spacing: 0.08em;
-  transform: rotate(-4deg);
-}
-
-.gate-etched-johny {
-  left: 12%;
-  bottom: 28%;
-  font-size: clamp(0.8rem, 1.9vw, 2.55rem);
-  color: rgba(151, 104, 75, 0.3);
-  transform: rotate(7deg);
-}
-
-.gate-etched-seven {
-  left: 46%;
-  top: 20%;
-  transform: rotate(2deg);
-}
-
-.gate-etched-twenty-one {
-  left: 28%;
-  top: 54%;
-  font-size: clamp(1rem, 2.8vw, 3.65rem);
-  transform: rotate(-1deg);
-}
-
-.gate-etched-babbayaga {
-  left: 33%;
-  bottom: 18%;
-  font-size: clamp(0.8rem, 2vw, 2.75rem);
-  letter-spacing: 0.07em;
-  transform: rotate(1deg);
-}
-
-.gate-etched-sins {
-  right: 13%;
-  bottom: 29%;
-  font-size: clamp(0.82rem, 1.9vw, 2.55rem);
-  color: rgba(151, 104, 75, 0.3);
-  transform: rotate(-8deg);
 }
 
 @keyframes question-reveal {
@@ -1777,6 +1742,27 @@ body {
   animation-duration: 8s;
 }
 
+.dutchman-peek {
+  top: 50%;
+  left: 50%;
+  width: clamp(17rem, 28vw, 25rem);
+  opacity: 0;
+  clip-path: inset(8% 37% 18% 37%);
+  animation: dutchman-peek-through 7.2s ease-in-out both;
+}
+
+.dutchman-peek .dutchman-ghost {
+  animation-duration: 7.8s;
+}
+
+.dutchman-peek .ghost-character {
+  opacity: 0.34;
+  filter: saturate(0.82) brightness(0.66)
+    drop-shadow(0 0 0.3rem rgba(91, 255, 203, 0.2))
+    drop-shadow(0 0 1rem rgba(4, 83, 70, 0.48))
+    drop-shadow(0 0 2.2rem rgba(0, 0, 0, 0.96));
+}
+
 .dutchman-ghost {
   position: relative;
   isolation: isolate;
@@ -1875,6 +1861,61 @@ body {
   opacity: 0.86;
 }
 
+@keyframes gate-edge-smoke-drift {
+  0%,
+  100% {
+    opacity: 0.46;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  45% {
+    opacity: 0.64;
+    transform: translate3d(0.4rem, -0.25rem, 0) scale(1.03);
+  }
+  72% {
+    opacity: 0.5;
+    transform: translate3d(-0.35rem, 0.3rem, 0) scale(1.02);
+  }
+}
+
+@keyframes gate-edge-smoke-lift {
+  0%,
+  100% {
+    opacity: 0.36;
+    transform: translate3d(0, 0.7rem, 0) scale(0.96);
+  }
+  50% {
+    opacity: 0.68;
+    transform: translate3d(0, -0.45rem, 0) scale(1.04);
+  }
+}
+
+@keyframes dutchman-peek-through {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.82);
+  }
+  24% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.86);
+  }
+  42% {
+    opacity: 0.24;
+    transform: translate3d(-50%, -50%, 0) scale(0.94);
+  }
+  58% {
+    opacity: 0.4;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+  76% {
+    opacity: 0.18;
+    transform: translate3d(-50%, -50%, 0) scale(0.97);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.88);
+  }
+}
+
 .door-sigil-upper:hover,
 .door-sigil-upper:focus-visible,
 .door-sigil-lower:hover,
@@ -1916,15 +1957,33 @@ body {
     width: min(64vw, 14rem);
   }
 
-  .gate-etched-mark {
-    opacity: 0.8;
+  .dutchman-peek {
+    width: min(78vw, 17rem);
+    clip-path: inset(8% 35% 18% 35%);
   }
 
-  .gate-etched-broomer,
-  .gate-etched-babbayaga,
-  .gate-etched-johny,
-  .gate-etched-sins {
-    font-size: clamp(0.7rem, 5.6vw, 1.25rem);
+  .gate-idle-peek:not(.gate-opening) .gate-door-left {
+    transform: translate3d(-0.62rem, 0, 0);
+  }
+
+  .gate-idle-peek:not(.gate-opening) .gate-door-right {
+    transform: translate3d(0.62rem, 0, 0);
+  }
+
+  .gate-door-surface-left {
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.14), transparent 24%, transparent 74%, rgba(0, 17, 18, 0.08)),
+      radial-gradient(ellipse at 64% 45%, rgba(2, 92, 98, 0.06), transparent 24%),
+      url("/gate-door-left-haunted-mobile.png") right center / 100% 100% no-repeat,
+      linear-gradient(180deg, #12090d, #090507 48%, #050304);
+  }
+
+  .gate-door-surface-right {
+    background:
+      linear-gradient(90deg, rgba(0, 17, 18, 0.08), transparent 26%, transparent 76%, rgba(0, 0, 0, 0.14)),
+      radial-gradient(ellipse at 36% 45%, rgba(2, 92, 98, 0.06), transparent 24%),
+      url("/gate-door-right-haunted-mobile.png") left center / 100% 100% no-repeat,
+      linear-gradient(180deg, #12090d, #090507 48%, #050304);
   }
 
   .gate-choice-panel {
@@ -1984,6 +2043,8 @@ body {
   .chess-bubble-water,
   .gate-ambient,
   .gate-film-grain,
+  .gate-edge-smoke,
+  .gate-edge-smoke::before,
   .gate-door-surface::after,
   .gate-center-crack::after,
   .gate-seam-fog,
@@ -2011,6 +2072,8 @@ body {
   .dutchman-ghost,
   .ghost-aura,
   .ghost-smoke,
+  .gate-edge-smoke,
+  .gate-edge-smoke::before,
   .gate-film-grain,
   .gate-door-surface::after {
     animation: none;

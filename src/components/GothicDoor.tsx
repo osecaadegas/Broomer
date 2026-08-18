@@ -26,6 +26,7 @@ const rides = [
 ];
 
 type DoorSymbol = "upper" | "lower";
+type GhostMode = "cross" | "center" | "peek";
 
 const SIGIL_STEP_DEGREES = 45;
 const UPPER_SIGIL_TARGET = 180;
@@ -63,7 +64,7 @@ function DoorIdleEvent({
 }: Readonly<{
   active: boolean;
   index: number;
-  ghostMode: "cross" | "center";
+  ghostMode: GhostMode;
 }>) {
   if (!active || index < 0) return null;
 
@@ -77,7 +78,11 @@ function DoorIdleEvent({
         {index === 0 && (
           <div
             className={`dutchman-figure ${
-              ghostMode === "center" ? "dutchman-center" : "dutchman-crossing"
+              ghostMode === "center"
+                ? "dutchman-center"
+                : ghostMode === "peek"
+                  ? "dutchman-peek"
+                  : "dutchman-crossing"
             }`}
           >
             <div className="dutchman-ghost">
@@ -207,6 +212,55 @@ function playGateAtmosphere() {
   wind.start(now + 0.92);
 }
 
+function playIdleDoorCreak() {
+  const context = getGateAudioContext();
+  if (!context) return;
+
+  void context.resume().catch(() => undefined);
+  const now = context.currentTime;
+  const output = context.createGain();
+  output.gain.setValueAtTime(0.0001, now);
+  output.gain.exponentialRampToValueAtTime(0.045, now + 0.08);
+  output.gain.exponentialRampToValueAtTime(0.0001, now + 1.85);
+  output.connect(context.destination);
+
+  const groan = context.createOscillator();
+  const groanGain = context.createGain();
+  const groanFilter = context.createBiquadFilter();
+  groan.type = "sawtooth";
+  groan.frequency.setValueAtTime(66, now);
+  groan.frequency.linearRampToValueAtTime(41, now + 1.55);
+  groanFilter.type = "bandpass";
+  groanFilter.frequency.setValueAtTime(360, now);
+  groanFilter.frequency.linearRampToValueAtTime(190, now + 1.55);
+  groanFilter.Q.setValueAtTime(9, now);
+  envelope(groanGain, now + 0.12, 0.16, 1.55);
+  groan.connect(groanFilter).connect(groanGain).connect(output);
+  groan.start(now + 0.05);
+  groan.stop(now + 1.85);
+
+  const scrapeLength = Math.floor(context.sampleRate * 1.6);
+  const scrapeBuffer = context.createBuffer(
+    1,
+    scrapeLength,
+    context.sampleRate,
+  );
+  const scrapeData = scrapeBuffer.getChannelData(0);
+  for (let index = 0; index < scrapeLength; index += 1) {
+    scrapeData[index] = (Math.random() * 2 - 1) * 0.16;
+  }
+  const scrape = context.createBufferSource();
+  const scrapeGain = context.createGain();
+  const scrapeFilter = context.createBiquadFilter();
+  scrape.buffer = scrapeBuffer;
+  scrapeFilter.type = "highpass";
+  scrapeFilter.frequency.setValueAtTime(840, now);
+  scrapeFilter.frequency.linearRampToValueAtTime(460, now + 1.45);
+  envelope(scrapeGain, now + 0.26, 0.035, 1.2);
+  scrape.connect(scrapeFilter).connect(scrapeGain).connect(output);
+  scrape.start(now + 0.24);
+}
+
 export function GothicDoor({
   onOpen,
   onUno,
@@ -234,9 +288,7 @@ export function GothicDoor({
   const [symbolsAwake, setSymbolsAwake] = useState(false);
   const [idleEventIndex, setIdleEventIndex] = useState(-1);
   const [idleEventActive, setIdleEventActive] = useState(false);
-  const [idleGhostMode, setIdleGhostMode] = useState<"cross" | "center">(
-    "center",
-  );
+  const [idleGhostMode, setIdleGhostMode] = useState<GhostMode>("center");
   const adminPressTimerRef = useRef<number | null>(null);
   const adminClicksRef = useRef({ count: 0, firstAt: 0 });
 
@@ -400,10 +452,11 @@ export function GothicDoor({
       return nextIndex;
     };
 
-    const pickGhostMode = () => {
+    const pickGhostMode = (): GhostMode => {
       const buffer = new Uint32Array(1);
       crypto.getRandomValues(buffer);
-      return buffer[0] % 2 === 0 ? "center" : "cross";
+      const modes: GhostMode[] = ["center", "center", "cross", "peek"];
+      return modes[buffer[0] % modes.length];
     };
 
     const nextDelay = (isFirst = false) => {
@@ -418,7 +471,11 @@ export function GothicDoor({
       const eventIndex = shouldShowDutchmanFirst ? 0 : pickIdleEvent();
       shouldShowDutchmanFirst = false;
       if (eventIndex === 0) {
-        setIdleGhostMode(pickGhostMode());
+        const nextGhostMode = pickGhostMode();
+        setIdleGhostMode(nextGhostMode);
+        if (nextGhostMode === "peek") {
+          playIdleDoorCreak();
+        }
       }
       setIdleEventIndex(eventIndex);
       setIdleEventActive(true);
@@ -435,6 +492,7 @@ export function GothicDoor({
       window.clearTimeout(idleTimer);
       window.clearTimeout(clearTimer);
       shouldShowDutchmanFirst = false;
+      void getGateAudioContext()?.resume().catch(() => undefined);
       setIdleEventActive(false);
       idleTimer = window.setTimeout(revealIdleEvent, nextDelay());
     };
@@ -487,12 +545,17 @@ export function GothicDoor({
     <div
       className={`cursed-gate fixed inset-0 z-50 flex items-center justify-center bg-[#05030a] ${
         sliding ? "gate-opening" : ""
-      } ${doorsOpen ? "gate-destination-visible" : ""}`}
+      } ${doorsOpen ? "gate-destination-visible" : ""} ${
+        idleEventActive && idleEventIndex === 0 && idleGhostMode === "peek"
+          ? "gate-idle-peek"
+          : ""
+      }`}
     >
       <div aria-hidden className="gate-beyond pointer-events-none absolute inset-0" />
       <div aria-hidden className="gate-ambient pointer-events-none absolute inset-0" />
       <div aria-hidden className="gate-film-grain pointer-events-none absolute inset-0" />
       <div aria-hidden className="gate-heavy-vignette pointer-events-none absolute inset-0" />
+      <div aria-hidden className="gate-edge-smoke pointer-events-none absolute inset-0" />
       <DoorIdleEvent
         active={idleEventActive}
         index={idleEventIndex}
@@ -567,18 +630,6 @@ export function GothicDoor({
           <div className="pointer-events-none absolute inset-x-6 bottom-8 top-[85%] rounded-sm border border-[#2a1a10]/30 bg-[#0a0608]/50" />
           <span aria-hidden className="gate-scratch gate-scratch-one" />
           <span aria-hidden className="gate-scratch gate-scratch-two" />
-          <span aria-hidden className="gate-etched-mark gate-etched-six">
-            6
-          </span>
-          <span aria-hidden className="gate-etched-mark gate-etched-seven-eleven">
-            7.11
-          </span>
-          <span aria-hidden className="gate-etched-mark gate-etched-broomer">
-            BROOMER
-          </span>
-          <span aria-hidden className="gate-etched-mark gate-etched-johny">
-            Johny
-          </span>
         </div>
       </div>
 
@@ -650,18 +701,6 @@ export function GothicDoor({
           <div className="pointer-events-none absolute inset-x-6 bottom-8 top-[85%] rounded-sm border border-[#2a1a10]/30 bg-[#0a0608]/50" />
           <span aria-hidden className="gate-scratch gate-scratch-three" />
           <span aria-hidden className="gate-scratch gate-scratch-four" />
-          <span aria-hidden className="gate-etched-mark gate-etched-seven">
-            7
-          </span>
-          <span aria-hidden className="gate-etched-mark gate-etched-twenty-one">
-            21.03
-          </span>
-          <span aria-hidden className="gate-etched-mark gate-etched-babbayaga">
-            BABBAYAGA
-          </span>
-          <span aria-hidden className="gate-etched-mark gate-etched-sins">
-            sins
-          </span>
         </div>
       </div>
 
