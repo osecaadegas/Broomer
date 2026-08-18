@@ -247,7 +247,7 @@ export function GothicDoor({
           setIdleEventActive(false);
           idleTimer = window.setTimeout(revealIdleEvent, 10000);
         },
-        eventIndex === 0 ? 7800 : 4000,
+        eventIndex === 0 ? 9400 : 4000,
       );
     };
 
