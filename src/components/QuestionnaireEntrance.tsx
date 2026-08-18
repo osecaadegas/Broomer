@@ -14,13 +14,15 @@ interface Props {
   questions: Question[];
 }
 
-const CHESS_BUBBLES = Array.from({ length: 320 }, (_, index) => ({
+const CHESS_TRANSITION_MS = 3600;
+
+const CHESS_BUBBLES = Array.from({ length: 72 }, (_, index) => ({
   id: index,
-  left: (index * 47 + (index % 11) * 7) % 100,
-  size: 6 + ((index * 13) % 42),
-  delay: (index % 40) * 0.07 - 2.2,
-  duration: 3.8 + ((index * 17) % 18) * 0.055,
-  drift: ((index * 19) % 150) - 75,
+  left: (index * 37 + (index % 9) * 11) % 100,
+  size: 4 + ((index * 13) % 28),
+  delay: 0.08 + (index % 24) * 0.055,
+  duration: 2.4 + ((index * 17) % 16) * 0.045,
+  drift: ((index * 19) % 96) - 48,
 }));
 
 function ChessBubbleTransition() {
@@ -70,7 +72,10 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
 
   useEffect(() => {
     if (!chessRevealing) return;
-    const timer = window.setTimeout(() => setChessRevealing(false), 4800);
+    const timer = window.setTimeout(
+      () => setChessRevealing(false),
+      CHESS_TRANSITION_MS,
+    );
     return () => window.clearTimeout(timer);
   }, [chessRevealing]);
 
