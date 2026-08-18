@@ -67,7 +67,7 @@ function DoorIdleEvent({
       <div
         key={index}
         aria-hidden
-        className={`pointer-events-none absolute inset-0 z-30 ${getIdleEventClass(index)}`}
+        className={`pointer-events-none absolute inset-0 z-[58] ${getIdleEventClass(index)}`}
       >
         {index === 0 && (
           <div className="dutchman-crossing">
@@ -89,7 +89,7 @@ function DoorIdleEvent({
       </div>
       <p
         aria-live="polite"
-        className="door-idle-message pointer-events-none absolute left-1/2 top-[22%] z-40 -translate-x-1/2 whitespace-nowrap font-serif text-xs italic text-[#8a7138]/65"
+        className="door-idle-message pointer-events-none absolute left-1/2 top-[22%] z-[64] -translate-x-1/2 whitespace-nowrap font-serif text-xs italic text-[#8a7138]/65"
       >
         {IDLE_MESSAGES[index]}
       </p>
@@ -388,14 +388,17 @@ export function GothicDoor({
       return nextIndex;
     };
 
-    const nextDelay = () => {
+    const nextDelay = (isFirst = false) => {
+      if (isFirst) return 1800;
       const buffer = new Uint32Array(1);
       crypto.getRandomValues(buffer);
-      return 12000 + (buffer[0] % 15000);
+      return 6500 + (buffer[0] % 9000);
     };
 
+    let shouldShowDutchmanFirst = true;
     const revealIdleEvent = () => {
-      const eventIndex = pickIdleEvent();
+      const eventIndex = shouldShowDutchmanFirst ? 0 : pickIdleEvent();
+      shouldShowDutchmanFirst = false;
       setIdleEventIndex(eventIndex);
       setIdleEventActive(true);
       clearTimer = window.setTimeout(
@@ -410,11 +413,12 @@ export function GothicDoor({
     const markActive = () => {
       window.clearTimeout(idleTimer);
       window.clearTimeout(clearTimer);
+      shouldShowDutchmanFirst = false;
       setIdleEventActive(false);
       idleTimer = window.setTimeout(revealIdleEvent, nextDelay());
     };
 
-    idleTimer = window.setTimeout(revealIdleEvent, nextDelay());
+    idleTimer = window.setTimeout(revealIdleEvent, nextDelay(true));
     window.addEventListener("pointerdown", markActive);
     window.addEventListener("keydown", markActive);
 
@@ -486,7 +490,7 @@ export function GothicDoor({
             }}
           />
           <div aria-hidden className="gate-door-engraving gate-door-engraving-left" />
-          <div className="pointer-events-none absolute -top-px left-0 right-0 h-40">
+          <div className="gate-door-arch pointer-events-none absolute -top-px left-0 right-0 h-40">
             <svg
               viewBox="0 0 400 160"
               fill="none"
@@ -557,7 +561,7 @@ export function GothicDoor({
             }}
           />
           <div aria-hidden className="gate-door-engraving gate-door-engraving-right" />
-          <div className="pointer-events-none absolute -top-px left-0 right-0 h-40">
+          <div className="gate-door-arch pointer-events-none absolute -top-px left-0 right-0 h-40">
             <svg
               viewBox="0 0 400 160"
               fill="none"
@@ -725,7 +729,7 @@ export function GothicDoor({
               A rival answers.
             </p>
           )}
-          <div className="gate-seal-grid grid grid-cols-2 gap-4">
+          <div className="gate-seal-grid grid grid-cols-2">
             {rides.map((ride) => {
               const isValid = isEntryRide(ride.value);
               const isWrong =

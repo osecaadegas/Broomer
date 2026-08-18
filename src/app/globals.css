@@ -502,8 +502,8 @@ body {
 }
 
 .gate-film-grain {
-  z-index: 80;
-  opacity: 0.07;
+  z-index: 31;
+  opacity: 0.045;
   mix-blend-mode: screen;
   background-image:
     radial-gradient(circle at 17% 23%, rgba(255, 255, 255, 0.55) 0 1px, transparent 1px),
@@ -514,10 +514,10 @@ body {
 }
 
 .gate-heavy-vignette {
-  z-index: 82;
+  z-index: 32;
   background:
-    radial-gradient(ellipse at center, transparent 0 22%, rgba(1, 0, 2, 0.5) 62%, rgba(0, 0, 0, 0.94) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.72), transparent 24%, transparent 68%, rgba(0, 0, 0, 0.82));
+    radial-gradient(ellipse at center, transparent 0 28%, rgba(1, 0, 2, 0.48) 64%, rgba(0, 0, 0, 0.94) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.62) 9%, rgba(0, 0, 0, 0.18) 23%, transparent 42%, transparent 66%, rgba(0, 0, 0, 0.82) 100%);
 }
 
 .gate-beyond {
@@ -623,6 +623,21 @@ body {
     radial-gradient(ellipse at 50% 50%, rgba(2, 30, 33, 0.16), transparent 42%);
   transform: translateX(-115%) skewX(-8deg);
   animation: gate-surface-shadow 22s ease-in-out 8s infinite;
+}
+
+.gate-door-arch {
+  opacity: 0.68;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 58%, rgba(0, 0, 0, 0.58) 78%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0 58%, rgba(0, 0, 0, 0.58) 78%, transparent 100%);
+}
+
+.gate-door-arch::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 45%;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(12, 6, 9, 0.1) 40%, transparent);
 }
 
 .gate-door-grain {
@@ -882,6 +897,9 @@ body {
 }
 
 .gate-choice-panel {
+  z-index: 64;
+  width: min(90vw, 38rem);
+  row-gap: clamp(0.9rem, 2.6vh, 1.35rem);
   transform: translateY(0);
   transition:
     opacity 420ms ease,
@@ -890,8 +908,13 @@ body {
 }
 
 .gate-choice-title {
-  color: rgba(138, 113, 56, 0.42);
-  text-shadow: 0 0 1rem rgba(0, 0, 0, 0.95);
+  position: relative;
+  z-index: 2;
+  color: rgba(138, 113, 56, 0.62);
+  font-weight: 700;
+  text-shadow:
+    0 0 1rem rgba(0, 0, 0, 0.95),
+    0 0 0.65rem rgba(107, 85, 40, 0.16);
   transition:
     opacity 280ms ease,
     color 280ms ease;
@@ -899,7 +922,7 @@ body {
 
 .cursed-gate:hover .gate-choice-title,
 .cursed-gate:focus-within .gate-choice-title {
-  color: rgba(138, 113, 56, 0.78);
+  color: rgba(138, 113, 56, 0.9);
 }
 
 .gate-choice-panel-opening {
@@ -916,8 +939,29 @@ body {
   transform: scale(0.72);
 }
 
+.gate-choice-panel > p {
+  position: relative;
+  z-index: 2;
+}
+
+.gate-seal-grid {
+  --gate-seal-size: clamp(4.2rem, 7vw, 5.4rem);
+  position: relative;
+  z-index: 1;
+  grid-template-columns: repeat(2, var(--gate-seal-size));
+  grid-template-rows: repeat(2, var(--gate-seal-size));
+  place-items: center;
+  justify-content: center;
+  column-gap: clamp(4rem, 10vw, 9.5rem);
+  row-gap: clamp(2.35rem, 6.4vh, 4.9rem);
+  width: max-content;
+  max-width: 100%;
+}
+
 .gate-seal {
   isolation: isolate;
+  width: var(--gate-seal-size);
+  height: var(--gate-seal-size);
   border: 0;
   border-radius: 50%;
   color: rgba(138, 113, 56, 0.68);
@@ -983,12 +1027,13 @@ body {
 }
 
 .gate-seal-symbol {
-  font-size: 1.85rem;
+  font-size: clamp(1.9rem, 3.4vw, 2.35rem);
   filter: saturate(0.64) brightness(0.78);
   text-shadow: 0 0 0.8rem rgba(0, 0, 0, 0.82);
 }
 
 .gate-seal-image {
+  height: clamp(2.25rem, 4.6vw, 2.85rem);
   opacity: 0.68;
   filter: saturate(0.52) brightness(0.58) sepia(0.3);
 }
@@ -1476,28 +1521,29 @@ body {
 }
 
 .door-idle-message {
+  top: clamp(8.8rem, 24vh, 13.5rem);
   animation: door-listen 4s ease-in-out both;
 }
 
 @keyframes dutchman-cross-door {
   0% {
     opacity: 0;
-    transform: translate3d(-42vw, 2vh, 0) scale(0.9) rotate(-1deg);
+    transform: translate3d(-35vw, 2vh, 0) scale(0.9) rotate(-1deg);
   }
   22% {
-    opacity: 0.42;
-    transform: translate3d(-2vw, -0.8vh, 0) scale(0.93) rotate(-0.35deg);
+    opacity: 0.74;
+    transform: translate3d(-4vw, -0.8vh, 0) scale(0.94) rotate(-0.35deg);
   }
   48% {
-    transform: translate3d(47vw, 1.2vh, 0) scale(0.97) rotate(0.2deg);
+    transform: translate3d(42vw, 1.2vh, 0) scale(0.98) rotate(0.2deg);
   }
   74% {
-    opacity: 0.36;
-    transform: translate3d(95vw, -1vh, 0) scale(1) rotate(-0.15deg);
+    opacity: 0.58;
+    transform: translate3d(88vw, -1vh, 0) scale(1.01) rotate(-0.15deg);
   }
   100% {
     opacity: 0;
-    transform: translate3d(142vw, -2vh, 0) scale(1.03) rotate(1deg);
+    transform: translate3d(128vw, -2vh, 0) scale(1.04) rotate(1deg);
   }
 }
 
@@ -1553,9 +1599,9 @@ body {
 
 .dutchman-crossing {
   position: absolute;
-  top: 3%;
+  top: clamp(4.25rem, 14vh, 8.5rem);
   left: 0;
-  width: clamp(15rem, 27vw, 24rem);
+  width: clamp(18rem, 31vw, 29rem);
   aspect-ratio: 2 / 3;
   animation: dutchman-cross-door 9.2s cubic-bezier(0.45, 0.05, 0.25, 1) both;
   will-change: transform, opacity;
@@ -1571,9 +1617,10 @@ body {
 
 .ghost-character {
   z-index: 3;
-  opacity: 0.54;
-  filter: drop-shadow(0 0 0.22rem rgba(62, 255, 137, 0.16))
-    drop-shadow(0 0 0.7rem rgba(3, 18, 10, 0.62))
+  opacity: 0.74;
+  filter: saturate(1.08) brightness(1.08)
+    drop-shadow(0 0 0.3rem rgba(62, 255, 137, 0.24))
+    drop-shadow(0 0 0.9rem rgba(3, 65, 31, 0.74))
     drop-shadow(0 0 1.7rem rgba(0, 0, 0, 0.82));
 }
 
@@ -1636,6 +1683,8 @@ body {
   position: absolute;
   left: 50%;
   z-index: 70;
+  width: clamp(2.9rem, 4.5vw, 3.65rem);
+  height: clamp(2.9rem, 4.5vw, 3.65rem);
   margin: 0;
   transform: translateX(-50%);
   background: rgba(5, 3, 4, 0.88);
@@ -1645,20 +1694,66 @@ body {
     0 0 0 1px rgba(107, 85, 40, 0.3),
     0 0 1rem rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(4px);
+  opacity: 0.86;
+}
+
+.door-sigil-upper:hover,
+.door-sigil-upper:focus-visible,
+.door-sigil-lower:hover,
+.door-sigil-lower:focus-visible {
+  opacity: 1;
+  border-color: rgba(138, 113, 56, 0.58);
+  box-shadow:
+    inset 0 0.08rem 0 rgba(217, 188, 101, 0.12),
+    inset 0 0 0.8rem rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(107, 85, 40, 0.48),
+    0 0 1.15rem rgba(29, 129, 111, 0.26),
+    0 0 1rem rgba(0, 0, 0, 0.62);
+}
+
+.door-sigil-upper svg,
+.door-sigil-lower svg {
+  width: 86%;
+  height: 86%;
 }
 
 .door-sigil-upper {
-  top: max(0.75rem, env(safe-area-inset-top));
+  top: clamp(4.5rem, 15vh, 9.75rem);
 }
 
 .door-sigil-lower {
-  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  bottom: clamp(4.5rem, 15vh, 9.75rem);
 }
 
 @media (max-width: 640px) {
   .dutchman-crossing {
-    top: 5%;
-    width: min(58vw, 13rem);
+    top: clamp(5rem, 16vh, 7rem);
+    width: min(72vw, 16rem);
+  }
+
+  .gate-choice-panel {
+    width: min(94vw, 24rem);
+    row-gap: 0.8rem;
+  }
+
+  .gate-seal-grid {
+    --gate-seal-size: clamp(4rem, 20vw, 4.75rem);
+    column-gap: clamp(3.6rem, 16vw, 5.25rem);
+    row-gap: clamp(1.9rem, 5.8vh, 3rem);
+  }
+
+  .door-sigil-upper,
+  .door-sigil-lower {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .door-sigil-upper {
+    top: clamp(4rem, 15vh, 6.4rem);
+  }
+
+  .door-sigil-lower {
+    bottom: clamp(4rem, 15vh, 6.4rem);
   }
 
   .door-idle-breath {
