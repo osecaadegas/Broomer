@@ -14,15 +14,19 @@ interface Props {
   questions: Question[];
 }
 
-const CHESS_TRANSITION_MS = 3600;
+const CHESS_TRANSITION_MS = 4300;
 
-const CHESS_BUBBLES = Array.from({ length: 72 }, (_, index) => ({
+const CHESS_BUBBLES = Array.from({ length: 184 }, (_, index) => ({
   id: index,
-  left: (index * 37 + (index % 9) * 11) % 100,
-  size: 4 + ((index * 13) % 28),
-  delay: 0.08 + (index % 24) * 0.055,
-  duration: 2.4 + ((index * 17) % 16) * 0.045,
-  drift: ((index * 19) % 96) - 48,
+  left: (index * 29 + (index % 13) * 7) % 100,
+  bottom: -18 - ((index * 11) % 46),
+  size: 3 + ((index * 17) % 34),
+  delay: (index % 42) * 0.034,
+  duration: 2.65 + ((index * 19) % 24) * 0.05,
+  drift: ((index * 23) % 150) - 75,
+  opacity: 0.34 + ((index * 7) % 28) / 100,
+  startScale: 0.24 + ((index * 5) % 18) / 100,
+  endScale: 0.92 + ((index * 3) % 24) / 100,
 }));
 
 function ChessBubbleTransition() {
@@ -39,11 +43,15 @@ function ChessBubbleTransition() {
           style={
             {
               left: `${bubble.left}%`,
+              bottom: `${bubble.bottom}px`,
               width: bubble.size,
               height: bubble.size,
               animationDelay: `${bubble.delay}s`,
               animationDuration: `${bubble.duration}s`,
               "--bubble-drift": `${bubble.drift}px`,
+              "--bubble-opacity": bubble.opacity,
+              "--bubble-start-scale": bubble.startScale,
+              "--bubble-end-scale": bubble.endScale,
             } as React.CSSProperties
           }
         />

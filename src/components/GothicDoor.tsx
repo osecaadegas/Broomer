@@ -27,6 +27,7 @@ const rides = [
 
 type DoorSymbol = "upper" | "lower";
 type GhostMode = "cross" | "center" | "peek";
+type DoorIdleKind = "ghost" | "breath" | "listen" | "fingers" | "eye";
 
 const SIGIL_STEP_DEGREES = 45;
 const UPPER_SIGIL_TARGET = 180;
@@ -46,36 +47,47 @@ const IDLE_MESSAGES = [
   "A shadow crosses the other side.",
   "The door exhales.",
   "Something has been waiting politely.",
-  "The seam remembers your hand.",
   "Iron teeth settle in the dark.",
+  "The wound blinks.",
 ] as const;
 
-function getIdleEventClass(index: number): string {
-  if (index === 0) return "door-idle-shadow";
-  if (index === 1) return "door-idle-breath";
-  if (index === 3) return "door-idle-fingers";
+const IDLE_EVENT_KINDS: DoorIdleKind[] = [
+  "ghost",
+  "breath",
+  "listen",
+  "fingers",
+  "eye",
+];
+
+function getIdleEventClass(kind: DoorIdleKind): string {
+  if (kind === "ghost") return "door-idle-shadow";
+  if (kind === "breath") return "door-idle-breath";
+  if (kind === "fingers") return "door-idle-fingers";
+  if (kind === "eye") return "door-idle-eye-event";
   return "door-idle-listen";
 }
 
 function DoorIdleEvent({
   active,
-  index,
+  kind,
+  messageIndex,
   ghostMode,
 }: Readonly<{
   active: boolean;
-  index: number;
+  kind: DoorIdleKind | null;
+  messageIndex: number;
   ghostMode: GhostMode;
 }>) {
-  if (!active || index < 0) return null;
+  if (!active || kind == null || messageIndex < 0) return null;
 
   return (
     <>
       <div
-        key={index}
+        key={`${kind}-${messageIndex}`}
         aria-hidden
-        className={`pointer-events-none absolute inset-0 z-[58] ${getIdleEventClass(index)}`}
+        className={`pointer-events-none absolute inset-0 z-[58] ${getIdleEventClass(kind)}`}
       >
-        {index === 0 && (
+        {kind === "ghost" && (
           <div
             className={`dutchman-figure ${
               ghostMode === "center"
@@ -105,7 +117,7 @@ function DoorIdleEvent({
         aria-live="polite"
         className="door-idle-message pointer-events-none absolute left-1/2 top-[22%] z-[64] -translate-x-1/2 whitespace-nowrap font-serif text-xs italic text-[#8a7138]/65"
       >
-        {IDLE_MESSAGES[index]}
+        {IDLE_MESSAGES[messageIndex]}
       </p>
     </>
   );
@@ -286,7 +298,8 @@ export function GothicDoor({
   const [upperSigilRotation, setUpperSigilRotation] = useState(45);
   const [lowerSigilRotation, setLowerSigilRotation] = useState(225);
   const [symbolsAwake, setSymbolsAwake] = useState(false);
-  const [idleEventIndex, setIdleEventIndex] = useState(-1);
+  const [idleEventKind, setIdleEventKind] = useState<DoorIdleKind | null>(null);
+  const [idleMessageIndex, setIdleMessageIndex] = useState(-1);
   const [idleEventActive, setIdleEventActive] = useState(false);
   const [idleGhostMode, setIdleGhostMode] = useState<GhostMode>("center");
   const adminPressTimerRef = useRef<number | null>(null);
@@ -441,15 +454,15 @@ export function GothicDoor({
     let clearTimer = 0;
     let previousEventIndex = -1;
 
-    const pickIdleEvent = () => {
+    const pickIdleEvent = (): DoorIdleKind => {
       const buffer = new Uint32Array(1);
       crypto.getRandomValues(buffer);
-      let nextIndex = buffer[0] % IDLE_MESSAGES.length;
+      let nextIndex = buffer[0] % IDLE_EVENT_KINDS.length;
       if (nextIndex === previousEventIndex) {
-        nextIndex = (nextIndex + 1) % IDLE_MESSAGES.length;
+        nextIndex = (nextIndex + 1) % IDLE_EVENT_KINDS.length;
       }
       previousEventIndex = nextIndex;
-      return nextIndex;
+      return IDLE_EVENT_KINDS[nextIndex];
     };
 
     const pickGhostMode = (): GhostMode => {
@@ -468,23 +481,25 @@ export function GothicDoor({
 
     let shouldShowDutchmanFirst = true;
     const revealIdleEvent = () => {
-      const eventIndex = shouldShowDutchmanFirst ? 0 : pickIdleEvent();
+      const eventKind = shouldShowDutchmanFirst ? "ghost" : pickIdleEvent();
       shouldShowDutchmanFirst = false;
-      if (eventIndex === 0) {
+      const messageIndex = IDLE_EVENT_KINDS.indexOf(eventKind);
+      if (eventKind === "ghost") {
         const nextGhostMode = pickGhostMode();
         setIdleGhostMode(nextGhostMode);
         if (nextGhostMode === "peek") {
           playIdleDoorCreak();
         }
       }
-      setIdleEventIndex(eventIndex);
+      setIdleEventKind(eventKind);
+      setIdleMessageIndex(messageIndex);
       setIdleEventActive(true);
       clearTimer = window.setTimeout(
         () => {
           setIdleEventActive(false);
           idleTimer = window.setTimeout(revealIdleEvent, nextDelay());
         },
-        eventIndex === 0 ? 9400 : 4000,
+        eventKind === "ghost" ? 9400 : eventKind === "eye" ? 5200 : 4000,
       );
     };
 
@@ -546,10 +561,10 @@ export function GothicDoor({
       className={`cursed-gate fixed inset-0 z-50 flex items-center justify-center bg-[#05030a] ${
         sliding ? "gate-opening" : ""
       } ${doorsOpen ? "gate-destination-visible" : ""} ${
-        idleEventActive && idleEventIndex === 0 && idleGhostMode === "peek"
+        idleEventActive && idleEventKind === "ghost" && idleGhostMode === "peek"
           ? "gate-idle-peek"
           : ""
-      }`}
+      } ${idleEventActive && idleEventKind === "eye" ? "gate-idle-eye" : ""}`}
     >
       <div aria-hidden className="gate-beyond pointer-events-none absolute inset-0" />
       <div aria-hidden className="gate-ambient pointer-events-none absolute inset-0" />
@@ -558,7 +573,8 @@ export function GothicDoor({
       <div aria-hidden className="gate-edge-smoke pointer-events-none absolute inset-0" />
       <DoorIdleEvent
         active={idleEventActive}
-        index={idleEventIndex}
+        kind={idleEventKind}
+        messageIndex={idleMessageIndex}
         ghostMode={idleGhostMode}
       />
 
@@ -578,6 +594,13 @@ export function GothicDoor({
             }}
           />
           <div aria-hidden className="gate-door-engraving gate-door-engraving-left" />
+          <div aria-hidden className="door-hole-eye">
+            <span className="door-hole-eye-lid" />
+            <span className="door-hole-eye-orb">
+              <span className="door-hole-eye-iris" />
+            </span>
+            <span className="door-hole-eye-glint" />
+          </div>
           <div className="gate-door-arch pointer-events-none absolute -top-px left-0 right-0 h-40">
             <svg
               viewBox="0 0 400 160"
