@@ -422,17 +422,17 @@ body {
 @keyframes dutchman-cross-door {
   0% {
     opacity: 0;
-    transform: translate3d(-42vw, 2vh, 0) scale(0.88) rotate(-1.5deg);
+    transform: translate3d(-42vw, 2vh, 0) scale(0.9) rotate(-1deg);
   }
-  18% {
-    opacity: 0.96;
+  22% {
+    opacity: 0.7;
   }
-  72% {
-    opacity: 0.9;
+  74% {
+    opacity: 0.64;
   }
   100% {
     opacity: 0;
-    transform: translate3d(142vw, -3vh, 0) scale(1.05) rotate(1.5deg);
+    transform: translate3d(142vw, -2vh, 0) scale(1.03) rotate(1deg);
   }
 }
 
@@ -442,27 +442,27 @@ body {
     transform: translateY(0) rotate(-0.35deg);
   }
   38% {
-    transform: translateY(-0.45rem) rotate(0.45deg);
+    transform: translateY(-0.32rem) rotate(0.35deg);
   }
   68% {
-    transform: translateY(0.18rem) rotate(-0.15deg);
+    transform: translateY(0.12rem) rotate(-0.12deg);
   }
 }
 
 @keyframes dutchman-dark-aura {
   0%,
   100% {
-    opacity: 0.54;
+    opacity: 0.3;
     filter: brightness(0) blur(1rem);
     transform: scale(1.04) rotate(-0.4deg);
   }
   46% {
-    opacity: 0.9;
-    filter: brightness(0) blur(1.75rem);
-    transform: scale(1.13) rotate(0.55deg);
+    opacity: 0.54;
+    filter: brightness(0) blur(1.6rem);
+    transform: scale(1.11) rotate(0.45deg);
   }
   76% {
-    opacity: 0.66;
+    opacity: 0.38;
     filter: brightness(0) blur(1.3rem);
     transform: scale(1.08) rotate(-0.2deg);
   }
@@ -474,10 +474,10 @@ body {
     transform: translate3d(-12%, 18%, 0) scale(0.72) rotate(-8deg);
   }
   28% {
-    opacity: 0.42;
+    opacity: 0.24;
   }
   70% {
-    opacity: 0.2;
+    opacity: 0.12;
     transform: translate3d(10%, -8%, 0) scale(1.12) rotate(5deg);
   }
   100% {
@@ -492,7 +492,7 @@ body {
   left: 0;
   width: clamp(15rem, 27vw, 24rem);
   aspect-ratio: 2 / 3;
-  animation: dutchman-cross-door 3.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: dutchman-cross-door 6.6s cubic-bezier(0.45, 0.05, 0.25, 1) both;
   will-change: transform, opacity;
 }
 
@@ -501,15 +501,15 @@ body {
   isolation: isolate;
   width: 100%;
   height: 100%;
-  animation: ghost-float 2.9s ease-in-out infinite;
+  animation: ghost-float 4.7s ease-in-out infinite;
 }
 
 .ghost-character {
   z-index: 3;
-  filter:
-    drop-shadow(0 0 0.28rem rgba(62, 255, 137, 0.4))
-    drop-shadow(0 0 0.8rem rgba(3, 18, 10, 0.94))
-    drop-shadow(0 0 2rem rgba(0, 0, 0, 1));
+  opacity: 0.8;
+  filter: drop-shadow(0 0 0.24rem rgba(62, 255, 137, 0.28))
+    drop-shadow(0 0 0.75rem rgba(3, 18, 10, 0.82))
+    drop-shadow(0 0 1.8rem rgba(0, 0, 0, 0.96));
 }
 
 .ghost-aura {
@@ -518,8 +518,8 @@ body {
   z-index: 1;
   background: url("/flyingshadow.png") center / contain no-repeat;
   filter: brightness(0) blur(1.2rem);
-  opacity: 0.72;
-  animation: dutchman-dark-aura 3.3s ease-in-out infinite;
+  opacity: 0.46;
+  animation: dutchman-dark-aura 5.2s ease-in-out infinite;
   will-change: transform, opacity, filter;
 }
 
@@ -534,7 +534,7 @@ body {
     transparent 72%
   );
   filter: blur(1.4rem);
-  animation: ghost-smoke-wisp 4.8s ease-in-out infinite;
+  animation: ghost-smoke-wisp 7.2s ease-in-out infinite;
   will-change: transform, opacity;
 }
 
@@ -545,13 +545,13 @@ body {
 .ghost-smoke-two {
   inset: 32% -20% 16% 35%;
   animation-delay: -1.7s;
-  animation-duration: 5.6s;
+  animation-duration: 8.1s;
 }
 
 .ghost-smoke-three {
   inset: 54% 10% -12% 5%;
   animation-delay: -3.1s;
-  animation-duration: 6.2s;
+  animation-duration: 9.3s;
 }
 
 @keyframes door-breathe-mobile {

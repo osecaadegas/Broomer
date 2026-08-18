@@ -235,14 +235,20 @@ export function GothicDoor({
 
     let idleTimer = 0;
     let clearTimer = 0;
+    let nextEventIndex = 0;
 
     const revealIdleEvent = () => {
-      setIdleEventIndex((current) => (current + 1) % IDLE_MESSAGES.length);
+      const eventIndex = nextEventIndex;
+      nextEventIndex = (nextEventIndex + 1) % IDLE_MESSAGES.length;
+      setIdleEventIndex(eventIndex);
       setIdleEventActive(true);
-      clearTimer = window.setTimeout(() => {
-        setIdleEventActive(false);
-        idleTimer = window.setTimeout(revealIdleEvent, 10000);
-      }, 4000);
+      clearTimer = window.setTimeout(
+        () => {
+          setIdleEventActive(false);
+          idleTimer = window.setTimeout(revealIdleEvent, 10000);
+        },
+        eventIndex === 0 ? 6800 : 4000,
+      );
     };
 
     const markActive = () => {
