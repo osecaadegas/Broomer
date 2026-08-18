@@ -275,7 +275,9 @@ body {
   flex: none;
   border: 0;
   background: transparent;
-  transition: filter 250ms ease, transform 250ms ease;
+  transition:
+    filter 250ms ease,
+    transform 250ms ease;
 }
 
 .ritual-candle::after {
@@ -313,7 +315,13 @@ body {
   width: 0.72rem;
   height: 1.15rem;
   border-radius: 50% 50% 48% 48%;
-  background: radial-gradient(circle at 50% 65%, #fff4b0 0 18%, #e8a83e 38%, #a43b20 68%, transparent 72%);
+  background: radial-gradient(
+    circle at 50% 65%,
+    #fff4b0 0 18%,
+    #e8a83e 38%,
+    #a43b20 68%,
+    transparent 72%
+  );
   filter: drop-shadow(0 0 0.55rem rgba(232, 168, 62, 0.85));
   opacity: 0;
   transform: translateX(-50%) scale(0.4);
@@ -327,7 +335,9 @@ body {
 
 .ritual-candle-lit::after {
   background: linear-gradient(90deg, #786440, #d7bd7e 48%, #75613d);
-  box-shadow: inset 0 -0.5rem 0.8rem rgba(0, 0, 0, 0.22), 0 0 1rem rgba(224, 164, 57, 0.22);
+  box-shadow:
+    inset 0 -0.5rem 0.8rem rgba(0, 0, 0, 0.22),
+    0 0 1rem rgba(224, 164, 57, 0.22);
 }
 
 .ritual-candle-awake {
@@ -335,15 +345,29 @@ body {
 }
 
 @keyframes ritual-flame-dance {
-  from { transform: translateX(-50%) rotate(-3deg) scale(0.92, 1.04); }
-  to { transform: translateX(-50%) rotate(3deg) scale(1.06, 0.94); }
+  from {
+    transform: translateX(-50%) rotate(-3deg) scale(0.92, 1.04);
+  }
+  to {
+    transform: translateX(-50%) rotate(3deg) scale(1.06, 0.94);
+  }
 }
 
 @keyframes door-shadow-pass {
-  0% { opacity: 0; transform: translateX(-35%) skewX(-10deg); }
-  28% { opacity: 0.34; }
-  72% { opacity: 0.22; }
-  100% { opacity: 0; transform: translateX(135%) skewX(-10deg); }
+  0% {
+    opacity: 0;
+    transform: translateX(-35%) skewX(-10deg);
+  }
+  28% {
+    opacity: 0.34;
+  }
+  72% {
+    opacity: 0.22;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(135%) skewX(-10deg);
+  }
 }
 
 .door-idle-shadow::before {
@@ -351,28 +375,54 @@ body {
   position: absolute;
   inset: 8% auto 8% -22%;
   width: 28%;
-  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.9), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, 0.9),
+    transparent
+  );
   filter: blur(1.8rem);
   animation: door-shadow-pass 3.8s ease-in-out both;
 }
 
 @keyframes door-breathe {
-  0%, 100% { opacity: 0; transform: scale(0.96); }
-  45% { opacity: 0.4; transform: scale(1.03); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  45% {
+    opacity: 0.4;
+    transform: scale(1.03);
+  }
 }
 
 .door-idle-breath {
-  background: radial-gradient(ellipse at center, rgba(139, 93, 45, 0.14), transparent 48%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(139, 93, 45, 0.14),
+    transparent 48%
+  );
   animation: door-breathe 4s ease-in-out both;
 }
 
 @keyframes door-listen {
-  0%, 100% { opacity: 0; }
-  45%, 70% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0;
+  }
+  45%,
+  70% {
+    opacity: 1;
+  }
 }
 
 .door-idle-listen {
-  background: radial-gradient(circle at 50% 48%, rgba(201, 168, 76, 0.12), transparent 8%);
+  background: radial-gradient(
+    circle at 50% 48%,
+    rgba(201, 168, 76, 0.12),
+    transparent 8%
+  );
   animation: door-listen 4s ease-in-out both;
 }
 
@@ -380,10 +430,167 @@ body {
   animation: door-listen 4s ease-in-out both;
 }
 
+.door-person-shadow {
+  display: none;
+}
+
+@keyframes door-shadow-pass-mobile {
+  0% {
+    opacity: 0;
+    transform: translateX(-32vw) scale(0.9);
+  }
+  22% {
+    opacity: 0.9;
+  }
+  70% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(132vw) scale(1.08);
+  }
+}
+
+@keyframes door-breathe-mobile {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: scale(0.94);
+  }
+  45% {
+    opacity: 0.92;
+    transform: scale(1.08);
+  }
+}
+
+@media (max-width: 640px) {
+  .door-sigil-upper,
+  .door-sigil-lower {
+    position: absolute;
+    left: 50%;
+    z-index: 70;
+    margin: 0;
+    transform: translateX(-50%);
+    background: rgba(12, 6, 9, 0.82);
+    box-shadow:
+      0 0 0 1px rgba(201, 168, 76, 0.2),
+      0 0 1.25rem rgba(201, 168, 76, 0.2);
+    backdrop-filter: blur(4px);
+  }
+
+  .door-sigil-upper {
+    top: max(0.75rem, env(safe-area-inset-top));
+  }
+
+  .door-sigil-lower {
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .door-idle-shadow::before {
+    display: none;
+  }
+
+  .door-person-shadow {
+    position: absolute;
+    inset: 0;
+    display: block;
+    animation: door-shadow-pass-mobile 3.8s ease-in-out both;
+    will-change: transform, opacity;
+  }
+
+  .door-person-body {
+    position: absolute;
+    inset: 21% auto 8% -27vw;
+    width: min(36vw, 9rem);
+    background: linear-gradient(
+      90deg,
+      rgba(10, 3, 10, 0.98),
+      rgba(77, 51, 59, 0.94) 48%,
+      rgba(10, 3, 10, 0.98)
+    );
+    clip-path: polygon(
+      38% 0,
+      62% 0,
+      75% 10%,
+      88% 29%,
+      80% 35%,
+      69% 22%,
+      66% 54%,
+      68% 100%,
+      55% 100%,
+      50% 58%,
+      45% 100%,
+      32% 100%,
+      34% 54%,
+      31% 22%,
+      20% 35%,
+      12% 29%,
+      25% 10%
+    );
+    filter:
+      blur(0.12rem)
+      drop-shadow(0 0 0.16rem rgba(237, 202, 137, 0.72))
+      drop-shadow(0 0 0.75rem rgba(177, 113, 55, 0.55))
+      drop-shadow(0 0 1.3rem rgba(0, 0, 0, 0.98));
+  }
+
+  .door-person-head {
+    position: absolute;
+    top: 10%;
+    left: calc(-27vw + min(11vw, 2.75rem));
+    width: min(14vw, 3.5rem);
+    aspect-ratio: 0.82;
+    border-radius: 48% 48% 44% 44%;
+    background: radial-gradient(
+      circle at 48% 42%,
+      rgba(82, 55, 62, 0.94),
+      rgba(10, 3, 10, 0.99) 68%
+    );
+    filter:
+      blur(0.12rem)
+      drop-shadow(0 0 0.14rem rgba(237, 202, 137, 0.72))
+      drop-shadow(0 0 0.65rem rgba(177, 113, 55, 0.55))
+      drop-shadow(0 0 1rem rgba(0, 0, 0, 0.98));
+  }
+
+  .door-idle-breath {
+    background:
+      radial-gradient(
+        ellipse at center,
+        rgba(213, 151, 66, 0.3),
+        rgba(100, 56, 32, 0.16) 38%,
+        transparent 68%
+      ),
+      linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.34),
+        transparent 35%,
+        transparent 65%,
+        rgba(0, 0, 0, 0.34)
+      );
+    box-shadow: inset 0 0 4rem rgba(208, 137, 53, 0.24);
+    animation: door-breathe-mobile 4s ease-in-out both;
+  }
+
+  .door-idle-message {
+    color: rgba(223, 199, 125, 0.9);
+    font-size: 0.8rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+  }
+}
+
 .candle-lighting-enchanted {
   background:
-    radial-gradient(circle at 50% 18%, rgba(230, 195, 108, 0.16), transparent 30%),
-    radial-gradient(circle at 18% 70%, rgba(95, 42, 120, 0.13), transparent 34%),
+    radial-gradient(
+      circle at 50% 18%,
+      rgba(230, 195, 108, 0.16),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 18% 70%,
+      rgba(95, 42, 120, 0.13),
+      transparent 34%
+    ),
     radial-gradient(circle at 82% 72%, rgba(112, 36, 73, 0.13), transparent 34%);
 }
 
@@ -759,3 +966,4 @@ body {
 .animate-seam-fade-in {
   animation: seam-fade-in 0.6s ease-out 1.4s both;
 }
+

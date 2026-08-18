@@ -8,6 +8,7 @@ import type { PlaneAnswer } from "@/lib/supabase/types";
 interface Props {
   onOpen: () => void;
   onUno: () => void;
+  onChess: () => void;
   onPrepareMusic: () => void;
   onStartMusic: () => void;
 }
@@ -23,13 +24,6 @@ const rides = [
   { value: "🚲", char: "🚲", image: null, label: "bike" },
   { value: "🧹", char: "🧹", image: null, label: "broom" },
 ];
-
-const secretRide = {
-  value: "moon",
-  char: "🌙",
-  image: null,
-  label: "moonlit passage",
-};
 
 const SYMBOL_SEQUENCE = ["upper", "lower", "upper", "lower", "upper"] as const;
 type DoorSymbol = (typeof SYMBOL_SEQUENCE)[number];
@@ -49,7 +43,10 @@ function getIdleEventClass(index: number): string {
   return "door-idle-listen";
 }
 
-function DoorIdleEvent({ active, index }: Readonly<{ active: boolean; index: number }>) {
+function DoorIdleEvent({
+  active,
+  index,
+}: Readonly<{ active: boolean; index: number }>) {
   if (!active || index < 0) return null;
 
   return (
@@ -58,7 +55,14 @@ function DoorIdleEvent({ active, index }: Readonly<{ active: boolean; index: num
         key={index}
         aria-hidden
         className={`pointer-events-none absolute inset-0 z-30 ${getIdleEventClass(index)}`}
-      />
+      >
+        {index === 0 && (
+          <div className="door-person-shadow">
+            <span className="door-person-head" />
+            <span className="door-person-body" />
+          </div>
+        )}
+      </div>
       <p
         aria-live="polite"
         className="door-idle-message pointer-events-none absolute left-1/2 top-[22%] z-40 -translate-x-1/2 whitespace-nowrap font-serif text-xs italic text-[#9f895d]/70"
@@ -70,9 +74,7 @@ function DoorIdleEvent({ active, index }: Readonly<{ active: boolean; index: num
 }
 
 function isEntryRide(value: string): boolean {
-  return (
-    value === "🧹" || value === "✈️" || value === "uno" || value === "moon"
-  );
+  return value === "🧹" || value === "✈️" || value === "uno";
 }
 
 function getRideSelectionClass(isValid: boolean, isWrong: boolean): string {
@@ -101,7 +103,6 @@ function beginRideSelection(
   setSliding(true);
   setTimeout(() => {
     if (value === "uno") onUno();
-    else if (value === "moon") onOpen();
     else setDoorsOpen(true);
   }, 900);
 }
@@ -109,6 +110,7 @@ function beginRideSelection(
 export function GothicDoor({
   onOpen,
   onUno,
+  onChess,
   onPrepareMusic,
   onStartMusic,
 }: Readonly<Props>) {
@@ -150,7 +152,11 @@ export function GothicDoor({
     if (symbol === SYMBOL_SEQUENCE[symbolProgress]) {
       const nextProgress = symbolProgress + 1;
       setSymbolProgress(nextProgress);
-      if (nextProgress === SYMBOL_SEQUENCE.length) setSymbolsAwake(true);
+      if (nextProgress === SYMBOL_SEQUENCE.length) {
+        setSymbolsAwake(true);
+        setSliding(true);
+        window.setTimeout(onChess, 900);
+      }
       return;
     }
 
@@ -434,7 +440,7 @@ export function GothicDoor({
           type="button"
           onClick={() => handleSymbolTap("upper")}
           aria-label="Upper door sigil"
-          className="pointer-events-auto mt-4 flex h-10 w-10 items-center justify-center rounded-full transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a84c]"
+          className="door-sigil-upper pointer-events-auto mt-4 flex h-10 w-10 items-center justify-center rounded-full transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a84c]"
           style={{
             filter: `drop-shadow(0 0 ${symbolsAwake ? 12 : symbolProgress * 2}px rgba(223,199,125,${symbolsAwake ? 0.9 : 0.35}))`,
           }}
@@ -472,7 +478,7 @@ export function GothicDoor({
           type="button"
           onClick={() => handleSymbolTap("lower")}
           aria-label="Lower door sigil"
-          className="pointer-events-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a84c]"
+          className="door-sigil-lower pointer-events-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a84c]"
           style={{
             filter: `drop-shadow(0 0 ${symbolsAwake ? 12 : symbolProgress * 2}px rgba(223,199,125,${symbolsAwake ? 0.9 : 0.35}))`,
           }}
@@ -511,11 +517,11 @@ export function GothicDoor({
           )}
           {symbolsAwake && (
             <p className="animate-card-in font-serif text-sm italic text-[#dfc77d]">
-              A fifth path wakes.
+              A rival answers.
             </p>
           )}
           <div className="grid grid-cols-2 gap-3">
-            {(symbolsAwake ? [...rides, secretRide] : rides).map((ride) => {
+            {rides.map((ride) => {
               const isValid = isEntryRide(ride.value);
               const isWrong = picked === ride.value && !isValid;
               const selectionClass = getRideSelectionClass(isValid, isWrong);
