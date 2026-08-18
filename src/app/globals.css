@@ -425,10 +425,10 @@ body {
     transform: translate3d(-42vw, 2vh, 0) scale(0.9) rotate(-1deg);
   }
   22% {
-    opacity: 0.7;
+    opacity: 0.56;
   }
   74% {
-    opacity: 0.64;
+    opacity: 0.5;
   }
   100% {
     opacity: 0;
@@ -452,17 +452,17 @@ body {
 @keyframes dutchman-dark-aura {
   0%,
   100% {
-    opacity: 0.3;
+    opacity: 0.22;
     filter: brightness(0) blur(1rem);
     transform: scale(1.04) rotate(-0.4deg);
   }
   46% {
-    opacity: 0.54;
+    opacity: 0.42;
     filter: brightness(0) blur(1.6rem);
     transform: scale(1.11) rotate(0.45deg);
   }
   76% {
-    opacity: 0.38;
+    opacity: 0.28;
     filter: brightness(0) blur(1.3rem);
     transform: scale(1.08) rotate(-0.2deg);
   }
@@ -474,10 +474,10 @@ body {
     transform: translate3d(-12%, 18%, 0) scale(0.72) rotate(-8deg);
   }
   28% {
-    opacity: 0.24;
+    opacity: 0.18;
   }
   70% {
-    opacity: 0.12;
+    opacity: 0.08;
     transform: translate3d(10%, -8%, 0) scale(1.12) rotate(5deg);
   }
   100% {
@@ -492,7 +492,7 @@ body {
   left: 0;
   width: clamp(15rem, 27vw, 24rem);
   aspect-ratio: 2 / 3;
-  animation: dutchman-cross-door 6.6s cubic-bezier(0.45, 0.05, 0.25, 1) both;
+  animation: dutchman-cross-door 7.6s cubic-bezier(0.45, 0.05, 0.25, 1) both;
   will-change: transform, opacity;
 }
 
@@ -501,15 +501,15 @@ body {
   isolation: isolate;
   width: 100%;
   height: 100%;
-  animation: ghost-float 4.7s ease-in-out infinite;
+  animation: ghost-float 5.4s ease-in-out infinite;
 }
 
 .ghost-character {
   z-index: 3;
-  opacity: 0.8;
-  filter: drop-shadow(0 0 0.24rem rgba(62, 255, 137, 0.28))
-    drop-shadow(0 0 0.75rem rgba(3, 18, 10, 0.82))
-    drop-shadow(0 0 1.8rem rgba(0, 0, 0, 0.96));
+  opacity: 0.68;
+  filter: drop-shadow(0 0 0.22rem rgba(62, 255, 137, 0.22))
+    drop-shadow(0 0 0.7rem rgba(3, 18, 10, 0.76))
+    drop-shadow(0 0 1.7rem rgba(0, 0, 0, 0.92));
 }
 
 .ghost-aura {
@@ -518,8 +518,8 @@ body {
   z-index: 1;
   background: url("/flyingshadow.png") center / contain no-repeat;
   filter: brightness(0) blur(1.2rem);
-  opacity: 0.46;
-  animation: dutchman-dark-aura 5.2s ease-in-out infinite;
+  opacity: 0.36;
+  animation: dutchman-dark-aura 6s ease-in-out infinite;
   will-change: transform, opacity, filter;
 }
 
@@ -534,7 +534,7 @@ body {
     transparent 72%
   );
   filter: blur(1.4rem);
-  animation: ghost-smoke-wisp 7.2s ease-in-out infinite;
+  animation: ghost-smoke-wisp 8.2s ease-in-out infinite;
   will-change: transform, opacity;
 }
 
@@ -545,13 +545,13 @@ body {
 .ghost-smoke-two {
   inset: 32% -20% 16% 35%;
   animation-delay: -1.7s;
-  animation-duration: 8.1s;
+  animation-duration: 9.1s;
 }
 
 .ghost-smoke-three {
   inset: 54% 10% -12% 5%;
   animation-delay: -3.1s;
-  animation-duration: 9.3s;
+  animation-duration: 10.4s;
 }
 
 @keyframes door-breathe-mobile {
