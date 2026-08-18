@@ -418,19 +418,55 @@ body {
 
 @keyframes slide-door-left {
   0% {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
+  }
+  10% {
+    transform: translate3d(0, 0, -2px);
+  }
+  18% {
+    transform: translate3d(-2px, 0, -3px);
+  }
+  22% {
+    transform: translate3d(1px, 0, -2px);
+  }
+  38% {
+    transform: translate3d(0, 0, -2px);
+  }
+  58% {
+    transform: translate3d(-9%, 0, -1px);
+  }
+  78% {
+    transform: translate3d(-52%, 0, 0);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translate3d(-104%, 0, 0);
   }
 }
 
 @keyframes slide-door-right {
   0% {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
+  }
+  10% {
+    transform: translate3d(0, 0, -2px);
+  }
+  18% {
+    transform: translate3d(2px, 0, -3px);
+  }
+  22% {
+    transform: translate3d(-1px, 0, -2px);
+  }
+  38% {
+    transform: translate3d(0, 0, -2px);
+  }
+  58% {
+    transform: translate3d(9%, 0, -1px);
+  }
+  78% {
+    transform: translate3d(52%, 0, 0);
   }
   100% {
-    transform: translateX(100%);
+    transform: translate3d(104%, 0, 0);
   }
 }
 
@@ -449,6 +485,234 @@ body {
   }
 }
 
+.cursed-gate {
+  isolation: isolate;
+  perspective: 54rem;
+  overflow: hidden;
+}
+
+.gate-ambient {
+  z-index: 2;
+  opacity: 0.42;
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(42, 6, 18, 0.3), transparent 34%),
+    radial-gradient(ellipse at 50% 50%, rgba(1, 42, 50, 0.08), transparent 26%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.55), transparent 36%, transparent 64%, rgba(0, 0, 0, 0.55));
+  animation: gate-ambient-breath 7.5s ease-in-out infinite;
+}
+
+.gate-film-grain {
+  z-index: 80;
+  opacity: 0.07;
+  mix-blend-mode: screen;
+  background-image:
+    radial-gradient(circle at 17% 23%, rgba(255, 255, 255, 0.55) 0 1px, transparent 1px),
+    radial-gradient(circle at 69% 61%, rgba(217, 188, 101, 0.4) 0 1px, transparent 1px),
+    radial-gradient(circle at 41% 83%, rgba(113, 210, 189, 0.26) 0 1px, transparent 1px);
+  background-size: 31px 37px, 43px 47px, 67px 71px;
+  animation: gate-grain-shift 1.8s steps(3, end) infinite;
+}
+
+.gate-heavy-vignette {
+  z-index: 82;
+  background:
+    radial-gradient(ellipse at center, transparent 0 22%, rgba(1, 0, 2, 0.5) 62%, rgba(0, 0, 0, 0.94) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.72), transparent 24%, transparent 68%, rgba(0, 0, 0, 0.82));
+}
+
+.gate-beyond {
+  z-index: 5;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse at 50% 47%, rgba(11, 63, 66, 0.4), transparent 18%),
+    radial-gradient(ellipse at 50% 55%, rgba(0, 8, 9, 0.94), #000 58%),
+    #000;
+}
+
+.gate-beyond::before,
+.gate-beyond::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gate-beyond::before {
+  width: 12vw;
+  margin-left: 44vw;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.72), transparent);
+  filter: blur(0.9rem);
+  transform: translateX(-18vw) scaleY(1.15);
+}
+
+.gate-beyond::after {
+  background:
+    radial-gradient(ellipse at 49% 54%, rgba(62, 124, 115, 0.18), transparent 7%),
+    radial-gradient(ellipse at 54% 46%, rgba(0, 0, 0, 0.62), transparent 13%);
+  filter: blur(0.35rem);
+}
+
+.gate-opening .gate-beyond {
+  animation: gate-beyond-reveal 3.2s ease-out both;
+}
+
+.gate-opening .gate-beyond::before {
+  animation: gate-behind-shadow 3.2s ease-out both;
+}
+
+.gate-opening .gate-beyond::after {
+  animation: gate-distant-glow 3.2s ease-out both;
+}
+
+.gate-door {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.gate-door-surface {
+  background:
+    radial-gradient(ellipse at 50% 12%, rgba(54, 13, 30, 0.28), transparent 42%),
+    radial-gradient(ellipse at 46% 82%, rgba(2, 38, 35, 0.11), transparent 24%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018), transparent 10%, transparent 90%, rgba(255, 255, 255, 0.014)),
+    linear-gradient(180deg, #12090d, #090507 48%, #050304);
+  box-shadow:
+    inset 0 0 0 1px rgba(138, 113, 56, 0.08),
+    inset 0 0 3rem rgba(0, 0, 0, 0.68),
+    inset 0 0 0 0.45rem rgba(0, 0, 0, 0.18),
+    0 0 2rem rgba(0, 0, 0, 0.85);
+}
+
+.gate-door-left .gate-door-surface {
+  box-shadow:
+    inset -1.4rem 0 2rem rgba(0, 0, 0, 0.74),
+    inset 0 0 0 1px rgba(138, 113, 56, 0.08),
+    inset 0 0 3rem rgba(0, 0, 0, 0.68),
+    0 0 2rem rgba(0, 0, 0, 0.85);
+}
+
+.gate-door-right .gate-door-surface {
+  box-shadow:
+    inset 1.4rem 0 2rem rgba(0, 0, 0, 0.74),
+    inset 0 0 0 1px rgba(138, 113, 56, 0.08),
+    inset 0 0 3rem rgba(0, 0, 0, 0.68),
+    0 0 2rem rgba(0, 0, 0, 0.85);
+}
+
+.gate-door-surface::before,
+.gate-door-surface::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.gate-door-surface::before {
+  opacity: 0.38;
+  background:
+    linear-gradient(105deg, transparent 0 18%, rgba(138, 113, 56, 0.07) 18.4%, transparent 19% 64%, rgba(0, 0, 0, 0.32) 64.5%, transparent 65%),
+    radial-gradient(circle at 18% 28%, rgba(138, 113, 56, 0.09) 0 1px, transparent 2px),
+    radial-gradient(circle at 72% 68%, rgba(33, 4, 9, 0.7) 0 2px, transparent 5px),
+    repeating-linear-gradient(86deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 11px);
+}
+
+.gate-door-surface::after {
+  opacity: 0;
+  background:
+    linear-gradient(105deg, transparent, rgba(0, 0, 0, 0.52) 45%, transparent 58%),
+    radial-gradient(ellipse at 50% 50%, rgba(2, 30, 33, 0.16), transparent 42%);
+  transform: translateX(-115%) skewX(-8deg);
+  animation: gate-surface-shadow 22s ease-in-out 8s infinite;
+}
+
+.gate-door-grain {
+  opacity: 0.045;
+  mix-blend-mode: screen;
+}
+
+.gate-door-engraving {
+  position: absolute;
+  inset: 9% 8%;
+  pointer-events: none;
+  opacity: 0.12;
+  border: 1px solid rgba(138, 113, 56, 0.18);
+  border-radius: 48% 48% 4% 4%;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+    inset 0 0 2rem rgba(0, 0, 0, 0.55);
+}
+
+.gate-door-engraving::before,
+.gate-door-engraving::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.gate-door-engraving::before {
+  inset: 18% 12% 26%;
+  border: 1px solid rgba(107, 85, 40, 0.2);
+  border-radius: 50% 50% 8% 8%;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(138, 113, 56, 0.08), transparent 8%),
+    linear-gradient(90deg, transparent 49%, rgba(138, 113, 56, 0.11) 50%, transparent 51%);
+}
+
+.gate-door-engraving::after {
+  left: 50%;
+  top: 57%;
+  width: 8rem;
+  height: 8rem;
+  border: 1px solid rgba(107, 85, 40, 0.18);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 1rem rgba(0, 0, 0, 0.42),
+    0 0 0 0.35rem rgba(0, 0, 0, 0.12);
+  transform: translate(-50%, -50%);
+}
+
+.gate-door-engraving-left::after {
+  clip-path: polygon(0 0, 56% 0, 56% 100%, 0 100%);
+}
+
+.gate-door-engraving-right::after {
+  clip-path: polygon(44% 0, 100% 0, 100% 100%, 44% 100%);
+}
+
+.gate-scratch {
+  position: absolute;
+  width: 7rem;
+  height: 1px;
+  pointer-events: none;
+  opacity: 0.1;
+  background: linear-gradient(90deg, transparent, rgba(217, 188, 101, 0.38), transparent);
+  transform-origin: center;
+}
+
+.gate-scratch-one {
+  top: 31%;
+  left: 18%;
+  transform: rotate(-9deg);
+}
+
+.gate-scratch-two {
+  right: 14%;
+  bottom: 26%;
+  transform: rotate(6deg);
+}
+
+.gate-scratch-three {
+  top: 22%;
+  right: 20%;
+  transform: rotate(8deg);
+}
+
+.gate-scratch-four {
+  bottom: 34%;
+  left: 17%;
+  transform: rotate(-6deg);
+}
+
 @keyframes question-reveal {
   0% {
     opacity: 0;
@@ -461,15 +725,480 @@ body {
 }
 
 .animate-slide-left {
-  animation: slide-door-left 0.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation: slide-door-left 3.05s cubic-bezier(0.7, 0, 0.22, 1) forwards;
+  will-change: transform;
 }
 
 .animate-slide-right {
-  animation: slide-door-right 0.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation: slide-door-right 3.05s cubic-bezier(0.7, 0, 0.22, 1) forwards;
+  will-change: transform;
 }
 
 .animate-smoke {
   animation: smoke-in 1.4s ease-out forwards;
+}
+
+.gate-seam-layer {
+  z-index: 50;
+}
+
+.gate-center-crack {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: clamp(0.55rem, 1vw, 0.9rem);
+  transform: translateX(-50%);
+}
+
+.gate-center-crack::before,
+.gate-center-crack::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.gate-center-crack::before {
+  left: 50%;
+  width: clamp(0.22rem, 0.42vw, 0.38rem);
+  background:
+    linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.96) 6%, #020403 50%, rgba(0, 0, 0, 0.98) 94%, transparent),
+    linear-gradient(90deg, rgba(0, 0, 0, 0), #000 50%, rgba(0, 0, 0, 0));
+  box-shadow:
+    -0.28rem 0 0.55rem rgba(0, 0, 0, 0.96),
+    0.28rem 0 0.55rem rgba(0, 0, 0, 0.96);
+  transform: translateX(-50%);
+}
+
+.gate-center-crack::after {
+  left: 50%;
+  width: clamp(0.16rem, 0.32vw, 0.28rem);
+  opacity: 0.18;
+  background:
+    linear-gradient(180deg, transparent 0 7%, rgba(92, 217, 196, 0.1), rgba(78, 164, 181, 0.28) 48%, rgba(39, 105, 92, 0.12), transparent 94%),
+    radial-gradient(ellipse at 50% 48%, rgba(74, 227, 192, 0.4), transparent 58%);
+  filter: blur(0.08rem);
+  box-shadow:
+    0 0 0.75rem rgba(49, 203, 183, 0.18),
+    0 0 2.8rem rgba(22, 100, 112, 0.16);
+  transform: translateX(-50%);
+  animation: gate-crack-breathe 5.4s ease-in-out infinite;
+}
+
+.gate-center-crack-awake::after,
+.gate-opening .gate-center-crack::after {
+  animation:
+    gate-crack-wake 3.05s cubic-bezier(0.2, 0.75, 0.2, 1) both,
+    gate-crack-breathe 2.8s ease-in-out infinite;
+}
+
+.gate-seam-fog {
+  position: absolute;
+  left: 50%;
+  width: 11rem;
+  height: 4.5rem;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse, rgba(115, 178, 169, 0.2), rgba(5, 25, 27, 0.18) 44%, transparent 70%);
+  filter: blur(1.2rem);
+  transform: translateX(-50%) scale(0.5);
+}
+
+.gate-seam-fog-one {
+  top: 31%;
+}
+
+.gate-seam-fog-two {
+  top: 49%;
+  animation-delay: 0.12s;
+}
+
+.gate-seam-fog-three {
+  top: 64%;
+  animation-delay: 0.24s;
+}
+
+.gate-opening .gate-seam-fog,
+.gate-center-crack-awake .gate-seam-fog {
+  animation: gate-seam-fog 3.05s ease-out both;
+}
+
+.gate-lock-sigil,
+.gate-fleur {
+  color: #8a7138;
+}
+
+.gate-lock-sigil {
+  border: 1px solid rgba(107, 85, 40, 0.28);
+  background: rgba(5, 3, 4, 0.86);
+  box-shadow:
+    inset 0 0.08rem 0 rgba(217, 188, 101, 0.08),
+    inset 0 0 0.8rem rgba(0, 0, 0, 0.72),
+    0 0 1rem rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(4px);
+}
+
+.gate-opening .gate-lock-sigil svg {
+  animation: gate-lock-turn 3.05s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+.gate-fleur {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 70;
+  border: 1px solid rgba(107, 85, 40, 0.22);
+  background:
+    radial-gradient(circle, rgba(107, 85, 40, 0.15), rgba(5, 3, 4, 0.92) 58%),
+    #050304;
+  box-shadow:
+    inset 0 0.12rem 0 rgba(217, 188, 101, 0.06),
+    inset 0 -0.7rem 1rem rgba(0, 0, 0, 0.68),
+    0 0 1.6rem rgba(0, 0, 0, 0.86);
+  opacity: 0.74;
+  transform: translate(-50%, -50%);
+}
+
+.gate-fleur:hover,
+.gate-fleur:focus-visible {
+  color: #d9bc65;
+  border-color: rgba(138, 113, 56, 0.38);
+  opacity: 0.92;
+}
+
+.gate-destination-visible .gate-fleur,
+.gate-destination-visible .gate-lock-sigil {
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 420ms ease,
+    transform 420ms ease;
+}
+
+.gate-destination-visible .gate-fleur {
+  transform: translate(-50%, -50%) scale(0.72);
+}
+
+.gate-choice-panel {
+  transform: translateY(0);
+  transition:
+    opacity 420ms ease,
+    transform 420ms ease,
+    filter 420ms ease;
+}
+
+.gate-choice-title {
+  color: rgba(138, 113, 56, 0.42);
+  text-shadow: 0 0 1rem rgba(0, 0, 0, 0.95);
+  transition:
+    opacity 280ms ease,
+    color 280ms ease;
+}
+
+.cursed-gate:hover .gate-choice-title,
+.cursed-gate:focus-within .gate-choice-title {
+  color: rgba(138, 113, 56, 0.78);
+}
+
+.gate-choice-panel-opening {
+  pointer-events: none;
+  filter: saturate(0.82);
+}
+
+.gate-choice-panel-opening .gate-choice-title {
+  opacity: 0;
+}
+
+.gate-choice-panel-opening .gate-seal:not(.gate-seal-picked) {
+  opacity: 0.08;
+  transform: scale(0.72);
+}
+
+.gate-seal {
+  isolation: isolate;
+  border: 0;
+  border-radius: 50%;
+  color: rgba(138, 113, 56, 0.68);
+  background:
+    radial-gradient(circle at 38% 28%, rgba(217, 188, 101, 0.1), transparent 19%),
+    radial-gradient(circle, rgba(33, 18, 11, 0.98), rgba(4, 2, 3, 0.98) 72%);
+  box-shadow:
+    inset 0 0 0 1px rgba(107, 85, 40, 0.42),
+    inset 0 0.22rem 0.18rem rgba(217, 188, 101, 0.08),
+    inset 0 -0.8rem 1rem rgba(0, 0, 0, 0.78),
+    0 0.75rem 1.6rem rgba(0, 0, 0, 0.54);
+  transform: translateZ(0);
+}
+
+.gate-seal::before,
+.gate-seal::after {
+  position: absolute;
+  inset: -0.4rem;
+  z-index: -1;
+  content: "";
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.gate-seal::before {
+  opacity: 0;
+  background: radial-gradient(circle, rgba(23, 98, 91, 0.34), transparent 60%);
+  filter: blur(0.75rem);
+  transform: scale(0.74);
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+
+.gate-seal::after {
+  inset: 0.35rem;
+  border: 1px solid rgba(107, 85, 40, 0.26);
+  opacity: 0.72;
+  box-shadow: inset 0 0 1rem rgba(0, 0, 0, 0.55);
+}
+
+.gate-seal:hover:not(:disabled),
+.gate-seal:focus-visible:not(:disabled),
+.gate-seal-picked {
+  color: rgba(217, 188, 101, 0.92);
+  box-shadow:
+    inset 0 0 0 1px rgba(138, 113, 56, 0.58),
+    inset 0 0.22rem 0.18rem rgba(217, 188, 101, 0.12),
+    inset 0 -0.8rem 1rem rgba(0, 0, 0, 0.72),
+    0 0 1.2rem rgba(17, 101, 98, 0.24),
+    0 0.75rem 1.6rem rgba(0, 0, 0, 0.54);
+}
+
+.gate-seal:hover:not(:disabled)::before,
+.gate-seal:focus-visible:not(:disabled)::before,
+.gate-seal-picked::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.gate-seal-picked {
+  animation: gate-seal-awaken 3.05s ease-out both;
+}
+
+.gate-seal-symbol {
+  font-size: 1.85rem;
+  filter: saturate(0.64) brightness(0.78);
+  text-shadow: 0 0 0.8rem rgba(0, 0, 0, 0.82);
+}
+
+.gate-seal-image {
+  opacity: 0.68;
+  filter: saturate(0.52) brightness(0.58) sepia(0.3);
+}
+
+.gate-seal:hover .gate-seal-image,
+.gate-seal-picked .gate-seal-image {
+  opacity: 0.92;
+  filter: saturate(0.72) brightness(0.86) sepia(0.18);
+}
+
+.gate-seal-dormant-pulse {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(107, 85, 40, 0.07), transparent 62%);
+  animation: gate-seal-dormant 4.6s ease-in-out infinite;
+}
+
+.gate-seal-wrong {
+  color: rgba(140, 31, 38, 0.72);
+  box-shadow:
+    inset 0 0 0 1px rgba(96, 18, 24, 0.52),
+    inset 0 -0.8rem 1rem rgba(0, 0, 0, 0.78),
+    0 0.75rem 1.6rem rgba(0, 0, 0, 0.54);
+}
+
+@keyframes gate-ambient-breath {
+  0%,
+  100% {
+    opacity: 0.34;
+    filter: saturate(0.75);
+  }
+  46% {
+    opacity: 0.54;
+    filter: saturate(1.04);
+  }
+}
+
+@keyframes gate-grain-shift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-0.45rem, 0.25rem, 0);
+  }
+  100% {
+    transform: translate3d(0.35rem, -0.2rem, 0);
+  }
+}
+
+@keyframes gate-beyond-reveal {
+  0%,
+  32% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes gate-behind-shadow {
+  0%,
+  62% {
+    opacity: 0;
+    transform: translateX(-20vw) scaleY(1.15);
+  }
+  70% {
+    opacity: 0.74;
+  }
+  86% {
+    opacity: 0.3;
+    transform: translateX(21vw) scaleY(1.28);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(35vw) scaleY(1.1);
+  }
+}
+
+@keyframes gate-distant-glow {
+  0%,
+  58% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  78% {
+    opacity: 0.86;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0.48;
+    transform: scale(1);
+  }
+}
+
+@keyframes gate-surface-shadow {
+  0%,
+  78% {
+    opacity: 0;
+    transform: translateX(-115%) skewX(-8deg);
+  }
+  84% {
+    opacity: 0.36;
+  }
+  96% {
+    opacity: 0.14;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(115%) skewX(-8deg);
+  }
+}
+
+@keyframes gate-crack-breathe {
+  0%,
+  100% {
+    opacity: 0.14;
+    filter: blur(0.09rem);
+  }
+  48% {
+    opacity: 0.34;
+    filter: blur(0.14rem);
+  }
+}
+
+@keyframes gate-crack-wake {
+  0%,
+  24% {
+    opacity: 0.12;
+    box-shadow:
+      0 0 0.75rem rgba(49, 203, 183, 0.08),
+      0 0 2.8rem rgba(22, 100, 112, 0.08);
+  }
+  42% {
+    opacity: 0.68;
+    box-shadow:
+      0 0 1.2rem rgba(49, 203, 183, 0.32),
+      0 0 5rem rgba(22, 100, 112, 0.26);
+  }
+  100% {
+    opacity: 0.78;
+    box-shadow:
+      0 0 1.5rem rgba(49, 203, 183, 0.38),
+      0 0 6rem rgba(22, 100, 112, 0.3);
+  }
+}
+
+@keyframes gate-seam-fog {
+  0%,
+  31% {
+    opacity: 0;
+    transform: translate3d(-50%, 1.8rem, 0) scale(0.48);
+  }
+  49% {
+    opacity: 0.42;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(-50% + 2.8rem), -3rem, 0) scale(1.8);
+  }
+}
+
+@keyframes gate-lock-turn {
+  0%,
+  38% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(18deg) scale(0.98);
+  }
+  62% {
+    transform: rotate(-11deg) scale(1.02);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@keyframes gate-seal-awaken {
+  0%,
+  8% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  18% {
+    transform: scale(0.96);
+  }
+  30% {
+    color: rgba(217, 188, 101, 0.78);
+    filter: brightness(0.8);
+  }
+  48% {
+    filter: brightness(1.2);
+  }
+  100% {
+    opacity: 0.16;
+    transform: scale(0.88);
+    filter: brightness(0.7);
+  }
+}
+
+@keyframes gate-seal-dormant {
+  0%,
+  100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 0.38;
+  }
 }
 
 @keyframes broom-flight {
@@ -685,7 +1414,15 @@ body {
 }
 
 .door-idle-shadow::before {
-  display: none;
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background:
+    linear-gradient(88deg, transparent 0 37%, rgba(0, 0, 0, 0.58) 47%, transparent 58%),
+    radial-gradient(ellipse at 50% 40%, rgba(0, 0, 0, 0.42), transparent 22%);
+  filter: blur(0.45rem);
+  animation: door-shadow-pass 9.4s cubic-bezier(0.32, 0.02, 0.22, 1) both;
 }
 
 @keyframes door-breathe {
@@ -723,10 +1460,19 @@ body {
 .door-idle-listen {
   background: radial-gradient(
     circle at 50% 48%,
-    rgba(201, 168, 76, 0.12),
+    rgba(107, 85, 40, 0.14),
     transparent 8%
   );
   animation: door-listen 4s ease-in-out both;
+}
+
+.door-idle-fingers {
+  background:
+    radial-gradient(ellipse 0.45rem 4.2rem at calc(50% - 0.8rem) 43%, rgba(3, 7, 6, 0.62), transparent 64%),
+    radial-gradient(ellipse 0.38rem 3.8rem at calc(50% - 0.18rem) 47%, rgba(2, 7, 6, 0.54), transparent 66%),
+    radial-gradient(ellipse 0.34rem 3.4rem at calc(50% + 0.44rem) 45%, rgba(2, 7, 6, 0.48), transparent 68%),
+    radial-gradient(ellipse at center, rgba(20, 79, 74, 0.12), transparent 25%);
+  animation: door-listen 4.8s ease-in-out both;
 }
 
 .door-idle-message {
@@ -892,10 +1638,12 @@ body {
   z-index: 70;
   margin: 0;
   transform: translateX(-50%);
-  background: rgba(12, 6, 9, 0.82);
+  background: rgba(5, 3, 4, 0.88);
   box-shadow:
-    0 0 0 1px rgba(201, 168, 76, 0.2),
-    0 0 1.25rem rgba(201, 168, 76, 0.2);
+    inset 0 0.08rem 0 rgba(217, 188, 101, 0.08),
+    inset 0 0 0.8rem rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(107, 85, 40, 0.3),
+    0 0 1rem rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(4px);
 }
 
@@ -917,8 +1665,8 @@ body {
     background:
       radial-gradient(
         ellipse at center,
-        rgba(213, 151, 66, 0.3),
-        rgba(100, 56, 32, 0.16) 38%,
+        rgba(83, 138, 125, 0.2),
+        rgba(40, 62, 58, 0.14) 38%,
         transparent 68%
       ),
       linear-gradient(
@@ -928,12 +1676,12 @@ body {
         transparent 65%,
         rgba(0, 0, 0, 0.34)
       );
-    box-shadow: inset 0 0 4rem rgba(208, 137, 53, 0.24);
+    box-shadow: inset 0 0 4rem rgba(42, 92, 86, 0.18);
     animation: door-breathe-mobile 4s ease-in-out both;
   }
 
   .door-idle-message {
-    color: rgba(223, 199, 125, 0.9);
+    color: rgba(138, 113, 56, 0.9);
     font-size: 0.8rem;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
   }
@@ -942,12 +1690,25 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .chess-game-reveal,
   .chess-bubble-transition,
-  .chess-bubble-water {
+  .chess-bubble-water,
+  .gate-ambient,
+  .gate-film-grain,
+  .gate-door-surface::after,
+  .gate-center-crack::after,
+  .gate-seam-fog,
+  .gate-lock-sigil svg,
+  .gate-seal-picked,
+  .gate-seal-dormant-pulse {
     animation-duration: 0.8s;
   }
 
   .chess-transition-bubble {
     display: none;
+  }
+
+  .animate-slide-left,
+  .animate-slide-right {
+    animation-duration: 0.8s;
   }
 
   .dutchman-crossing {
@@ -958,7 +1719,9 @@ body {
 
   .dutchman-ghost,
   .ghost-aura,
-  .ghost-smoke {
+  .ghost-smoke,
+  .gate-film-grain,
+  .gate-door-surface::after {
     animation: none;
   }
 }

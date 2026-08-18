@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { PlaneAnswerReveal } from "@/components/PlaneAnswerReveal";
 import type { PlaneAnswer } from "@/lib/supabase/types";
 
@@ -38,15 +38,21 @@ function isAligned(rotation: number, target: number): boolean {
 const PLANE_QUOTE_DELAY_MS = 3100;
 const PLANE_QUOTE_TYPE_MS = 2100;
 const PLANE_FLIGHT_MS = 5400;
+const GATE_REVEAL_MS = 3100;
+const ADMIN_PRESS_MS = 1400;
+const ADMIN_CLICK_WINDOW_MS = 1800;
 const IDLE_MESSAGES = [
   "A shadow crosses the other side.",
   "The door exhales.",
   "Something has been waiting politely.",
+  "The seam remembers your hand.",
+  "Iron teeth settle in the dark.",
 ] as const;
 
 function getIdleEventClass(index: number): string {
   if (index === 0) return "door-idle-shadow";
   if (index === 1) return "door-idle-breath";
+  if (index === 3) return "door-idle-fingers";
   return "door-idle-listen";
 }
 
@@ -83,7 +89,7 @@ function DoorIdleEvent({
       </div>
       <p
         aria-live="polite"
-        className="door-idle-message pointer-events-none absolute left-1/2 top-[22%] z-40 -translate-x-1/2 whitespace-nowrap font-serif text-xs italic text-[#9f895d]/70"
+        className="door-idle-message pointer-events-none absolute left-1/2 top-[22%] z-40 -translate-x-1/2 whitespace-nowrap font-serif text-xs italic text-[#8a7138]/65"
       >
         {IDLE_MESSAGES[index]}
       </p>
@@ -97,32 +103,99 @@ function isEntryRide(value: string): boolean {
 
 function getRideSelectionClass(isValid: boolean, isWrong: boolean): string {
   if (isWrong) {
-    return "border-red-900/50 bg-red-950/30 text-2xl sm:text-3xl";
+    return "gate-seal-wrong";
   }
   if (isValid) {
-    return "border-[#c9a84c]/25 bg-[#0c060a] text-2xl hover:border-[#c9a84c]/60 hover:bg-[#140e10] hover:shadow-[0_0_20px_rgba(201,168,76,0.12)] sm:text-3xl";
+    return "gate-seal-valid";
   }
-  return "border-[#2a1a10]/40 bg-[#0c060a] text-2xl hover:border-[#3a2a1a]/60 hover:bg-[#140e10] sm:text-3xl";
+  return "gate-seal-muted";
 }
 
-function beginRideSelection(
-  value: string,
-  sliding: boolean,
-  setPicked: (value: string) => void,
-  setSliding: (value: boolean) => void,
-  setDoorsOpen: (value: boolean) => void,
-  onUno: () => void,
-  onOpen: () => void,
-) {
-  if (sliding) return;
-  setPicked(value);
-  if (!isEntryRide(value)) return;
+type AudioContextConstructor = new () => AudioContext;
 
-  setSliding(true);
-  setTimeout(() => {
-    if (value === "uno") onUno();
-    else setDoorsOpen(true);
-  }, 900);
+let gateAudioContext: AudioContext | null = null;
+
+function getGateAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  const audioWindow = window as typeof window & {
+    webkitAudioContext?: AudioContextConstructor;
+  };
+  const AudioConstructor =
+    window.AudioContext ?? audioWindow.webkitAudioContext;
+  if (!AudioConstructor) return null;
+  gateAudioContext ??= new AudioConstructor();
+  return gateAudioContext;
+}
+
+function envelope(gain: GainNode, time: number, peak: number, end: number) {
+  gain.gain.cancelScheduledValues(time);
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.exponentialRampToValueAtTime(peak, time + 0.08);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + end);
+}
+
+function playGateAtmosphere() {
+  const context = getGateAudioContext();
+  if (!context) return;
+
+  void context.resume();
+  const now = context.currentTime;
+  const output = context.createGain();
+  output.gain.setValueAtTime(0.08, now);
+  output.gain.exponentialRampToValueAtTime(0.0001, now + 3.2);
+  output.connect(context.destination);
+
+  const rumble = context.createOscillator();
+  const rumbleGain = context.createGain();
+  rumble.type = "sine";
+  rumble.frequency.setValueAtTime(38, now);
+  rumble.frequency.linearRampToValueAtTime(31, now + 2.8);
+  envelope(rumbleGain, now + 0.45, 0.46, 2.7);
+  rumble.connect(rumbleGain).connect(output);
+  rumble.start(now + 0.45);
+  rumble.stop(now + 3.25);
+
+  const thump = context.createOscillator();
+  const thumpGain = context.createGain();
+  thump.type = "triangle";
+  thump.frequency.setValueAtTime(92, now + 0.42);
+  thump.frequency.exponentialRampToValueAtTime(44, now + 0.82);
+  envelope(thumpGain, now + 0.42, 0.58, 0.74);
+  thump.connect(thumpGain).connect(output);
+  thump.start(now + 0.42);
+  thump.stop(now + 1.15);
+
+  const creak = context.createOscillator();
+  const creakGain = context.createGain();
+  const creakFilter = context.createBiquadFilter();
+  creak.type = "sawtooth";
+  creak.frequency.setValueAtTime(128, now + 1.2);
+  creak.frequency.linearRampToValueAtTime(73, now + 2.9);
+  creakFilter.type = "bandpass";
+  creakFilter.frequency.setValueAtTime(650, now + 1.2);
+  creakFilter.frequency.linearRampToValueAtTime(310, now + 2.9);
+  creakFilter.Q.setValueAtTime(8, now + 1.2);
+  envelope(creakGain, now + 1.2, 0.12, 1.85);
+  creak.connect(creakFilter).connect(creakGain).connect(output);
+  creak.start(now + 1.2);
+  creak.stop(now + 3.15);
+
+  const noiseLength = Math.floor(context.sampleRate * 2.4);
+  const noiseBuffer = context.createBuffer(1, noiseLength, context.sampleRate);
+  const noiseData = noiseBuffer.getChannelData(0);
+  for (let index = 0; index < noiseLength; index += 1) {
+    noiseData[index] = (Math.random() * 2 - 1) * 0.24;
+  }
+  const wind = context.createBufferSource();
+  const windGain = context.createGain();
+  const windFilter = context.createBiquadFilter();
+  wind.buffer = noiseBuffer;
+  windFilter.type = "lowpass";
+  windFilter.frequency.setValueAtTime(520, now + 0.92);
+  windFilter.frequency.linearRampToValueAtTime(190, now + 2.8);
+  envelope(windGain, now + 0.92, 0.13, 2.1);
+  wind.connect(windFilter).connect(windGain).connect(output);
+  wind.start(now + 0.92);
 }
 
 export function GothicDoor({
@@ -152,17 +225,20 @@ export function GothicDoor({
   const [symbolsAwake, setSymbolsAwake] = useState(false);
   const [idleEventIndex, setIdleEventIndex] = useState(-1);
   const [idleEventActive, setIdleEventActive] = useState(false);
+  const adminPressTimerRef = useRef<number | null>(null);
+  const adminClicksRef = useRef({ count: 0, firstAt: 0 });
 
   function handlePick(char: string) {
-    beginRideSelection(
-      char,
-      sliding,
-      setPicked,
-      setSliding,
-      setDoorsOpen,
-      onUno,
-      onOpen,
-    );
+    if (sliding) return;
+    setPicked(char);
+    if (!isEntryRide(char)) return;
+
+    playGateAtmosphere();
+    setSliding(true);
+    window.setTimeout(() => {
+      if (char === "uno") onUno();
+      else setDoorsOpen(true);
+    }, GATE_REVEAL_MS);
   }
 
   function handleSymbolRotate(symbol: DoorSymbol) {
@@ -186,11 +262,52 @@ export function GothicDoor({
     ) {
       setSymbolsAwake(true);
       setSliding(true);
+      playGateAtmosphere();
       if (navigator.userActivation?.isActive) {
         navigator.vibrate?.([40, 50, 90]);
       }
-      window.setTimeout(onChess, 1100);
+      window.setTimeout(onChess, GATE_REVEAL_MS);
     }
+  }
+
+  function clearAdminPressTimer() {
+    if (adminPressTimerRef.current == null) return;
+    window.clearTimeout(adminPressTimerRef.current);
+    adminPressTimerRef.current = null;
+  }
+
+  function openAdminGate() {
+    window.location.assign("/admin");
+  }
+
+  function handleFleurPointerDown() {
+    if (sliding) return;
+    clearAdminPressTimer();
+    adminPressTimerRef.current = window.setTimeout(
+      openAdminGate,
+      ADMIN_PRESS_MS,
+    );
+  }
+
+  function handleFleurPointerUp() {
+    clearAdminPressTimer();
+    const now = performance.now();
+    const clicks = adminClicksRef.current;
+    if (now - clicks.firstAt > ADMIN_CLICK_WINDOW_MS) {
+      clicks.count = 0;
+      clicks.firstAt = now;
+    }
+
+    clicks.count += 1;
+    if (clicks.count >= 5) {
+      openAdminGate();
+    }
+  }
+
+  function handleFleurKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    handleFleurPointerUp();
   }
 
   async function handlePlaneSubmit() {
@@ -246,6 +363,10 @@ export function GothicDoor({
     }
     return () => {
       document.body.style.overflow = "";
+      if (adminPressTimerRef.current != null) {
+        window.clearTimeout(adminPressTimerRef.current);
+        adminPressTimerRef.current = null;
+      }
     };
   }, [gone]);
 
@@ -254,17 +375,33 @@ export function GothicDoor({
 
     let idleTimer = 0;
     let clearTimer = 0;
-    let nextEventIndex = 0;
+    let previousEventIndex = -1;
+
+    const pickIdleEvent = () => {
+      const buffer = new Uint32Array(1);
+      crypto.getRandomValues(buffer);
+      let nextIndex = buffer[0] % IDLE_MESSAGES.length;
+      if (nextIndex === previousEventIndex) {
+        nextIndex = (nextIndex + 1) % IDLE_MESSAGES.length;
+      }
+      previousEventIndex = nextIndex;
+      return nextIndex;
+    };
+
+    const nextDelay = () => {
+      const buffer = new Uint32Array(1);
+      crypto.getRandomValues(buffer);
+      return 12000 + (buffer[0] % 15000);
+    };
 
     const revealIdleEvent = () => {
-      const eventIndex = nextEventIndex;
-      nextEventIndex = (nextEventIndex + 1) % IDLE_MESSAGES.length;
+      const eventIndex = pickIdleEvent();
       setIdleEventIndex(eventIndex);
       setIdleEventActive(true);
       clearTimer = window.setTimeout(
         () => {
           setIdleEventActive(false);
-          idleTimer = window.setTimeout(revealIdleEvent, 10000);
+          idleTimer = window.setTimeout(revealIdleEvent, nextDelay());
         },
         eventIndex === 0 ? 9400 : 4000,
       );
@@ -274,10 +411,10 @@ export function GothicDoor({
       window.clearTimeout(idleTimer);
       window.clearTimeout(clearTimer);
       setIdleEventActive(false);
-      idleTimer = window.setTimeout(revealIdleEvent, 8000);
+      idleTimer = window.setTimeout(revealIdleEvent, nextDelay());
     };
 
-    idleTimer = window.setTimeout(revealIdleEvent, 8000);
+    idleTimer = window.setTimeout(revealIdleEvent, nextDelay());
     window.addEventListener("pointerdown", markActive);
     window.addEventListener("keydown", markActive);
 
@@ -322,33 +459,33 @@ export function GothicDoor({
   if (gone) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05030a]">
-      {/* Ambient light */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-20"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 35%, rgba(180,140,60,0.15) 0%, transparent 60%)",
-        }}
-      />
+    <div
+      className={`cursed-gate fixed inset-0 z-50 flex items-center justify-center bg-[#05030a] ${
+        sliding ? "gate-opening" : ""
+      } ${doorsOpen ? "gate-destination-visible" : ""}`}
+    >
+      <div aria-hidden className="gate-beyond pointer-events-none absolute inset-0" />
+      <div aria-hidden className="gate-ambient pointer-events-none absolute inset-0" />
+      <div aria-hidden className="gate-film-grain pointer-events-none absolute inset-0" />
+      <div aria-hidden className="gate-heavy-vignette pointer-events-none absolute inset-0" />
       <DoorIdleEvent active={idleEventActive} index={idleEventIndex} />
 
       {/* LEFT DOOR */}
       <div
-        className={`absolute inset-y-0 left-0 z-20 flex w-1/2 ${
+        className={`gate-door gate-door-left absolute inset-y-0 left-0 z-20 flex w-1/2 ${
           sliding ? "animate-slide-left" : ""
         }`}
       >
-        <div className="relative h-full w-full overflow-hidden border-r border-[#2a1a10] bg-gradient-to-b from-[#10090c] via-[#0c0609] to-[#080407]">
+        <div className="gate-door-surface gate-door-surface-left relative h-full w-full overflow-hidden border-r border-[#0a0705] bg-gradient-to-b from-[#10090c] via-[#0c0609] to-[#080407]">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            className="gate-door-grain pointer-events-none absolute inset-0"
             style={{
               backgroundImage:
                 "repeating-linear-gradient(0deg, rgba(200,170,120,0.5) 0px, transparent 1px, transparent 3px)",
             }}
           />
+          <div aria-hidden className="gate-door-engraving gate-door-engraving-left" />
           <div className="pointer-events-none absolute -top-px left-0 right-0 h-40">
             <svg
               viewBox="0 0 400 160"
@@ -399,24 +536,27 @@ export function GothicDoor({
             <div className="absolute bottom-0 left-1/2 h-6 w-3 -translate-x-1/2 translate-y-1 rounded-b-sm bg-gradient-to-b from-[#2a1a10] to-[#1a0f0a] shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
           </div>
           <div className="pointer-events-none absolute inset-x-6 bottom-8 top-[85%] rounded-sm border border-[#2a1a10]/30 bg-[#0a0608]/50" />
+          <span aria-hidden className="gate-scratch gate-scratch-one" />
+          <span aria-hidden className="gate-scratch gate-scratch-two" />
         </div>
       </div>
 
       {/* RIGHT DOOR */}
       <div
-        className={`absolute inset-y-0 right-0 z-20 flex w-1/2 ${
+        className={`gate-door gate-door-right absolute inset-y-0 right-0 z-20 flex w-1/2 ${
           sliding ? "animate-slide-right" : ""
         }`}
       >
-        <div className="relative h-full w-full overflow-hidden border-l border-[#2a1a10] bg-gradient-to-b from-[#10090c] via-[#0c0609] to-[#080407]">
+        <div className="gate-door-surface gate-door-surface-right relative h-full w-full overflow-hidden border-l border-[#0a0705] bg-gradient-to-b from-[#10090c] via-[#0c0609] to-[#080407]">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            className="gate-door-grain pointer-events-none absolute inset-0"
             style={{
               backgroundImage:
                 "repeating-linear-gradient(0deg, rgba(200,170,120,0.5) 0px, transparent 1px, transparent 3px)",
             }}
           />
+          <div aria-hidden className="gate-door-engraving gate-door-engraving-right" />
           <div className="pointer-events-none absolute -top-px left-0 right-0 h-40">
             <svg
               viewBox="0 0 400 160"
@@ -467,19 +607,31 @@ export function GothicDoor({
             <div className="absolute bottom-0 left-1/2 h-6 w-3 -translate-x-1/2 translate-y-1 rounded-b-sm bg-gradient-to-b from-[#2a1a10] to-[#1a0f0a] shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
           </div>
           <div className="pointer-events-none absolute inset-x-6 bottom-8 top-[85%] rounded-sm border border-[#2a1a10]/30 bg-[#0a0608]/50" />
+          <span aria-hidden className="gate-scratch gate-scratch-three" />
+          <span aria-hidden className="gate-scratch gate-scratch-four" />
         </div>
       </div>
 
       {/* CENTER SEAM */}
-      <div className="pointer-events-none absolute inset-0 z-50 flex flex-col items-center">
+      <div className="gate-seam-layer pointer-events-none absolute inset-0 z-50">
+        <div
+          aria-hidden
+          className={`gate-center-crack ${
+            sliding || symbolsAwake ? "gate-center-crack-awake" : ""
+          }`}
+        >
+          <span className="gate-seam-fog gate-seam-fog-one" />
+          <span className="gate-seam-fog gate-seam-fog-two" />
+          <span className="gate-seam-fog gate-seam-fog-three" />
+        </div>
         <button
           type="button"
           onClick={() => handleSymbolRotate("upper")}
           aria-label="Rotate upper door sigil clockwise"
           aria-pressed={isAligned(upperSigilRotation, UPPER_SIGIL_TARGET)}
-          className="door-sigil-upper pointer-events-auto mt-4 flex h-10 w-10 items-center justify-center rounded-full transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a84c]"
+          className="door-sigil-upper gate-lock-sigil pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a7138]"
           style={{
-            filter: `drop-shadow(0 0 ${isAligned(upperSigilRotation, UPPER_SIGIL_TARGET) ? 10 : 2}px rgba(223,199,125,${symbolsAwake ? 0.9 : 0.45}))`,
+            filter: `drop-shadow(0 0 ${isAligned(upperSigilRotation, UPPER_SIGIL_TARGET) ? 8 : 1}px rgba(217,188,101,${symbolsAwake ? 0.55 : 0.22}))`,
           }}
         >
           <svg
@@ -490,40 +642,41 @@ export function GothicDoor({
           >
             <path
               d="M20 2 L26 18 L38 22 L26 26 L28 42 L20 34 L12 42 L14 26 L2 22 L14 18 Z"
-              fill="rgba(180,140,60,0.15)"
-              stroke="rgba(180,140,60,0.25)"
+              fill="rgba(107,85,40,0.16)"
+              stroke="rgba(138,113,56,0.42)"
               strokeWidth="1"
             />
             <circle
               cx="20"
               cy="22"
               r="4"
-              fill="rgba(180,140,60,0.1)"
-              stroke="rgba(180,140,60,0.2)"
+              fill="rgba(24,17,10,0.55)"
+              stroke="rgba(138,113,56,0.28)"
               strokeWidth="0.8"
             />
           </svg>
         </button>
-        <div className="h-28 w-px bg-gradient-to-b from-[#c9a84c]/15 via-[#c9a84c]/25 to-[#c9a84c]/10" />
         <button
           type="button"
-          onClick={() => window.location.assign("/admin")}
-          aria-label="Open admin dashboard"
-          title="Admin dashboard"
+          onPointerDown={handleFleurPointerDown}
+          onPointerUp={handleFleurPointerUp}
+          onPointerCancel={clearAdminPressTimer}
+          onPointerLeave={clearAdminPressTimer}
+          onKeyDown={handleFleurKeyDown}
+          aria-label="Dormant fleur-de-lis seal"
           tabIndex={sliding ? -1 : 0}
-          className={`grid h-14 w-14 place-items-center rounded-full border border-[#c9a84c]/20 bg-[#0c0609] shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(201,168,76,0.1)] transition hover:border-[#c9a84c]/50 hover:bg-[#17100c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#c9a84c] ${sliding ? "pointer-events-none" : "pointer-events-auto"}`}
+          className={`gate-fleur pointer-events-auto grid h-14 w-14 place-items-center rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8a7138] ${sliding ? "pointer-events-none" : ""}`}
         >
           <span className="text-xl">⚜️</span>
         </button>
-        <div className="h-28 w-px bg-gradient-to-b from-[#c9a84c]/10 via-[#c9a84c]/25 to-[#c9a84c]/15" />
         <button
           type="button"
           onClick={() => handleSymbolRotate("lower")}
           aria-label="Rotate lower door sigil clockwise"
           aria-pressed={isAligned(lowerSigilRotation, LOWER_SIGIL_TARGET)}
-          className="door-sigil-lower pointer-events-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a84c]"
+          className="door-sigil-lower gate-lock-sigil pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a7138]"
           style={{
-            filter: `drop-shadow(0 0 ${isAligned(lowerSigilRotation, LOWER_SIGIL_TARGET) ? 10 : 2}px rgba(223,199,125,${symbolsAwake ? 0.9 : 0.45}))`,
+            filter: `drop-shadow(0 0 ${isAligned(lowerSigilRotation, LOWER_SIGIL_TARGET) ? 8 : 1}px rgba(217,188,101,${symbolsAwake ? 0.55 : 0.22}))`,
           }}
         >
           <svg
@@ -534,27 +687,31 @@ export function GothicDoor({
           >
             <path
               d="M20 2 L26 18 L38 22 L26 26 L28 42 L20 34 L12 42 L14 26 L2 22 L14 18 Z"
-              fill="rgba(180,140,60,0.15)"
-              stroke="rgba(180,140,60,0.25)"
+              fill="rgba(107,85,40,0.16)"
+              stroke="rgba(138,113,56,0.42)"
               strokeWidth="1"
             />
             <circle
               cx="20"
               cy="22"
               r="4"
-              fill="rgba(180,140,60,0.1)"
-              stroke="rgba(180,140,60,0.2)"
+              fill="rgba(24,17,10,0.55)"
+              stroke="rgba(138,113,56,0.28)"
               strokeWidth="0.8"
             />
           </svg>
         </button>
       </div>
 
-      {/* EMOJI SELECTION (phase 1) */}
-      {!sliding && (
-        <div className="pointer-events-auto relative z-40 flex flex-col items-center gap-5">
-          <p className="text-xs uppercase tracking-[0.25em] text-[#8a7a60]">
-            Choose your ride
+      {/* PASSAGE SEALS (phase 1) */}
+      {!doorsOpen && (
+        <div
+          className={`gate-choice-panel pointer-events-auto relative z-40 flex flex-col items-center gap-5 ${
+            sliding ? "gate-choice-panel-opening" : ""
+          }`}
+        >
+          <p className="gate-choice-title text-xs uppercase tracking-[0.25em]">
+            Choose your passage
           </p>
           {(isAligned(upperSigilRotation, UPPER_SIGIL_TARGET) ||
             isAligned(lowerSigilRotation, LOWER_SIGIL_TARGET)) &&
@@ -564,11 +721,11 @@ export function GothicDoor({
             </p>
           )}
           {symbolsAwake && (
-            <p className="animate-card-in font-serif text-sm italic text-[#dfc77d]">
+            <p className="animate-card-in font-serif text-sm italic text-[#8a7138]">
               A rival answers.
             </p>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="gate-seal-grid grid grid-cols-2 gap-4">
             {rides.map((ride) => {
               const isValid = isEntryRide(ride.value);
               const isWrong =
@@ -580,7 +737,10 @@ export function GothicDoor({
                   type="button"
                   onClick={() => handlePick(ride.value)}
                   aria-label={ride.label}
-                  className={`group relative flex h-16 w-16 items-center justify-center rounded-lg border transition-all duration-200 sm:h-20 sm:w-20 ${selectionClass}`}
+                  disabled={sliding}
+                  className={`gate-seal group relative flex h-16 w-16 items-center justify-center transition-all duration-300 sm:h-20 sm:w-20 ${selectionClass} ${
+                    picked === ride.value ? "gate-seal-picked" : ""
+                  }`}
                 >
                   {ride.image ? (
                     <Image
@@ -590,20 +750,20 @@ export function GothicDoor({
                       height={608}
                       loading="eager"
                       sizes="40px"
-                      className="pointer-events-none h-9 w-auto object-contain sm:h-10"
+                      className="gate-seal-image pointer-events-none h-9 w-auto object-contain sm:h-10"
                     />
                   ) : (
-                    ride.char
+                    <span className="gate-seal-symbol">{ride.char}</span>
                   )}
                   {isValid && !sliding && (
-                    <span className="pointer-events-none absolute inset-0 rounded-lg bg-[#c9a84c]/[0.03] animate-pulse" />
+                    <span className="gate-seal-dormant-pulse pointer-events-none absolute inset-0" />
                   )}
                 </button>
               );
             })}
           </div>
           {picked === "hint" && (
-            <p className="animate-card-in max-w-52 text-center font-serif text-xs italic leading-relaxed text-[#c9a84c]/75">
+            <p className="animate-card-in max-w-52 text-center font-serif text-xs italic leading-relaxed text-[#8a7138]/80">
               Two seals guard the fleur. Turn their longest points toward its
               heart.
             </p>
@@ -613,7 +773,7 @@ export function GothicDoor({
             picked !== "🧹" &&
             picked !== "✈️" &&
             picked !== "uno" && (
-              <p className="animate-card-in text-xs font-medium text-red-800/80">
+              <p className="animate-card-in text-xs font-medium text-red-800/70">
                 Wrong pick… Try again
               </p>
             )}
