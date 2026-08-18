@@ -25,8 +25,15 @@ const rides = [
   { value: "🧹", char: "🧹", image: null, label: "broom" },
 ];
 
-const SYMBOL_SEQUENCE = ["upper", "lower", "upper", "lower", "upper"] as const;
-type DoorSymbol = (typeof SYMBOL_SEQUENCE)[number];
+type DoorSymbol = "upper" | "lower";
+
+const SIGIL_STEP_DEGREES = 45;
+const UPPER_SIGIL_TARGET = 180;
+const LOWER_SIGIL_TARGET = 360;
+
+function isAligned(rotation: number, target: number): boolean {
+  return rotation % 360 === target % 360;
+}
 
 const PLANE_QUOTE_DELAY_MS = 3100;
 const PLANE_QUOTE_TYPE_MS = 2100;
@@ -140,7 +147,8 @@ export function GothicDoor({
   const [broomFlying, setBroomFlying] = useState(false);
   const [smoke, setSmoke] = useState(false);
   const [gone, setGone] = useState(false);
-  const [symbolProgress, setSymbolProgress] = useState(0);
+  const [upperSigilRotation, setUpperSigilRotation] = useState(45);
+  const [lowerSigilRotation, setLowerSigilRotation] = useState(225);
   const [symbolsAwake, setSymbolsAwake] = useState(false);
   const [idleEventIndex, setIdleEventIndex] = useState(-1);
   const [idleEventActive, setIdleEventActive] = useState(false);
@@ -157,21 +165,30 @@ export function GothicDoor({
     );
   }
 
-  function handleSymbolTap(symbol: DoorSymbol) {
+  function handleSymbolRotate(symbol: DoorSymbol) {
     if (sliding || symbolsAwake) return;
 
-    if (symbol === SYMBOL_SEQUENCE[symbolProgress]) {
-      const nextProgress = symbolProgress + 1;
-      setSymbolProgress(nextProgress);
-      if (nextProgress === SYMBOL_SEQUENCE.length) {
-        setSymbolsAwake(true);
-        setSliding(true);
-        window.setTimeout(onChess, 900);
-      }
-      return;
-    }
+    const nextUpperRotation =
+      symbol === "upper"
+        ? upperSigilRotation + SIGIL_STEP_DEGREES
+        : upperSigilRotation;
+    const nextLowerRotation =
+      symbol === "lower"
+        ? lowerSigilRotation + SIGIL_STEP_DEGREES
+        : lowerSigilRotation;
 
-    setSymbolProgress(symbol === SYMBOL_SEQUENCE[0] ? 1 : 0);
+    setUpperSigilRotation(nextUpperRotation);
+    setLowerSigilRotation(nextLowerRotation);
+
+    if (
+      isAligned(nextUpperRotation, UPPER_SIGIL_TARGET) &&
+      isAligned(nextLowerRotation, LOWER_SIGIL_TARGET)
+    ) {
+      setSymbolsAwake(true);
+      setSliding(true);
+      navigator.vibrate?.([40, 50, 90]);
+      window.setTimeout(onChess, 1100);
+    }
   }
 
   async function handlePlaneSubmit() {
@@ -455,14 +472,20 @@ export function GothicDoor({
       <div className="pointer-events-none absolute inset-0 z-50 flex flex-col items-center">
         <button
           type="button"
-          onClick={() => handleSymbolTap("upper")}
-          aria-label="Upper door sigil"
+          onClick={() => handleSymbolRotate("upper")}
+          aria-label="Rotate upper door sigil clockwise"
+          aria-pressed={isAligned(upperSigilRotation, UPPER_SIGIL_TARGET)}
           className="door-sigil-upper pointer-events-auto mt-4 flex h-10 w-10 items-center justify-center rounded-full transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a84c]"
           style={{
-            filter: `drop-shadow(0 0 ${symbolsAwake ? 12 : symbolProgress * 2}px rgba(223,199,125,${symbolsAwake ? 0.9 : 0.35}))`,
+            filter: `drop-shadow(0 0 ${isAligned(upperSigilRotation, UPPER_SIGIL_TARGET) ? 10 : 2}px rgba(223,199,125,${symbolsAwake ? 0.9 : 0.45}))`,
           }}
         >
-          <svg viewBox="0 0 40 50" className="h-10 w-10" fill="none">
+          <svg
+            viewBox="0 0 40 50"
+            className="h-10 w-10 transition-transform duration-500 ease-out"
+            fill="none"
+            style={{ transform: `rotate(${upperSigilRotation}deg)` }}
+          >
             <path
               d="M20 2 L26 18 L38 22 L26 26 L28 42 L20 34 L12 42 L14 26 L2 22 L14 18 Z"
               fill="rgba(180,140,60,0.15)"
@@ -493,14 +516,20 @@ export function GothicDoor({
         <div className="h-28 w-px bg-gradient-to-b from-[#c9a84c]/10 via-[#c9a84c]/25 to-[#c9a84c]/15" />
         <button
           type="button"
-          onClick={() => handleSymbolTap("lower")}
-          aria-label="Lower door sigil"
+          onClick={() => handleSymbolRotate("lower")}
+          aria-label="Rotate lower door sigil clockwise"
+          aria-pressed={isAligned(lowerSigilRotation, LOWER_SIGIL_TARGET)}
           className="door-sigil-lower pointer-events-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a84c]"
           style={{
-            filter: `drop-shadow(0 0 ${symbolsAwake ? 12 : symbolProgress * 2}px rgba(223,199,125,${symbolsAwake ? 0.9 : 0.35}))`,
+            filter: `drop-shadow(0 0 ${isAligned(lowerSigilRotation, LOWER_SIGIL_TARGET) ? 10 : 2}px rgba(223,199,125,${symbolsAwake ? 0.9 : 0.45}))`,
           }}
         >
-          <svg viewBox="0 0 40 50" className="h-10 w-10 rotate-180" fill="none">
+          <svg
+            viewBox="0 0 40 50"
+            className="h-10 w-10 transition-transform duration-500 ease-out"
+            fill="none"
+            style={{ transform: `rotate(${lowerSigilRotation}deg)` }}
+          >
             <path
               d="M20 2 L26 18 L38 22 L26 26 L28 42 L20 34 L12 42 L14 26 L2 22 L14 18 Z"
               fill="rgba(180,140,60,0.15)"
@@ -525,11 +554,11 @@ export function GothicDoor({
           <p className="text-xs uppercase tracking-[0.25em] text-[#8a7a60]">
             Choose your ride
           </p>
-          {symbolProgress > 0 && !symbolsAwake && (
+          {(isAligned(upperSigilRotation, UPPER_SIGIL_TARGET) ||
+            isAligned(lowerSigilRotation, LOWER_SIGIL_TARGET)) &&
+            !symbolsAwake && (
             <p className="animate-card-in font-serif text-xs italic text-[#9f895d]/70">
-              {symbolProgress < 3
-                ? "A faint pulse answers."
-                : "The pattern is listening."}
+              One seal holds its gaze.
             </p>
           )}
           {symbolsAwake && (
@@ -573,8 +602,8 @@ export function GothicDoor({
           </div>
           {picked === "hint" && (
             <p className="animate-card-in max-w-52 text-center font-serif text-xs italic leading-relaxed text-[#c9a84c]/75">
-              The upper seal is jealous: answer it only from below, then let it
-              have the last word.
+              Two seals guard the fleur. Turn their longest points toward its
+              heart.
             </p>
           )}
           {picked !== null &&
