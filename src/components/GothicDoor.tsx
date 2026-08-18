@@ -21,7 +21,7 @@ const rides = [
     label: "UNO reverse card",
   },
   { value: "✈️", char: "✈️", image: null, label: "plane" },
-  { value: "🚲", char: "🚲", image: null, label: "bike" },
+  { value: "hint", char: "❓", image: null, label: "Reveal a cryptic clue" },
   { value: "🧹", char: "🧹", image: null, label: "broom" },
 ];
 
@@ -540,7 +540,8 @@ export function GothicDoor({
           <div className="grid grid-cols-2 gap-3">
             {rides.map((ride) => {
               const isValid = isEntryRide(ride.value);
-              const isWrong = picked === ride.value && !isValid;
+              const isWrong =
+                picked === ride.value && !isValid && ride.value !== "hint";
               const selectionClass = getRideSelectionClass(isValid, isWrong);
               return (
                 <button
@@ -570,7 +571,14 @@ export function GothicDoor({
               );
             })}
           </div>
+          {picked === "hint" && (
+            <p className="animate-card-in max-w-52 text-center font-serif text-xs italic leading-relaxed text-[#c9a84c]/75">
+              The upper seal is jealous: answer it only from below, then let it
+              have the last word.
+            </p>
+          )}
           {picked !== null &&
+            picked !== "hint" &&
             picked !== "🧹" &&
             picked !== "✈️" &&
             picked !== "uno" && (
