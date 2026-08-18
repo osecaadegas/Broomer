@@ -571,29 +571,29 @@ body {
   }
 }
 
+.door-sigil-upper,
+.door-sigil-lower {
+  position: absolute;
+  left: 50%;
+  z-index: 70;
+  margin: 0;
+  transform: translateX(-50%);
+  background: rgba(12, 6, 9, 0.82);
+  box-shadow:
+    0 0 0 1px rgba(201, 168, 76, 0.2),
+    0 0 1.25rem rgba(201, 168, 76, 0.2);
+  backdrop-filter: blur(4px);
+}
+
+.door-sigil-upper {
+  top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.door-sigil-lower {
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
 @media (max-width: 640px) {
-  .door-sigil-upper,
-  .door-sigil-lower {
-    position: absolute;
-    left: 50%;
-    z-index: 70;
-    margin: 0;
-    transform: translateX(-50%);
-    background: rgba(12, 6, 9, 0.82);
-    box-shadow:
-      0 0 0 1px rgba(201, 168, 76, 0.2),
-      0 0 1.25rem rgba(201, 168, 76, 0.2);
-    backdrop-filter: blur(4px);
-  }
-
-  .door-sigil-upper {
-    top: max(0.75rem, env(safe-area-inset-top));
-  }
-
-  .door-sigil-lower {
-    bottom: max(0.75rem, env(safe-area-inset-bottom));
-  }
-
   .dutchman-crossing {
     top: 5%;
     width: min(58vw, 13rem);
