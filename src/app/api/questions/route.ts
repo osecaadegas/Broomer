@@ -6,11 +6,20 @@ import {
 import type { SupabaseQuestionRow } from "@/lib/supabase/types";
 import {
   hasOptions,
+  isCandleGate,
   isQuestionType,
   toQuestionFromSupabase,
 } from "@/lib/questionnaire";
 
 export const dynamic = "force-dynamic";
+
+function getDependsOnValue(
+  candleGate: unknown,
+  dependsOn: unknown,
+): number | null {
+  if (isCandleGate(candleGate)) return -candleGate;
+  return typeof dependsOn === "number" ? dependsOn : null;
+}
 
 export async function GET() {
   const supabase = createPublicSupabaseClient();
@@ -56,6 +65,7 @@ export async function POST(request: Request) {
     multipleMax,
     responseText,
     responseTrigger,
+    candleGate,
   } = (body ?? {}) as {
     prompt?: unknown;
     type?: unknown;
@@ -70,6 +80,7 @@ export async function POST(request: Request) {
     multipleMax?: unknown;
     responseText?: unknown;
     responseTrigger?: unknown;
+    candleGate?: unknown;
   };
 
   const promptValue = typeof prompt === "string" ? prompt.trim() : "";
@@ -83,6 +94,17 @@ export async function POST(request: Request) {
   if (!isQuestionType(type)) {
     return NextResponse.json(
       { error: "Invalid question type" },
+      { status: 400 },
+    );
+  }
+
+  if (
+    candleGate !== undefined &&
+    candleGate !== null &&
+    !isCandleGate(candleGate)
+  ) {
+    return NextResponse.json(
+      { error: "Candle gate must be between 1 and 5" },
       { status: 400 },
     );
   }
@@ -125,7 +147,7 @@ export async function POST(request: Request) {
       options: optionsValue,
       required: required === true,
       position: nextPosition,
-      depends_on: typeof dependsOn === "number" ? dependsOn : null,
+      depends_on: getDependsOnValue(candleGate, dependsOn),
       condition_type: typeof conditionType === "string" ? conditionType : null,
       condition_value:
         typeof conditionValue === "string" ? conditionValue : null,

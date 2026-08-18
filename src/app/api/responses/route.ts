@@ -9,6 +9,7 @@ import type {
   SupabaseResponseRow,
 } from "@/lib/supabase/types";
 import {
+  candleGateFromDependsOn,
   isQuestionType,
   isQuestionVisible,
   RESPONSE_MOOD_SELFIE_KEY,
@@ -125,7 +126,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { answers } = (body ?? {}) as { answers?: unknown };
+  const { answers, candleSpell } = (body ?? {}) as {
+    answers?: unknown;
+    candleSpell?: unknown;
+  };
+  const candleSpellActive = candleSpell === true;
 
   if (
     typeof answers !== "object" ||
@@ -229,7 +234,20 @@ export async function POST(request: Request) {
 
   const allQuestions = questionData as SupabaseQuestionRow[];
 
+  if (!candleSpellActive) {
+    for (const question of allQuestions) {
+      if (candleGateFromDependsOn(question.depends_on) == null) continue;
+      delete answerMap[String(question.id)];
+      delete answerMap[`${question.id}:followup`];
+    }
+  }
+
   for (const question of allQuestions) {
+    if (
+      candleGateFromDependsOn(question.depends_on) != null &&
+      !candleSpellActive
+    )
+      continue;
     if (
       !isQuestionVisible(
         {

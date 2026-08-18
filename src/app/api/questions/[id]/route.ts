@@ -3,6 +3,7 @@ import { getAdminSupabase } from "@/lib/supabase/server";
 import type { SupabaseQuestionRow } from "@/lib/supabase/types";
 import {
   hasOptions,
+  isCandleGate,
   isQuestionType,
   toQuestionFromSupabase,
   type QuestionType,
@@ -63,6 +64,7 @@ export async function PATCH(
     multipleMax,
     responseText,
     responseTrigger,
+    candleGate,
   } = (body ?? {}) as {
     prompt?: unknown;
     type?: unknown;
@@ -77,6 +79,7 @@ export async function PATCH(
     multipleMax?: unknown;
     responseText?: unknown;
     responseTrigger?: unknown;
+    candleGate?: unknown;
   };
 
   const update: {
@@ -154,6 +157,17 @@ export async function PATCH(
     update.required = required === true;
   }
 
+  if (
+    candleGate !== undefined &&
+    candleGate !== null &&
+    !isCandleGate(candleGate)
+  ) {
+    return NextResponse.json(
+      { error: "Candle gate must be between 1 and 5" },
+      { status: 400 },
+    );
+  }
+
   if (dependsOn !== undefined) {
     update.depends_on = typeof dependsOn === "number" ? dependsOn : null;
   }
@@ -186,6 +200,20 @@ export async function PATCH(
   if (responseTrigger !== undefined) {
     update.response_trigger =
       typeof responseTrigger === "string" ? responseTrigger : null;
+  }
+  if (candleGate !== undefined) {
+    if (isCandleGate(candleGate)) {
+      update.depends_on = -candleGate;
+      update.condition_type = null;
+      update.condition_value = null;
+    } else if (
+      candleGate === null &&
+      typeof existing.depends_on === "number" &&
+      existing.depends_on >= -5 &&
+      existing.depends_on <= -1
+    ) {
+      update.depends_on = null;
+    }
   }
 
   update.updated_at = new Date().toISOString();

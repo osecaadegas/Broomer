@@ -6,6 +6,7 @@ import type { FormEvent } from "react";
 import {
   hasOptions,
   isPickType,
+  isQuestionOnCandlePath,
   isQuestionVisible,
   ratingScale,
   type Question,
@@ -94,8 +95,13 @@ export function Questionnaire({
   const [moodInterludeCompleted, setMoodInterludeCompleted] = useState(false);
 
   const visible = useMemo(
-    () => questions.filter((question) => isQuestionVisible(question, answers)),
-    [questions, answers],
+    () =>
+      questions.filter(
+        (question) =>
+          isQuestionOnCandlePath(question, enchanted) &&
+          isQuestionVisible(question, answers),
+      ),
+    [questions, answers, enchanted],
   );
 
   // Keep `current` within the visible list when a conditional answer changes
@@ -275,7 +281,7 @@ export function Questionnaire({
       const res = await fetch("/api/responses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers, candleSpell: enchanted }),
       });
       const data = await res.json();
       if (!res.ok) {

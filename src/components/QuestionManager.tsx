@@ -7,6 +7,7 @@ import {
   QUESTION_TYPE_HINTS,
   QUESTION_TYPE_LABELS,
   QUESTION_TYPES,
+  type CandleGate,
   type Question,
   type QuestionType,
 } from "@/lib/questionnaire";
@@ -64,6 +65,7 @@ const SAMPLE_QUESTIONS: Array<{
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
+const CANDLE_GATES: CandleGate[] = [1, 2, 3, 4, 5];
 
 export function QuestionManager({ initialQuestions }: Props) {
   const [questions, setQuestions] = useState<Question[]>(initialQuestions);
@@ -73,6 +75,7 @@ export function QuestionManager({ initialQuestions }: Props) {
   const [type, setType] = useState<QuestionType>("short");
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [required, setRequired] = useState(false);
+  const [candleGate, setCandleGate] = useState<CandleGate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmId, setConfirmId] = useState<number | null>(null);
@@ -91,6 +94,7 @@ export function QuestionManager({ initialQuestions }: Props) {
     setType("short");
     setOptions(["", ""]);
     setRequired(false);
+    setCandleGate(null);
     setError(null);
     setFormOpen(true);
   }
@@ -101,6 +105,7 @@ export function QuestionManager({ initialQuestions }: Props) {
     setType(question.type);
     setOptions(question.options.length ? [...question.options] : ["", ""]);
     setRequired(question.required);
+    setCandleGate(question.candleGate);
     setError(null);
     setFormOpen(true);
   }
@@ -155,6 +160,7 @@ export function QuestionManager({ initialQuestions }: Props) {
         type,
         options: hasOptions(type) ? cleanedOptions : [],
         required,
+        candleGate,
       };
       const res = await fetch(
         editingId ? `/api/questions/${editingId}` : "/api/questions",
@@ -365,6 +371,37 @@ export function QuestionManager({ initialQuestions }: Props) {
                 Mark as required
               </span>
             </label>
+
+            <div>
+              <label
+                htmlFor="question-candle-gate"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Question path
+              </label>
+              <select
+                id="question-candle-gate"
+                className={inputClass}
+                value={candleGate ?? ""}
+                onChange={(event) =>
+                  setCandleGate(
+                    event.target.value
+                      ? (Number(event.target.value) as CandleGate)
+                      : null,
+                  )
+                }
+              >
+                <option value="">Always visible</option>
+                {CANDLE_GATES.map((gate) => (
+                  <option key={gate} value={gate}>
+                    Candle {gate} spell path
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-xs text-slate-400">
+                Candle questions appear only after the complete lights-off spell.
+              </p>
+            </div>
           </div>
 
           {error && (
@@ -453,6 +490,11 @@ export function QuestionManager({ initialQuestions }: Props) {
                     {question.required && (
                       <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-600">
                         Required
+                      </span>
+                    )}
+                    {question.candleGate != null && (
+                      <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                        Candle {question.candleGate}
                       </span>
                     )}
                   </div>

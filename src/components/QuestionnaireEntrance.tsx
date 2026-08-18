@@ -192,7 +192,16 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
           onStartMusic={startMusic}
         />
       )}
-      {stage === "lights" && <DiabolicalLights onChoose={handleLights} />}
+      {stage === "lights" && (
+        <DiabolicalLights
+          onChoose={handleLights}
+          candleQuestionCounts={[1, 2, 3, 4, 5].map(
+            (gate) =>
+              questions.filter((question) => question.candleGate === gate)
+                .length,
+          )}
+        />
+      )}
       {stage === "author" && (
         <UnoQuestionBuilder onCancel={() => window.location.reload()} />
       )}

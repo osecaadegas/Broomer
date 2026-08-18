@@ -6,15 +6,33 @@ import type { MouseEvent, PointerEvent } from "react";
 
 interface Props {
   onChoose: (enabled: boolean, enchanted?: boolean) => void;
+  candleQuestionCounts: readonly number[];
 }
 
 const SPELL_SEQUENCE = [2, 1, 3, 0, 4] as const;
 const CANDLE_HEIGHTS = [3.25, 3.8, 4.5, 3.8, 3.25] as const;
 
-export function DiabolicalLights({ onChoose }: Readonly<Props>) {
+function getCandleMessage(
+  index: number,
+  questionCount: number,
+  spellComplete: boolean,
+): string {
+  if (spellComplete) return "The room remembers your name.";
+  if (questionCount === 1) return `Candle ${index + 1} wakes 1 question.`;
+  if (questionCount > 1) {
+    return `Candle ${index + 1} wakes ${questionCount} questions.`;
+  }
+  return `Candle ${index + 1} guards a quiet secret.`;
+}
+
+export function DiabolicalLights({
+  onChoose,
+  candleQuestionCounts,
+}: Readonly<Props>) {
   const [litCandles, setLitCandles] = useState<number[]>([]);
   const [spellAwake, setSpellAwake] = useState(false);
   const [spellMessage, setSpellMessage] = useState<string | null>(null);
+  const [lightsOffSelected, setLightsOffSelected] = useState(false);
 
   function lightCandle(index: number) {
     if (spellAwake || litCandles.includes(index)) return;
@@ -28,16 +46,28 @@ export function DiabolicalLights({ onChoose }: Readonly<Props>) {
 
     const next = [...litCandles, index];
     setLitCandles(next);
+    const questionCount = candleQuestionCounts[index] ?? 0;
     setSpellMessage(
-      next.length < SPELL_SEQUENCE.length
-        ? "The next flame is listening."
-        : "The room remembers your name.",
+      getCandleMessage(
+        index,
+        questionCount,
+        next.length === SPELL_SEQUENCE.length,
+      ),
     );
 
     if (next.length === SPELL_SEQUENCE.length) {
       setSpellAwake(true);
-      window.setTimeout(() => onChoose(true, true), 1100);
+      window.setTimeout(() => onChoose(false, true), 1100);
     }
+  }
+
+  function chooseLights(enabled: boolean) {
+    if (enabled) {
+      onChoose(true, false);
+      return;
+    }
+    setLightsOffSelected(true);
+    setSpellMessage(null);
   }
 
   function chooseWithPointer(
@@ -45,14 +75,14 @@ export function DiabolicalLights({ onChoose }: Readonly<Props>) {
     event: PointerEvent<HTMLButtonElement>,
   ) {
     if (event.button !== 0) return;
-    onChoose(enabled);
+    chooseLights(enabled);
   }
 
   function chooseWithKeyboard(
     enabled: boolean,
     event: MouseEvent<HTMLButtonElement>,
   ) {
-    if (event.detail === 0) onChoose(enabled);
+    if (event.detail === 0) chooseLights(enabled);
   }
 
   return (
@@ -87,39 +117,53 @@ export function DiabolicalLights({ onChoose }: Readonly<Props>) {
         </button>
       </fieldset>
 
-      <div
-        className="mt-7 flex h-20 w-full max-w-sm items-end justify-center gap-3 sm:gap-5"
-        aria-label="Five ritual candles"
-      >
-        {[0, 1, 2, 3, 4].map((index) => {
-          const lit = litCandles.includes(index);
-          return (
-            <button
-              key={index}
-              type="button"
-              onClick={() => lightCandle(index)}
-              aria-label={`${lit ? "Lit" : "Unlit"} ritual candle ${index + 1}`}
-              aria-pressed={lit}
-              className={`ritual-candle ${lit ? "ritual-candle-lit" : ""} ${
-                spellAwake ? "ritual-candle-awake" : ""
-              }`}
-              style={{ height: `${CANDLE_HEIGHTS[index]}rem` }}
-            >
-              <span className="ritual-flame" aria-hidden />
-              <span className="ritual-wick" aria-hidden />
-            </button>
-          );
-        })}
-      </div>
+      {lightsOffSelected && (
+        <div className="animate-card-in mt-7 flex flex-col items-center">
+          <div
+            className="flex h-20 w-full max-w-sm items-end justify-center gap-3 sm:gap-5"
+            aria-label="Five ritual candles"
+          >
+            {[0, 1, 2, 3, 4].map((index) => {
+              const lit = litCandles.includes(index);
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => lightCandle(index)}
+                  aria-label={`${lit ? "Lit" : "Unlit"} ritual candle ${index + 1}`}
+                  aria-pressed={lit}
+                  className={`ritual-candle ${lit ? "ritual-candle-lit" : ""} ${
+                    spellAwake ? "ritual-candle-awake" : ""
+                  }`}
+                  style={{ height: `${CANDLE_HEIGHTS[index]}rem` }}
+                >
+                  <span className="ritual-flame" aria-hidden />
+                  <span className="ritual-wick" aria-hidden />
+                </button>
+              );
+            })}
+          </div>
 
-      <p
-        aria-live="polite"
-        className={`mt-3 min-h-5 font-serif text-xs italic transition-colors ${
-          spellAwake ? "text-[#f0d586]" : "text-[#9f895d]/75"
-        }`}
-      >
-        {spellMessage}
-      </p>
+          <p
+            aria-live="polite"
+            className={`mt-3 min-h-5 font-serif text-xs italic transition-colors ${
+              spellAwake ? "text-[#f0d586]" : "text-[#9f895d]/75"
+            }`}
+          >
+            {spellMessage}
+          </p>
+
+          {!spellAwake && (
+            <button
+              type="button"
+              onClick={() => onChoose(false, false)}
+              className="mt-2 font-serif text-xs italic text-stone-500 underline decoration-stone-700 underline-offset-4 transition hover:text-stone-300"
+            >
+              Continue in darkness
+            </button>
+          )}
+        </div>
+      )}
 
       <Image
         src="/spongebob.png"
@@ -128,7 +172,7 @@ export function DiabolicalLights({ onChoose }: Readonly<Props>) {
         height={713}
         priority
         sizes="(max-width: 640px) 62vw, 256px"
-        className="diabolical-spongebob mt-8 h-auto w-[min(62vw,16rem)] object-contain"
+        className={`${lightsOffSelected ? "mt-5" : "mt-8"} diabolical-spongebob h-auto w-[min(62vw,16rem)] object-contain`}
       />
     </section>
   );

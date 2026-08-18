@@ -13,6 +13,7 @@ export const QUESTION_TYPES = [
 ] as const;
 
 export type QuestionType = (typeof QUESTION_TYPES)[number];
+export type CandleGate = 1 | 2 | 3 | 4 | 5;
 
 export interface Question {
   id: number;
@@ -30,6 +31,7 @@ export interface Question {
   multipleMax: number | null;
   responseText: string | null;
   responseTrigger: string | null;
+  candleGate: CandleGate | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -124,6 +126,34 @@ export function isQuestionType(value: unknown): value is QuestionType {
   );
 }
 
+export function isCandleGate(value: unknown): value is CandleGate {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 5
+  );
+}
+
+export function candleGateFromDependsOn(value: unknown): CandleGate | null {
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value > -1 ||
+    value < -5
+  ) {
+    return null;
+  }
+  return -value as CandleGate;
+}
+
+export function isQuestionOnCandlePath(
+  question: { candleGate: CandleGate | null },
+  candleSpellActive: boolean,
+): boolean {
+  return question.candleGate == null || candleSpellActive;
+}
+
 export function hasOptions(type: QuestionType): boolean {
   return type === "single" || type === "multiple";
 }
@@ -157,6 +187,7 @@ export function ratingScale(question: { options: string[] }): number[] {
 
 export function toQuestionFromSupabase(row: SupabaseQuestionRow): Question {
   const rawOptions = Array.isArray(row.options) ? row.options : [];
+  const candleGate = candleGateFromDependsOn(row.depends_on);
   return {
     id: row.id,
     prompt: row.prompt,
@@ -166,7 +197,7 @@ export function toQuestionFromSupabase(row: SupabaseQuestionRow): Question {
     ),
     required: row.required,
     position: row.position,
-    dependsOn: row.depends_on,
+    dependsOn: candleGate == null ? row.depends_on : null,
     conditionType: row.condition_type as Question["conditionType"],
     conditionValue: row.condition_value,
     followUpOption: row.follow_up_option,
@@ -175,6 +206,7 @@ export function toQuestionFromSupabase(row: SupabaseQuestionRow): Question {
     multipleMax: row.multiple_max,
     responseText: row.response_text,
     responseTrigger: row.response_trigger,
+    candleGate,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
