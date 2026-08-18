@@ -59,7 +59,12 @@ function getIdleEventClass(index: number): string {
 function DoorIdleEvent({
   active,
   index,
-}: Readonly<{ active: boolean; index: number }>) {
+  ghostMode,
+}: Readonly<{
+  active: boolean;
+  index: number;
+  ghostMode: "cross" | "center";
+}>) {
   if (!active || index < 0) return null;
 
   return (
@@ -70,7 +75,11 @@ function DoorIdleEvent({
         className={`pointer-events-none absolute inset-0 z-[58] ${getIdleEventClass(index)}`}
       >
         {index === 0 && (
-          <div className="dutchman-crossing">
+          <div
+            className={`dutchman-figure ${
+              ghostMode === "center" ? "dutchman-center" : "dutchman-crossing"
+            }`}
+          >
             <div className="dutchman-ghost">
               <span className="ghost-smoke ghost-smoke-one" />
               <span className="ghost-smoke ghost-smoke-two" />
@@ -225,6 +234,9 @@ export function GothicDoor({
   const [symbolsAwake, setSymbolsAwake] = useState(false);
   const [idleEventIndex, setIdleEventIndex] = useState(-1);
   const [idleEventActive, setIdleEventActive] = useState(false);
+  const [idleGhostMode, setIdleGhostMode] = useState<"cross" | "center">(
+    "center",
+  );
   const adminPressTimerRef = useRef<number | null>(null);
   const adminClicksRef = useRef({ count: 0, firstAt: 0 });
 
@@ -388,6 +400,12 @@ export function GothicDoor({
       return nextIndex;
     };
 
+    const pickGhostMode = () => {
+      const buffer = new Uint32Array(1);
+      crypto.getRandomValues(buffer);
+      return buffer[0] % 2 === 0 ? "center" : "cross";
+    };
+
     const nextDelay = (isFirst = false) => {
       if (isFirst) return 1800;
       const buffer = new Uint32Array(1);
@@ -399,6 +417,9 @@ export function GothicDoor({
     const revealIdleEvent = () => {
       const eventIndex = shouldShowDutchmanFirst ? 0 : pickIdleEvent();
       shouldShowDutchmanFirst = false;
+      if (eventIndex === 0) {
+        setIdleGhostMode(pickGhostMode());
+      }
       setIdleEventIndex(eventIndex);
       setIdleEventActive(true);
       clearTimer = window.setTimeout(
@@ -472,7 +493,11 @@ export function GothicDoor({
       <div aria-hidden className="gate-ambient pointer-events-none absolute inset-0" />
       <div aria-hidden className="gate-film-grain pointer-events-none absolute inset-0" />
       <div aria-hidden className="gate-heavy-vignette pointer-events-none absolute inset-0" />
-      <DoorIdleEvent active={idleEventActive} index={idleEventIndex} />
+      <DoorIdleEvent
+        active={idleEventActive}
+        index={idleEventIndex}
+        ghostMode={idleGhostMode}
+      />
 
       {/* LEFT DOOR */}
       <div
@@ -542,6 +567,18 @@ export function GothicDoor({
           <div className="pointer-events-none absolute inset-x-6 bottom-8 top-[85%] rounded-sm border border-[#2a1a10]/30 bg-[#0a0608]/50" />
           <span aria-hidden className="gate-scratch gate-scratch-one" />
           <span aria-hidden className="gate-scratch gate-scratch-two" />
+          <span aria-hidden className="gate-etched-mark gate-etched-six">
+            6
+          </span>
+          <span aria-hidden className="gate-etched-mark gate-etched-seven-eleven">
+            7.11
+          </span>
+          <span aria-hidden className="gate-etched-mark gate-etched-broomer">
+            BROOMER
+          </span>
+          <span aria-hidden className="gate-etched-mark gate-etched-johny">
+            Johny
+          </span>
         </div>
       </div>
 
@@ -613,6 +650,18 @@ export function GothicDoor({
           <div className="pointer-events-none absolute inset-x-6 bottom-8 top-[85%] rounded-sm border border-[#2a1a10]/30 bg-[#0a0608]/50" />
           <span aria-hidden className="gate-scratch gate-scratch-three" />
           <span aria-hidden className="gate-scratch gate-scratch-four" />
+          <span aria-hidden className="gate-etched-mark gate-etched-seven">
+            7
+          </span>
+          <span aria-hidden className="gate-etched-mark gate-etched-twenty-one">
+            21.03
+          </span>
+          <span aria-hidden className="gate-etched-mark gate-etched-babbayaga">
+            BABBAYAGA
+          </span>
+          <span aria-hidden className="gate-etched-mark gate-etched-sins">
+            sins
+          </span>
         </div>
       </div>
 
