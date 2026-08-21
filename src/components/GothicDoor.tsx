@@ -1,7 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { PlaneAnswerReveal } from "@/components/PlaneAnswerReveal";
 import type { PlaneAnswer } from "@/lib/supabase/types";
 
@@ -45,6 +51,7 @@ const GATE_REVEAL_MS = 3100;
 const ADMIN_PRESS_MS = 1400;
 const ADMIN_CLICK_WINDOW_MS = 1800;
 const CARD_GATE_WORD = "krabby";
+const CARD_GATE_HOLD_MS = 1150;
 const IDLE_MESSAGES = [
   "A shadow crosses the other side.",
   "The door exhales.",
@@ -310,9 +317,28 @@ export function GothicDoor({
   const adminPressTimerRef = useRef<number | null>(null);
   const adminClicksRef = useRef({ count: 0, firstAt: 0 });
   const cardGateBufferRef = useRef("");
+  const cardGateHoldTimerRef = useRef<number | null>(null);
+  const cardGateOpeningRef = useRef(false);
+
+  const clearCardGateHoldTimer = useCallback(() => {
+    if (cardGateHoldTimerRef.current == null) return;
+    window.clearTimeout(cardGateHoldTimerRef.current);
+    cardGateHoldTimerRef.current = null;
+  }, []);
+
+  const revealCardGate = useCallback(() => {
+    if (sliding || cardGateOpeningRef.current) return;
+    cardGateOpeningRef.current = true;
+    clearCardGateHoldTimer();
+    setPicked("cards");
+    setCardGatePrimed(false);
+    playGateAtmosphere();
+    setSliding(true);
+    window.setTimeout(onCards, GATE_REVEAL_MS);
+  }, [clearCardGateHoldTimer, onCards, sliding]);
 
   function handlePick(char: string) {
-    if (sliding) return;
+    if (sliding || cardGateOpeningRef.current) return;
     setPicked(char);
     if (char === "hint") {
       cardGateBufferRef.current = "";
@@ -355,16 +381,21 @@ export function GothicDoor({
         `${cardGateBufferRef.current}${event.key.toLowerCase()}`.slice(-16);
       if (!cardGateBufferRef.current.endsWith(CARD_GATE_WORD)) return;
 
-      setPicked("cards");
-      setCardGatePrimed(false);
-      playGateAtmosphere();
-      setSliding(true);
-      window.setTimeout(onCards, GATE_REVEAL_MS);
+      revealCardGate();
     }
 
     window.addEventListener("keydown", handleCardGateKey);
     return () => window.removeEventListener("keydown", handleCardGateKey);
-  }, [cardGatePrimed, onCards, sliding]);
+  }, [cardGatePrimed, revealCardGate, sliding]);
+
+  function handleHintPointerDown() {
+    if (sliding || !cardGatePrimed || cardGateOpeningRef.current) return;
+    clearCardGateHoldTimer();
+    cardGateHoldTimerRef.current = window.setTimeout(
+      revealCardGate,
+      CARD_GATE_HOLD_MS,
+    );
+  }
 
   function handleSymbolRotate(symbol: DoorSymbol) {
     if (sliding || symbolsAwake) return;
@@ -492,8 +523,9 @@ export function GothicDoor({
         window.clearTimeout(adminPressTimerRef.current);
         adminPressTimerRef.current = null;
       }
+      clearCardGateHoldTimer();
     };
-  }, [gone]);
+  }, [clearCardGateHoldTimer, gone]);
 
   useEffect(() => {
     if (sliding) return;
@@ -899,6 +931,18 @@ export function GothicDoor({
                   key={ride.value}
                   type="button"
                   onClick={() => handlePick(ride.value)}
+                  onPointerDown={
+                    ride.value === "hint" ? handleHintPointerDown : undefined
+                  }
+                  onPointerUp={
+                    ride.value === "hint" ? clearCardGateHoldTimer : undefined
+                  }
+                  onPointerCancel={
+                    ride.value === "hint" ? clearCardGateHoldTimer : undefined
+                  }
+                  onPointerLeave={
+                    ride.value === "hint" ? clearCardGateHoldTimer : undefined
+                  }
                   aria-label={ride.label}
                   disabled={sliding}
                   className={`gate-seal group relative flex h-16 w-16 items-center justify-center transition-all duration-300 sm:h-20 sm:w-20 ${selectionClass} ${
@@ -932,8 +976,8 @@ export function GothicDoor({
                 heart.
               </p>
               <p className="mt-2 text-[#9f895d]/70">
-                The fifth passage has no seal. Whisper the crab&apos;s K-word
-                while the door listens.
+                The fifth passage has no seal. Hold the unanswered mark until
+                it answers.
               </p>
             </div>
           )}
