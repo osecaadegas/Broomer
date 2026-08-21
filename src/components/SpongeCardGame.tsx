@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 type Rarity = "common" | "rare" | "epic" | "legendary" | "gold";
@@ -35,6 +36,7 @@ type SpongeCard = {
   main: string;
   accent: string;
   glow: string;
+  artImage: string;
 };
 
 type StoredCardGame = {
@@ -132,21 +134,23 @@ const CARDS: SpongeCard[] = [
     main: "#e879f9",
     accent: "#86efac",
     glow: "#ecfeff",
+    artImage: "/chess/White_pieces/Snail_Pawn.png",
   },
   {
     id: "plankton",
-    name: "Plankton",
-    title: "Tiny Mastermind",
+    name: "SpongeBob",
+    title: "Gift Sneak",
     rarity: "common",
-    quote: "One eye on the formula.",
+    quote: "A wrapped surprise from the reef.",
     power: 18,
     jelly: 22,
-    motif: "microbe",
+    motif: "sponge",
     bg: "#115e59",
     floor: "#052e2b",
     main: "#7ddf64",
     accent: "#f3ff7a",
     glow: "#a7f3d0",
+    artImage: "/spongebob.png",
   },
   {
     id: "squidward",
@@ -162,21 +166,23 @@ const CARDS: SpongeCard[] = [
     main: "#e0f2fe",
     accent: "#312e81",
     glow: "#cffafe",
+    artImage: "/chess/White_pieces/Squidward_Bishop.png",
   },
   {
     id: "puff",
-    name: "Mrs. Puff",
-    title: "Boating Legend",
+    name: "Gary",
+    title: "Midnight Meow",
     rarity: "common",
-    quote: "Brake before destiny.",
+    quote: "A quiet crawl through the tide.",
     power: 16,
     jelly: 31,
-    motif: "puffer",
+    motif: "snail",
     bg: "#38bdf8",
     floor: "#0f766e",
     main: "#f8b4d9",
     accent: "#f97316",
     glow: "#fff7ad",
+    artImage: "/chess/Black_pieces/Snail_Pawn.png",
   },
   {
     id: "sandy",
@@ -192,6 +198,7 @@ const CARDS: SpongeCard[] = [
     main: "#fbbf24",
     accent: "#d97706",
     glow: "#ecfeff",
+    artImage: "/chess/White_pieces/Sandy_Queen.png",
   },
   {
     id: "krabs",
@@ -207,6 +214,7 @@ const CARDS: SpongeCard[] = [
     main: "#ef4444",
     accent: "#facc15",
     glow: "#fff7ad",
+    artImage: "/chess/White_pieces/MrCrabs_Rook.png",
   },
   {
     id: "patrick",
@@ -222,21 +230,23 @@ const CARDS: SpongeCard[] = [
     main: "#fb7185",
     accent: "#86efac",
     glow: "#fce7f3",
+    artImage: "/chess/White_pieces/Patrick_knight.png",
   },
   {
     id: "patty",
-    name: "Krabby Patty",
-    title: "Secret Stack",
+    name: "Patrick Star",
+    title: "Night Rock",
     rarity: "epic",
-    quote: "Fresh from the grill.",
+    quote: "A pink legend under deep water lights.",
     power: 91,
     jelly: 95,
-    motif: "burger",
+    motif: "star",
     bg: "#0284c7",
     floor: "#166534",
     main: "#f59e0b",
     accent: "#84cc16",
     glow: "#fef3c7",
+    artImage: "/chess/Black_pieces/Patrick_knight.png",
   },
   {
     id: "spongebob",
@@ -252,6 +262,7 @@ const CARDS: SpongeCard[] = [
     main: "#fde047",
     accent: "#22c55e",
     glow: "#fef9c3",
+    artImage: "/chess/White_pieces/Sponge_King.png",
   },
   {
     id: "dutchman",
@@ -267,81 +278,87 @@ const CARDS: SpongeCard[] = [
     main: "#5eead4",
     accent: "#22c55e",
     glow: "#ccfbf1",
+    artImage: "/flyingshadow.png",
   },
   {
     id: "pineapple-house",
-    name: "Pineapple House",
-    title: "Porous Home",
+    name: "SpongeBob",
+    title: "Deep-Sea King",
     rarity: "common",
-    quote: "Lights on in the reef.",
+    quote: "The crown sits crooked but proud.",
     power: 20,
     jelly: 34,
-    motif: "house",
+    motif: "sponge",
     bg: "#0ea5e9",
     floor: "#166534",
     main: "#f59e0b",
     accent: "#22c55e",
     glow: "#fef3c7",
+    artImage: "/chess/Black_pieces/Sponge_King.png",
   },
   {
     id: "jellyfish",
-    name: "Jellyfish",
-    title: "Field Zapper",
+    name: "Squidward",
+    title: "Blue Bishop",
     rarity: "common",
-    quote: "A sting with style.",
+    quote: "A dramatic pause before the solo.",
     power: 26,
     jelly: 48,
-    motif: "jelly",
+    motif: "clarinet",
     bg: "#0284c7",
     floor: "#0e7490",
     main: "#f0abfc",
     accent: "#fb7185",
     glow: "#fae8ff",
+    artImage: "/chess/Black_pieces/Squidward_Bishop.png",
   },
   {
     id: "spatula",
-    name: "Golden Spatula",
-    title: "Grill Relic",
+    name: "Mr. Krabs",
+    title: "Night Register",
     rarity: "rare",
-    quote: "Flip fate cleanly.",
+    quote: "Every shiny point has a home.",
     power: 68,
     jelly: 42,
-    motif: "spatula",
+    motif: "claw",
     bg: "#0891b2",
     floor: "#0f766e",
     main: "#facc15",
     accent: "#94a3b8",
     glow: "#fef9c3",
+    artImage: "/chess/Black_pieces/MrCrabs_Rook.png",
   },
   {
     id: "boatmobile",
-    name: "Boatmobile",
-    title: "Road Reef",
+    name: "Sandy Cheeks",
+    title: "Shadow Scientist",
     rarity: "rare",
-    quote: "Turn before impact.",
+    quote: "Karate still works after dark.",
     power: 72,
     jelly: 51,
-    motif: "boat",
+    motif: "dome",
     bg: "#22d3ee",
     floor: "#0f766e",
     main: "#f97316",
     accent: "#1d4ed8",
     glow: "#cffafe",
+    artImage: "/chess/Black_pieces/Sandy_Queen.png",
   },
   {
     id: "magic-conch",
-    name: "Magic Conch",
-    title: "Shell Oracle",
+    name: "SpongeBob",
+    title: "Treasure Gift",
     rarity: "legendary",
-    quote: "The shell has spoken.",
+    quote: "The rarest present is still smiling.",
     power: 145,
     jelly: 168,
-    motif: "shell",
+    motif: "sponge",
     bg: "#7c3aed",
     floor: "#0e7490",
     main: "#f9a8d4",
     accent: "#fde68a",
     glow: "#fae8ff",
+    artImage: "/spongebob.png",
   },
   {
     id: "gold-sponge",
@@ -357,10 +374,11 @@ const CARDS: SpongeCard[] = [
     main: "#fde047",
     accent: "#f59e0b",
     glow: "#fff7ad",
+    artImage: "/chess/White_pieces/Sponge_King.png",
   },
   {
     id: "gold-crown",
-    name: "King Neptune",
+    name: "SpongeBob",
     title: "Royal Foil",
     rarity: "gold",
     quote: "By golden decree.",
@@ -372,6 +390,7 @@ const CARDS: SpongeCard[] = [
     main: "#fde68a",
     accent: "#22d3ee",
     glow: "#fff7ad",
+    artImage: "/chess/Black_pieces/Sponge_King.png",
   },
 ];
 
@@ -596,15 +615,14 @@ function MotifShape({ card }: { card: SpongeCard }) {
   }
 }
 
-function CardArtwork({ card, locked = false }: { card: SpongeCard; locked?: boolean }) {
+function CardBackdrop({ card }: { card: SpongeCard }) {
   const gradientId = `sponge-card-art-${card.id}`;
 
   return (
     <svg
-      className={`absolute inset-0 h-full w-full ${locked ? "grayscale brightness-50" : ""}`}
+      className="absolute inset-0 h-full w-full"
       viewBox="0 0 240 180"
-      role="img"
-      aria-label={`${card.name} original artwork`}
+      aria-hidden
     >
       <defs>
         <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="1">
@@ -620,9 +638,33 @@ function CardArtwork({ card, locked = false }: { card: SpongeCard; locked?: bool
       <circle cx="58" cy="22" r="3" fill={card.glow} opacity="0.35" />
       <circle cx="202" cy="38" r="7" fill={card.glow} opacity="0.35" />
       <circle cx="216" cy="76" r="3.5" fill={card.glow} opacity="0.45" />
-      <MotifShape card={card} />
+      <g opacity="0.18">
+        <MotifShape card={card} />
+      </g>
       <path d="M0 0h240v180H0z" fill="none" stroke="rgba(255,255,255,0.32)" strokeWidth="7" />
     </svg>
+  );
+}
+
+function CardArtwork({ card, locked = false }: { card: SpongeCard; locked?: boolean }) {
+  return (
+    <div
+      className={`absolute inset-0 ${locked ? "grayscale brightness-50" : ""}`}
+      role="img"
+      aria-label={`${card.name} card artwork`}
+    >
+      <CardBackdrop card={card} />
+      <div className="absolute inset-x-2 bottom-1 top-1">
+        <Image
+          src={card.artImage}
+          alt=""
+          fill
+          sizes="(max-width: 640px) 28vw, 180px"
+          className="object-contain drop-shadow-[0_0.8rem_0.85rem_rgba(2,8,23,0.52)]"
+        />
+      </div>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.2),transparent_38%),linear-gradient(180deg,transparent_58%,rgba(2,6,23,0.18))]" />
+    </div>
   );
 }
 
@@ -1035,7 +1077,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
         </div>
 
         <p className="py-7 text-center text-[10px] font-black uppercase tracking-widest text-white/45">
-          SpongeBob-themed fan card game with original SVG artwork
+          SpongeBob-themed fan card game with collectible image cards
         </p>
       </div>
     </section>

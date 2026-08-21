@@ -57,7 +57,7 @@ const ADMIN_PRESS_MS = 1400;
 const ADMIN_CLICK_WINDOW_MS = 1800;
 const MOSQUITO_FIRST_DELAY_MS = 4200;
 const MOSQUITO_INTERVAL_MS = 13500;
-const MOSQUITO_FLIGHT_MS = 7600;
+const MOSQUITO_FLIGHT_MS = 12000;
 const MOSQUITO_KILL_MS = 620;
 const IDLE_MESSAGES = [
   "A shadow crosses the other side.",

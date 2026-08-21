@@ -1562,19 +1562,19 @@ body {
 }
 
 .gate-mosquito-run-0 {
-  animation: mosquito-flight-one 7.6s linear both;
+  animation: mosquito-flight-one 12s linear both;
 }
 
 .gate-mosquito-run-1 {
-  animation: mosquito-flight-two 7.6s linear both;
+  animation: mosquito-flight-two 12s linear both;
 }
 
 .gate-mosquito-run-2 {
-  animation: mosquito-flight-three 7.6s linear both;
+  animation: mosquito-flight-three 12s linear both;
 }
 
 .gate-mosquito-run-3 {
-  animation: mosquito-flight-four 7.6s linear both;
+  animation: mosquito-flight-four 12s linear both;
 }
 
 .gate-mosquito .mosquito-wings {
@@ -3012,7 +3012,7 @@ body {
   .gate-mosquito-run-2,
   .gate-mosquito-run-3 {
     animation-name: mosquito-flight-reduced;
-    animation-duration: 6.4s;
+    animation-duration: 8.5s;
   }
 
   .animate-slide-left,
