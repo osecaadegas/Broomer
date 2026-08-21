@@ -107,6 +107,15 @@ export function SearchIcon(props: IconProps) {
   );
 }
 
+export function SendIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m22 2-7 20-4-9-9-4Z" />
+      <path d="M22 2 11 13" />
+    </Svg>
+  );
+}
+
 export function ClipboardIcon(props: IconProps) {
   return (
     <Svg {...props}>

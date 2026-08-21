@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { Chess, type Color, type PieceSymbol, type Square } from "chess.js";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -9,6 +9,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   SearchIcon,
+  SendIcon,
+  SparklesIcon,
   XIcon,
 } from "@/components/icons";
 
@@ -17,6 +19,8 @@ interface Props {
 }
 
 type Role = "w" | "b";
+type GameResultReason = "checkmate" | "forfeit";
+type ChatMenu = "messages" | "emojis" | null;
 
 interface ChessPresence {
   presence_ref: string;
@@ -26,6 +30,29 @@ interface ChessPresence {
 }
 
 type PieceView = { color: Color; type: PieceSymbol };
+
+interface ChatMessage {
+  id: string;
+  playerId: string;
+  role: Role | null;
+  body: string;
+  mine: boolean;
+}
+
+interface GameResult {
+  id: number;
+  reason: GameResultReason;
+  winner: Role | null;
+  loser: Role | null;
+}
+
+interface MoveAnimation {
+  id: number;
+  from: Square;
+  to: Square;
+  color: Color;
+  type: PieceSymbol;
+}
 
 interface GameView {
   fen: string;
@@ -72,6 +99,16 @@ const PIECE_NAMES: Record<PieceSymbol, string> = {
   p: "Gary Pawn",
 };
 const CHESS_CHANNEL = "broomer-chess:single-table";
+const CHAT_MAX_LENGTH = 120;
+const CHAT_MAX_MESSAGES = 8;
+const MOVE_ANIMATION_MS = 420;
+const QUICK_CHAT_MESSAGES = [
+  "Nice move",
+  "Your turn",
+  "Wait",
+  "Good game",
+] as const;
+const QUICK_CHAT_EMOJIS = ["😂", "😭", "💀", "👏", "🔥", "🤝"] as const;
 
 function createGameView(game: Chess): GameView {
   const pieces: Partial<Record<Square, PieceView>> = {};
@@ -257,6 +294,45 @@ function readBroadcastPayload(message: unknown): Record<string, unknown> {
   return record;
 }
 
+function getRoleName(role: Role | null): string {
+  if (role === "w") return "White";
+  if (role === "b") return "Black";
+  return "Player";
+}
+
+function getOppositeRole(role: Role): Role {
+  return role === "w" ? "b" : "w";
+}
+
+function normalizeChatBody(body: string): string {
+  return body.replace(/\s+/g, " ").trim().slice(0, CHAT_MAX_LENGTH);
+}
+
+function isRole(value: unknown): value is Role {
+  return value === "w" || value === "b";
+}
+
+function getResultText(result: GameResult, viewerRole: Role | null): string {
+  if (result.reason === "checkmate") {
+    if (result.winner === viewerRole) return "You win by checkmate";
+    return `${getRoleName(result.winner)} wins by checkmate`;
+  }
+
+  if (result.loser === viewerRole) return "You forfeited";
+  if (result.winner === viewerRole) return "You win by forfeit";
+  return `${getRoleName(result.winner)} wins by forfeit`;
+}
+
+function getCheckmateResult(game: Chess) {
+  if (!game.isCheckmate()) return null;
+  const loser = game.turn();
+  return {
+    reason: "checkmate" as const,
+    winner: getOppositeRole(loser),
+    loser,
+  };
+}
+
 function getGameStatus(
   game: GameView,
   role: Role | null,
@@ -287,6 +363,9 @@ export function ChessGame({ onExit }: Readonly<Props>) {
     createGameView(new Chess()),
   );
   const [role, setRole] = useState<Role | null>(null);
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMenu, setChatMenu] = useState<ChatMenu>(null);
   const [connection, setConnection] = useState<
     "connecting" | "online" | "error"
   >("connecting");
@@ -295,6 +374,10 @@ export function ChessGame({ onExit }: Readonly<Props>) {
   const [legalTargets, setLegalTargets] = useState<Square[]>([]);
   const [dragging, setDragging] = useState<Square | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [moveAnimation, setMoveAnimation] = useState<MoveAnimation | null>(
+    null,
+  );
+  const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [compactLandscape, setCompactLandscape] = useState(() =>
     typeof window === "undefined"
@@ -308,7 +391,12 @@ export function ChessGame({ onExit }: Readonly<Props>) {
   const playerIdRef = useRef<string | null>(null);
   const joinedAtRef = useRef<number | null>(null);
   const roleRef = useRef<Role | null>(null);
+  const gameResultRef = useRef<GameResult | null>(null);
   const seatTimerRef = useRef<number | null>(null);
+  const moveTimerRef = useRef<number | null>(null);
+  const resultSequenceRef = useRef(0);
+  const moveSequenceRef = useRef(0);
+  const chatLogRef = useRef<HTMLDivElement>(null);
   const suppressClickUntilRef = useRef(0);
 
   useEffect(() => {
@@ -319,6 +407,12 @@ export function ChessGame({ onExit }: Readonly<Props>) {
     media.addEventListener("change", updateLayout);
     return () => media.removeEventListener("change", updateLayout);
   }, []);
+
+  useEffect(() => {
+    const log = chatLogRef.current;
+    if (!log) return;
+    log.scrollTop = 0;
+  }, [chatMessages]);
 
   function refreshBoard() {
     setSelected(null);
@@ -339,6 +433,81 @@ export function ChessGame({ onExit }: Readonly<Props>) {
 
   function send(event: string, payload: Record<string, unknown>) {
     void channelRef.current?.send({ type: "broadcast", event, payload });
+  }
+
+  function appendChatMessage(message: ChatMessage) {
+    setChatMessages((current) =>
+      [...current, message].slice(-CHAT_MAX_MESSAGES),
+    );
+  }
+
+  function showGameResult(
+    reason: GameResultReason,
+    winner: Role | null,
+    loser: Role | null,
+  ) {
+    resultSequenceRef.current += 1;
+    const nextResult = {
+      id: resultSequenceRef.current,
+      reason,
+      winner,
+      loser,
+    };
+    gameResultRef.current = nextResult;
+    setGameResult(nextResult);
+    setNotice(null);
+    setSelected(null);
+    setLegalTargets([]);
+    setDragging(null);
+  }
+
+  function clearGameResult() {
+    gameResultRef.current = null;
+    setGameResult(null);
+  }
+
+  function queueMoveAnimation(from: Square, to: Square, piece: PieceView) {
+    if (moveTimerRef.current != null) {
+      window.clearTimeout(moveTimerRef.current);
+    }
+    moveSequenceRef.current += 1;
+    const nextAnimation = {
+      id: moveSequenceRef.current,
+      from,
+      to,
+      color: piece.color,
+      type: piece.type,
+    };
+    setMoveAnimation(nextAnimation);
+    moveTimerRef.current = window.setTimeout(() => {
+      setMoveAnimation((current) =>
+        current?.id === nextAnimation.id ? null : current,
+      );
+      moveTimerRef.current = null;
+    }, MOVE_ANIMATION_MS);
+  }
+
+  function sendChatMessage(body: string) {
+    const cleanBody = normalizeChatBody(body);
+    const senderRole = roleRef.current;
+    if (!cleanBody || connection !== "online" || !senderRole) return;
+
+    const message: ChatMessage = {
+      id: crypto.randomUUID(),
+      playerId: getPlayerId(),
+      role: senderRole,
+      body: cleanBody,
+      mine: true,
+    };
+    appendChatMessage(message);
+    setChatDraft("");
+    setChatMenu(null);
+    send("chat", {
+      id: message.id,
+      playerId: message.playerId,
+      role: message.role,
+      body: message.body,
+    });
   }
 
   useEffect(() => {
@@ -467,26 +636,69 @@ export function ChessGame({ onExit }: Readonly<Props>) {
           typeof payload.fen !== "string"
         )
           return;
+        clearGameResult();
         gameRef.current.load(payload.fen);
         setOpponentReady(true);
         setNotice(null);
         refreshBoard();
+        const checkmateResult = getCheckmateResult(gameRef.current);
+        if (checkmateResult) {
+          showGameResult(
+            checkmateResult.reason,
+            checkmateResult.winner,
+            checkmateResult.loser,
+          );
+        }
       })
       .on("broadcast", { event: "move" }, (message) => {
         const payload = readBroadcastPayload(message);
         if (payload.playerId === playerId) return;
+        if (gameResultRef.current) return;
         if (typeof payload.from !== "string" || typeof payload.to !== "string")
           return;
+        const from = payload.from as Square;
+        const to = payload.to as Square;
         try {
           gameRef.current.move({
-            from: payload.from,
-            to: payload.to,
+            from,
+            to,
             promotion: "q",
           });
+          const movedPiece = gameRef.current.get(to);
+          if (movedPiece) queueMoveAnimation(from, to, movedPiece);
           refreshBoard();
+          const checkmateResult = getCheckmateResult(gameRef.current);
+          if (checkmateResult) {
+            showGameResult(
+              checkmateResult.reason,
+              checkmateResult.winner,
+              checkmateResult.loser,
+            );
+          }
         } catch {
           send("sync-request", { playerId });
         }
+      })
+      .on("broadcast", { event: "chat" }, (message) => {
+        const payload = readBroadcastPayload(message);
+        if (payload.playerId === playerId) return;
+        if (
+          typeof payload.playerId !== "string" ||
+          typeof payload.body !== "string"
+        )
+          return;
+        const body = normalizeChatBody(payload.body);
+        if (!body) return;
+        appendChatMessage({
+          id:
+            typeof payload.id === "string"
+              ? payload.id
+              : crypto.randomUUID(),
+          playerId: payload.playerId,
+          role: isRole(payload.role) ? payload.role : null,
+          body,
+          mine: false,
+        });
       })
       .on("broadcast", { event: "sync-request" }, ({ payload }) => {
         if (roleRef.current !== "w" || typeof payload.playerId !== "string")
@@ -498,12 +710,20 @@ export function ChessGame({ onExit }: Readonly<Props>) {
       })
       .on("broadcast", { event: "reset" }, () => {
         gameRef.current.reset();
+        clearGameResult();
+        setMoveAnimation(null);
         setNotice(null);
         refreshBoard();
       })
       .on("broadcast", { event: "resign" }, ({ payload }) => {
         if (payload.playerId === playerId) return;
-        setNotice("Your opponent resigned. You win.");
+        const winner = roleRef.current;
+        const loser = isRole(payload.role)
+          ? payload.role
+          : winner
+            ? getOppositeRole(winner)
+            : null;
+        showGameResult("forfeit", winner, loser);
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
@@ -524,6 +744,9 @@ export function ChessGame({ onExit }: Readonly<Props>) {
       if (seatTimerRef.current != null) {
         window.clearTimeout(seatTimerRef.current);
       }
+      if (moveTimerRef.current != null) {
+        window.clearTimeout(moveTimerRef.current);
+      }
       channelRef.current = null;
       void supabase.removeChannel(channel);
     };
@@ -538,12 +761,22 @@ export function ChessGame({ onExit }: Readonly<Props>) {
   function movePiece(from: Square, to: Square): boolean {
     try {
       gameRef.current.move({ from, to, promotion: "q" });
+      const movedPiece = gameRef.current.get(to);
       send("move", {
         playerId: playerIdRef.current,
         from,
         to,
       });
+      if (movedPiece) queueMoveAnimation(from, to, movedPiece);
       refreshBoard();
+      const checkmateResult = getCheckmateResult(gameRef.current);
+      if (checkmateResult) {
+        showGameResult(
+          checkmateResult.reason,
+          checkmateResult.winner,
+          checkmateResult.loser,
+        );
+      }
       return true;
     } catch {
       return false;
@@ -557,7 +790,13 @@ export function ChessGame({ onExit }: Readonly<Props>) {
     }
 
     const game = gameRef.current;
-    if (!role || !opponentReady || game.isGameOver() || game.turn() !== role)
+    if (
+      !role ||
+      !opponentReady ||
+      gameResult ||
+      game.isGameOver() ||
+      game.turn() !== role
+    )
       return;
     const piece = game.get(square);
 
@@ -585,6 +824,7 @@ export function ChessGame({ onExit }: Readonly<Props>) {
     if (
       !role ||
       !opponentReady ||
+      gameResult ||
       game.isGameOver() ||
       game.turn() !== role ||
       piece?.color !== role
@@ -617,26 +857,36 @@ export function ChessGame({ onExit }: Readonly<Props>) {
 
   function resetGame() {
     gameRef.current.reset();
+    clearGameResult();
+    setMoveAnimation(null);
     setNotice(null);
     send("reset", { playerId: playerIdRef.current });
     refreshBoard();
   }
 
   function resign() {
-    send("resign", { playerId: playerIdRef.current });
-    setNotice("You resigned.");
+    const loser = roleRef.current;
+    if (!loser || !opponentReady || gameResult) return;
+    const winner = getOppositeRole(loser);
+    send("resign", { playerId: playerIdRef.current, role: loser });
+    showGameResult("forfeit", winner, loser);
   }
 
-  const files = role !== "b" ? FILES : [...FILES].reverse();
-  const ranks = role !== "b" ? RANKS : [...RANKS].reverse();
+  const files: readonly string[] = role !== "b" ? FILES : [...FILES].reverse();
+  const ranks: readonly number[] = role !== "b" ? RANKS : [...RANKS].reverse();
   const canMove =
     role != null &&
     opponentReady &&
     gameView.turn === role &&
+    gameResult == null &&
     !gameView.isGameOver;
+  const canChat = connection === "online" && role != null;
+  const resultText = gameResult ? getResultText(gameResult, role) : null;
+  const statusText =
+    resultText ?? notice ?? getGameStatus(gameView, role, opponentReady);
+  const visibleChatMessages = [...chatMessages].reverse();
   let playerLabel = "—";
-  if (role === "w") playerLabel = "White";
-  if (role === "b") playerLabel = "Black";
+  if (role) playerLabel = getRoleName(role);
   let connectionLabel = "Connecting";
   let connectionClass = "text-stone-500";
   if (connection === "online") {
@@ -647,16 +897,22 @@ export function ChessGame({ onExit }: Readonly<Props>) {
     connectionClass = "text-red-300";
   }
   const shellClass = compactLandscape
-    ? "grid w-[min(calc(100vw-1.5rem),43rem)] grid-cols-[minmax(0,1fr)_7rem] grid-rows-[auto_minmax(0,1fr)] gap-x-3"
+    ? "grid w-[min(calc(100vw-1.5rem),52rem)] grid-cols-[minmax(0,1fr)_12rem] grid-rows-[auto_minmax(0,1fr)] gap-x-3"
     : "flex w-fit max-w-full flex-col items-center justify-center";
   const statusClass = compactLandscape
-    ? "col-start-1 row-start-1 mb-1 w-[min(calc(100dvh-5rem),calc(100vw-9rem),36rem)] justify-self-center"
+    ? "col-start-1 row-start-1 mb-1 w-[min(calc(100dvh-5rem),calc(100vw-15rem),36rem)] justify-self-center"
     : "mb-2 w-[min(calc(100vw-1.5rem),36rem)] sm:w-[min(calc(100vw-2.5rem),36rem)]";
   const boardClass = compactLandscape
-    ? "col-start-1 row-start-2 w-[min(calc(100dvh-5rem),calc(100vw-9rem),36rem)] justify-self-center"
-    : "w-[min(calc(100vw-3rem),calc(100dvh-11rem),36rem)] sm:w-[min(calc(100vw-5rem),calc(100dvh-11.5rem),36rem)]";
+    ? "col-start-1 row-start-2 w-[min(calc(100dvh-5rem),calc(100vw-15rem),36rem)] justify-self-center"
+    : "w-[min(calc(100vw-3rem),calc(100dvh-18rem),36rem)] sm:w-[min(calc(100vw-5rem),calc(100dvh-18.5rem),36rem)]";
+  const sidePanelClass = compactLandscape
+    ? "col-start-2 row-span-2 row-start-1 flex min-h-0 w-full flex-col justify-center gap-2"
+    : "contents";
+  const chatClass = compactLandscape
+    ? "min-h-0 flex-1"
+    : "mt-2 w-[min(calc(100vw-1.5rem),36rem)] sm:w-[min(calc(100vw-2.5rem),36rem)]";
   const footerClass = compactLandscape
-    ? "col-start-2 row-span-2 row-start-1 mt-0 w-auto flex-col items-stretch justify-center [&>div]:flex-col [&>div]:gap-1.5"
+    ? "mt-0 w-full flex-col items-stretch justify-center [&>div]:flex-col [&>div]:gap-1.5"
     : "mt-2 w-[min(calc(100vw-1.5rem),36rem)] sm:w-[min(calc(100vw-2.5rem),36rem)]";
 
   return (
@@ -667,9 +923,10 @@ export function ChessGame({ onExit }: Readonly<Props>) {
         >
           <div className="min-w-0">
             <p
+              aria-live="polite"
               className={`truncate ${canMove ? "text-[#ead9ae]" : "text-stone-400"}`}
             >
-              {notice ?? getGameStatus(gameView, role, opponentReady)}
+              {statusText}
             </p>
             <p className="mt-0.5 text-[10px] text-[#ebd9a8]/80 sm:text-xs">
               {playerLabel} ·{" "}
@@ -692,6 +949,29 @@ export function ChessGame({ onExit }: Readonly<Props>) {
                 const piece = gameView.pieces[square];
                 const dark = (rankIndex + fileIndex) % 2 === 1;
                 const target = legalTargets.includes(square);
+                let pieceStyle: CSSProperties | undefined;
+                let pieceClassName =
+                  "chess-piece-image pointer-events-none select-none object-contain p-[5%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]";
+
+                if (
+                  piece &&
+                  moveAnimation?.to === square &&
+                  moveAnimation.color === piece.color &&
+                  moveAnimation.type === piece.type
+                ) {
+                  const fromFileIndex = files.indexOf(moveAnimation.from[0]);
+                  const fromRankIndex = ranks.indexOf(
+                    Number(moveAnimation.from[1]),
+                  );
+                  if (fromFileIndex >= 0 && fromRankIndex >= 0) {
+                    pieceStyle = {
+                      "--chess-move-x": `${(fromFileIndex - fileIndex) * 100}%`,
+                      "--chess-move-y": `${(fromRankIndex - rankIndex) * 100}%`,
+                    } as CSSProperties;
+                    pieceClassName += " chess-piece-moving";
+                  }
+                }
+
                 return (
                   <button
                     key={square}
@@ -720,7 +1000,8 @@ export function ChessGame({ onExit }: Readonly<Props>) {
                         fill
                         draggable={false}
                         sizes="(max-width: 640px) 12vw, 72px"
-                        className="pointer-events-none select-none object-contain p-[5%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]"
+                        style={pieceStyle}
+                        className={pieceClassName}
                       />
                     )}
                   </button>
@@ -730,44 +1011,196 @@ export function ChessGame({ onExit }: Readonly<Props>) {
           </div>
         </div>
 
-        <footer
-          className={`chess-game-footer flex items-center justify-between gap-1 sm:gap-2 ${footerClass}`}
-        >
-          <button
-            type="button"
-            onClick={onExit}
-            className="chess-leave-button whitespace-nowrap px-1.5 py-2 text-[11px] sm:px-3 sm:text-sm"
+        <div className={sidePanelClass}>
+          <section
+            className={`chess-chat-panel flex flex-col overflow-hidden ${chatClass}`}
+            aria-label="Match chat"
           >
-            <span aria-hidden>↪</span> Leave room
-          </button>
-          <div className="flex gap-2">
+            <div className="flex items-center justify-between gap-2 px-2.5 pt-2">
+              <p className="text-[10px] font-bold uppercase text-[#ffe29a]">
+                Chat
+              </p>
+              <p className="text-[10px] text-cyan-100/45">
+                {chatMessages.length}/{CHAT_MAX_MESSAGES}
+              </p>
+            </div>
+
+            <div
+              ref={chatLogRef}
+              className="chess-chat-log flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 py-1.5"
+              aria-live="polite"
+            >
+              {chatMessages.length === 0 ? (
+                <p className="chess-chat-empty grid flex-1 place-items-center text-center text-[11px]">
+                  No messages yet
+                </p>
+              ) : (
+                visibleChatMessages.map((message) => {
+                  return (
+                    <article
+                      key={message.id}
+                      className={`chess-chat-message ${message.mine ? "chess-chat-message-self" : ""}`}
+                    >
+                      <p className="chess-chat-author">
+                        {message.mine ? "You" : getRoleName(message.role)}
+                      </p>
+                      <p>{message.body}</p>
+                    </article>
+                  );
+                })
+              )}
+            </div>
+
+            <form
+              className="chess-chat-form relative flex items-center gap-1 px-2 pb-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                sendChatMessage(chatDraft);
+              }}
+            >
+              {chatMenu && (
+                <div
+                  className={`chess-chat-menu absolute bottom-[calc(100%+0.35rem)] right-2 z-10 grid gap-1 p-1.5 ${chatMenu === "messages" ? "chess-chat-menu-messages grid-cols-2" : "chess-chat-menu-emojis grid-cols-6"}`}
+                >
+                  {chatMenu === "messages"
+                    ? QUICK_CHAT_MESSAGES.map((message) => (
+                        <button
+                          key={message}
+                          type="button"
+                          disabled={!canChat}
+                          title={message}
+                          onClick={() => sendChatMessage(message)}
+                          className="truncate px-2 py-1.5 text-[10px] font-semibold transition disabled:opacity-30"
+                        >
+                          {message}
+                        </button>
+                      ))
+                    : QUICK_CHAT_EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          disabled={!canChat}
+                          aria-label={`Send ${emoji} emoji`}
+                          title={`Send ${emoji}`}
+                          onClick={() => sendChatMessage(emoji)}
+                          className="grid h-8 place-items-center text-sm transition disabled:opacity-30"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                </div>
+              )}
+              <input
+                type="text"
+                value={chatDraft}
+                maxLength={CHAT_MAX_LENGTH}
+                disabled={!canChat}
+                aria-label="Chat message"
+                placeholder={canChat ? "Message" : "Waiting"}
+                onFocus={() => setChatMenu(null)}
+                onChange={(event) =>
+                  setChatDraft(event.target.value.slice(0, CHAT_MAX_LENGTH))
+                }
+                className="min-w-0 flex-1 px-2 py-1.5 text-xs outline-none disabled:opacity-40"
+              />
+              <button
+                type="button"
+                disabled={!canChat}
+                aria-label="Show quick messages"
+                aria-expanded={chatMenu === "messages"}
+                title="Quick messages"
+                onClick={() =>
+                  setChatMenu((current) =>
+                    current === "messages" ? null : "messages",
+                  )
+                }
+                className="chess-chat-tool-button grid h-8 w-8 shrink-0 place-items-center transition disabled:opacity-30"
+              >
+                <SparklesIcon className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                disabled={!canChat}
+                aria-label="Show quick emojis"
+                aria-expanded={chatMenu === "emojis"}
+                title="Quick emojis"
+                onClick={() =>
+                  setChatMenu((current) =>
+                    current === "emojis" ? null : "emojis",
+                  )
+                }
+                className="chess-chat-tool-button grid h-8 w-8 shrink-0 place-items-center text-sm transition disabled:opacity-30"
+              >
+                <span aria-hidden>☺</span>
+              </button>
+              <button
+                type="submit"
+                disabled={!canChat || normalizeChatBody(chatDraft).length === 0}
+                aria-label="Send chat message"
+                title="Send message"
+                className="chess-chat-send grid h-8 w-8 shrink-0 place-items-center transition disabled:opacity-30"
+              >
+                <SendIcon className="h-4 w-4" />
+              </button>
+            </form>
+          </section>
+
+          <footer
+            className={`chess-game-footer flex items-center justify-between gap-1 sm:gap-2 ${footerClass}`}
+          >
             <button
               type="button"
-              onClick={() => setGalleryOpen(true)}
-              className="chess-action-button inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-2 py-2 text-[11px] transition sm:px-3 sm:text-sm"
+              onClick={onExit}
+              className="chess-leave-button whitespace-nowrap px-1.5 py-2 text-[11px] sm:px-3 sm:text-sm"
             >
-              <SearchIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              Pieces
+              <span aria-hidden>↪</span> Leave room
             </button>
-            <button
-              type="button"
-              onClick={resign}
-              disabled={!opponentReady || gameView.isGameOver}
-              className="chess-action-button whitespace-nowrap px-2 py-2 text-[11px] transition disabled:opacity-30 sm:px-4 sm:text-sm"
-            >
-              Resign
-            </button>
-            <button
-              type="button"
-              onClick={resetGame}
-              disabled={!opponentReady}
-              className="chess-action-button chess-action-primary whitespace-nowrap px-2 py-2 text-[11px] transition disabled:opacity-30 sm:px-4 sm:text-sm"
-            >
-              New match
-            </button>
-          </div>
-        </footer>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setGalleryOpen(true)}
+                className="chess-action-button inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-2 py-2 text-[11px] transition sm:px-3 sm:text-sm"
+              >
+                <SearchIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                Pieces
+              </button>
+              <button
+                type="button"
+                onClick={resign}
+                disabled={
+                  !opponentReady || gameView.isGameOver || gameResult != null
+                }
+                className="chess-action-button whitespace-nowrap px-2 py-2 text-[11px] transition disabled:opacity-30 sm:px-4 sm:text-sm"
+              >
+                Resign
+              </button>
+              <button
+                type="button"
+                onClick={resetGame}
+                disabled={!opponentReady}
+                className="chess-action-button chess-action-primary whitespace-nowrap px-2 py-2 text-[11px] transition disabled:opacity-30 sm:px-4 sm:text-sm"
+              >
+                New match
+              </button>
+            </div>
+          </footer>
+        </div>
       </div>
+      {gameResult && (
+        <div
+          key={gameResult.id}
+          className="chess-winner-animation pointer-events-none absolute inset-0 z-[2] grid place-items-center px-4"
+          aria-live="assertive"
+        >
+          <div className="chess-winner-card flex flex-col items-center text-center">
+            <SparklesIcon className="h-8 w-8" />
+            <p>{resultText}</p>
+            <span>
+              {gameResult.reason === "checkmate" ? "Checkmate" : "Forfeit"}
+            </span>
+          </div>
+        </div>
+      )}
       {galleryOpen && <PieceGallery onClose={() => setGalleryOpen(false)} />}
     </section>
   );
