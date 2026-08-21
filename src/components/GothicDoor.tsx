@@ -24,7 +24,6 @@ const rides = [
   { value: "✈️", char: "✈️", image: null, label: "plane" },
   { value: "hint", char: "❓", image: null, label: "Reveal a cryptic clue" },
   { value: "🧹", char: "🧹", image: null, label: "broom" },
-  { value: "cards", char: "🟨", image: null, label: "Krusty card pack" },
 ];
 
 type DoorSymbol = "upper" | "lower";
@@ -45,6 +44,7 @@ const PLANE_FLIGHT_MS = 5400;
 const GATE_REVEAL_MS = 3100;
 const ADMIN_PRESS_MS = 1400;
 const ADMIN_CLICK_WINDOW_MS = 1800;
+const CARD_GATE_WORD = "krabby";
 const IDLE_MESSAGES = [
   "A shadow crosses the other side.",
   "The door exhales.",
@@ -127,7 +127,7 @@ function DoorIdleEvent({
 }
 
 function isEntryRide(value: string): boolean {
-  return value === "🧹" || value === "✈️" || value === "uno" || value === "cards";
+  return value === "🧹" || value === "✈️" || value === "uno";
 }
 
 function getRideSelectionClass(isValid: boolean, isWrong: boolean): string {
@@ -306,22 +306,65 @@ export function GothicDoor({
   const [idleMessageIndex, setIdleMessageIndex] = useState(-1);
   const [idleEventActive, setIdleEventActive] = useState(false);
   const [idleGhostMode, setIdleGhostMode] = useState<GhostMode>("center");
+  const [cardGatePrimed, setCardGatePrimed] = useState(false);
   const adminPressTimerRef = useRef<number | null>(null);
   const adminClicksRef = useRef({ count: 0, firstAt: 0 });
+  const cardGateBufferRef = useRef("");
 
   function handlePick(char: string) {
     if (sliding) return;
     setPicked(char);
+    if (char === "hint") {
+      cardGateBufferRef.current = "";
+      setCardGatePrimed(true);
+      return;
+    }
+
+    setCardGatePrimed(false);
     if (!isEntryRide(char)) return;
 
     playGateAtmosphere();
     setSliding(true);
     window.setTimeout(() => {
       if (char === "uno") onUno();
-      else if (char === "cards") onCards();
       else setDoorsOpen(true);
     }, GATE_REVEAL_MS);
   }
+
+  useEffect(() => {
+    if (!cardGatePrimed || sliding) return;
+
+    function handleCardGateKey(event: globalThis.KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
+      ) {
+        return;
+      }
+      if (
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.key.length !== 1
+      ) {
+        return;
+      }
+
+      cardGateBufferRef.current =
+        `${cardGateBufferRef.current}${event.key.toLowerCase()}`.slice(-16);
+      if (!cardGateBufferRef.current.endsWith(CARD_GATE_WORD)) return;
+
+      setPicked("cards");
+      setCardGatePrimed(false);
+      playGateAtmosphere();
+      setSliding(true);
+      window.setTimeout(onCards, GATE_REVEAL_MS);
+    }
+
+    window.addEventListener("keydown", handleCardGateKey);
+    return () => window.removeEventListener("keydown", handleCardGateKey);
+  }, [cardGatePrimed, onCards, sliding]);
 
   function handleSymbolRotate(symbol: DoorSymbol) {
     if (sliding || symbolsAwake) return;
@@ -860,7 +903,7 @@ export function GothicDoor({
                   disabled={sliding}
                   className={`gate-seal group relative flex h-16 w-16 items-center justify-center transition-all duration-300 sm:h-20 sm:w-20 ${selectionClass} ${
                     picked === ride.value ? "gate-seal-picked" : ""
-                  } ${ride.value === "cards" ? "gate-card-seal col-span-2 justify-self-center" : ""}`}
+                  }`}
                 >
                   {ride.image ? (
                     <Image
@@ -883,17 +926,22 @@ export function GothicDoor({
             })}
           </div>
           {picked === "hint" && (
-            <p className="animate-card-in max-w-52 text-center font-serif text-xs italic leading-relaxed text-[#8a7138]/80">
-              Two seals guard the fleur. Turn their longest points toward its
-              heart.
-            </p>
+            <div className="animate-card-in max-w-60 text-center font-serif text-xs italic leading-relaxed text-[#8a7138]/80">
+              <p>
+                Two seals guard the fleur. Turn their longest points toward its
+                heart.
+              </p>
+              <p className="mt-2 text-[#9f895d]/70">
+                The fifth passage has no seal. Whisper the crab&apos;s K-word
+                while the door listens.
+              </p>
+            </div>
           )}
           {picked !== null &&
             picked !== "hint" &&
             picked !== "🧹" &&
             picked !== "✈️" &&
-            picked !== "uno" &&
-            picked !== "cards" && (
+            picked !== "uno" && (
               <p className="animate-card-in text-xs font-medium text-red-800/70">
                 Wrong pick… Try again
               </p>

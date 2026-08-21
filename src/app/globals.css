@@ -1418,7 +1418,6 @@ body {
   z-index: 1;
   grid-template-columns: repeat(2, var(--gate-seal-size));
   grid-template-rows: repeat(2, var(--gate-seal-size));
-  grid-auto-rows: var(--gate-seal-size);
   place-items: center;
   justify-content: center;
   column-gap: clamp(4rem, 10vw, 9.5rem);
@@ -1524,31 +1523,6 @@ body {
   box-shadow:
     inset 0 0 0 1px rgba(96, 18, 24, 0.52),
     inset 0 -0.8rem 1rem rgba(0, 0, 0, 0.78),
-    0 0.75rem 1.6rem rgba(0, 0, 0, 0.54);
-}
-
-.gate-card-seal {
-  color: rgba(245, 214, 84, 0.78);
-  background:
-    radial-gradient(circle at 34% 24%, rgba(255, 246, 171, 0.18), transparent 22%),
-    radial-gradient(circle, rgba(70, 52, 12, 0.72), rgba(4, 2, 3, 0.98) 70%);
-  box-shadow:
-    inset 0 0 0 1px rgba(217, 188, 101, 0.5),
-    inset 0 0.22rem 0.18rem rgba(255, 246, 171, 0.13),
-    inset 0 -0.8rem 1rem rgba(0, 0, 0, 0.78),
-    0 0 1.1rem rgba(217, 188, 101, 0.08),
-    0 0.75rem 1.6rem rgba(0, 0, 0, 0.54);
-}
-
-.gate-card-seal:hover:not(:disabled),
-.gate-card-seal:focus-visible:not(:disabled),
-.gate-card-seal.gate-seal-picked {
-  color: rgba(255, 246, 171, 0.98);
-  box-shadow:
-    inset 0 0 0 1px rgba(245, 214, 84, 0.72),
-    inset 0 0.22rem 0.18rem rgba(255, 246, 171, 0.2),
-    inset 0 -0.8rem 1rem rgba(0, 0, 0, 0.7),
-    0 0 1.5rem rgba(217, 188, 101, 0.28),
     0 0.75rem 1.6rem rgba(0, 0, 0, 0.54);
 }
 
