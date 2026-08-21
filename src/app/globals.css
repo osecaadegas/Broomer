@@ -1418,6 +1418,7 @@ body {
   z-index: 1;
   grid-template-columns: repeat(2, var(--gate-seal-size));
   grid-template-rows: repeat(2, var(--gate-seal-size));
+  grid-auto-rows: var(--gate-seal-size);
   place-items: center;
   justify-content: center;
   column-gap: clamp(4rem, 10vw, 9.5rem);
@@ -1524,6 +1525,111 @@ body {
     inset 0 0 0 1px rgba(96, 18, 24, 0.52),
     inset 0 -0.8rem 1rem rgba(0, 0, 0, 0.78),
     0 0.75rem 1.6rem rgba(0, 0, 0, 0.54);
+}
+
+.gate-card-seal {
+  color: rgba(245, 214, 84, 0.78);
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 246, 171, 0.18), transparent 22%),
+    radial-gradient(circle, rgba(70, 52, 12, 0.72), rgba(4, 2, 3, 0.98) 70%);
+  box-shadow:
+    inset 0 0 0 1px rgba(217, 188, 101, 0.5),
+    inset 0 0.22rem 0.18rem rgba(255, 246, 171, 0.13),
+    inset 0 -0.8rem 1rem rgba(0, 0, 0, 0.78),
+    0 0 1.1rem rgba(217, 188, 101, 0.08),
+    0 0.75rem 1.6rem rgba(0, 0, 0, 0.54);
+}
+
+.gate-card-seal:hover:not(:disabled),
+.gate-card-seal:focus-visible:not(:disabled),
+.gate-card-seal.gate-seal-picked {
+  color: rgba(255, 246, 171, 0.98);
+  box-shadow:
+    inset 0 0 0 1px rgba(245, 214, 84, 0.72),
+    inset 0 0.22rem 0.18rem rgba(255, 246, 171, 0.2),
+    inset 0 -0.8rem 1rem rgba(0, 0, 0, 0.7),
+    0 0 1.5rem rgba(217, 188, 101, 0.28),
+    0 0.75rem 1.6rem rgba(0, 0, 0, 0.54);
+}
+
+.sponge-card-game-scene {
+  background:
+    radial-gradient(circle at 48% -8%, rgba(125, 211, 252, 0.76), rgba(14, 165, 233, 0.36) 34%, transparent 60%),
+    radial-gradient(ellipse at 15% 100%, rgba(251, 191, 36, 0.24), transparent 42%),
+    radial-gradient(ellipse at 85% 100%, rgba(236, 72, 153, 0.24), transparent 42%),
+    linear-gradient(180deg, #0c4a6e 0%, #075985 38%, #042f4f 72%, #031926 100%);
+}
+
+.sponge-card-game-scene::before {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 4.5rem 4.5rem;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.65), transparent 78%);
+}
+
+.sponge-card-bubble {
+  position: absolute;
+  bottom: -4rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.08) 68%);
+  animation: sponge-card-bubble-rise linear infinite;
+}
+
+.sponge-pack-shine::before,
+.sponge-card-foil::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.64) 50%, transparent 68%);
+  background-size: 300% 100%;
+  animation: sponge-card-shine 3.1s linear infinite;
+  mix-blend-mode: screen;
+}
+
+.sponge-card-reveal {
+  opacity: 0;
+  animation: sponge-card-reveal 440ms cubic-bezier(0.2, 0.82, 0.26, 1) forwards;
+}
+
+@keyframes sponge-card-bubble-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.7);
+  }
+  12% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(1.4rem, -118vh, 0) scale(1.1);
+  }
+}
+
+@keyframes sponge-card-shine {
+  0% {
+    background-position: 160% 0;
+  }
+  100% {
+    background-position: -60% 0;
+  }
+}
+
+@keyframes sponge-card-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(1.25rem) rotate(-5deg) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
 }
 
 @keyframes gate-ambient-breath {

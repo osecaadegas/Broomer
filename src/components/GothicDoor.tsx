@@ -9,6 +9,7 @@ interface Props {
   onOpen: () => void;
   onUno: () => void;
   onChess: () => void;
+  onCards: () => void;
   onPrepareMusic: () => void;
   onStartMusic: () => void;
 }
@@ -23,6 +24,7 @@ const rides = [
   { value: "✈️", char: "✈️", image: null, label: "plane" },
   { value: "hint", char: "❓", image: null, label: "Reveal a cryptic clue" },
   { value: "🧹", char: "🧹", image: null, label: "broom" },
+  { value: "cards", char: "🟨", image: null, label: "Krusty card pack" },
 ];
 
 type DoorSymbol = "upper" | "lower";
@@ -125,7 +127,7 @@ function DoorIdleEvent({
 }
 
 function isEntryRide(value: string): boolean {
-  return value === "🧹" || value === "✈️" || value === "uno";
+  return value === "🧹" || value === "✈️" || value === "uno" || value === "cards";
 }
 
 function getRideSelectionClass(isValid: boolean, isWrong: boolean): string {
@@ -278,6 +280,7 @@ export function GothicDoor({
   onOpen,
   onUno,
   onChess,
+  onCards,
   onPrepareMusic,
   onStartMusic,
 }: Readonly<Props>) {
@@ -315,6 +318,7 @@ export function GothicDoor({
     setSliding(true);
     window.setTimeout(() => {
       if (char === "uno") onUno();
+      else if (char === "cards") onCards();
       else setDoorsOpen(true);
     }, GATE_REVEAL_MS);
   }
@@ -856,7 +860,7 @@ export function GothicDoor({
                   disabled={sliding}
                   className={`gate-seal group relative flex h-16 w-16 items-center justify-center transition-all duration-300 sm:h-20 sm:w-20 ${selectionClass} ${
                     picked === ride.value ? "gate-seal-picked" : ""
-                  }`}
+                  } ${ride.value === "cards" ? "gate-card-seal col-span-2 justify-self-center" : ""}`}
                 >
                   {ride.image ? (
                     <Image
@@ -888,7 +892,8 @@ export function GothicDoor({
             picked !== "hint" &&
             picked !== "🧹" &&
             picked !== "✈️" &&
-            picked !== "uno" && (
+            picked !== "uno" &&
+            picked !== "cards" && (
               <p className="animate-card-in text-xs font-medium text-red-800/70">
                 Wrong pick… Try again
               </p>

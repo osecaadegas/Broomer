@@ -8,6 +8,7 @@ import { GothicDoorClose } from "@/components/GothicDoorClose";
 import { KissFinale } from "@/components/KissFinale";
 import { ChessGame } from "@/components/ChessGame";
 import { Questionnaire } from "@/components/Questionnaire";
+import { SpongeCardGame } from "@/components/SpongeCardGame";
 import { UnoQuestionBuilder } from "@/components/UnoQuestionBuilder";
 
 interface Props {
@@ -67,7 +68,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
   const finaleSoundDoneRef = useRef(false);
   const finaleStartedRef = useRef(false);
   const [stage, setStage] = useState<
-    "door" | "lights" | "questions" | "author" | "chess"
+    "door" | "lights" | "questions" | "author" | "chess" | "cards"
   >("door");
   const [lightsOn, setLightsOn] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -251,6 +252,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
           onOpen={() => setStage("lights")}
           onUno={() => setStage("author")}
           onChess={revealChess}
+          onCards={() => setStage("cards")}
           onPrepareMusic={prepareMusic}
           onStartMusic={startMusic}
         />
@@ -277,6 +279,7 @@ export function QuestionnaireEntrance({ questions }: Readonly<Props>) {
         />
       )}
       {stage === "chess" && chessRevealing && <ChessBubbleTransition />}
+      {stage === "cards" && <SpongeCardGame onExit={() => setStage("door")} />}
       {stage === "questions" && (
         <div className="relative z-10 w-full animate-question-reveal">
           <Questionnaire
