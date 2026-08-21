@@ -1532,8 +1532,8 @@ body {
   top: 0;
   z-index: 74;
   display: grid;
-  width: 3rem;
-  height: 3rem;
+  width: 72px;
+  height: 72px;
   padding: 0;
   place-items: center;
   border: 0;
@@ -1556,25 +1556,25 @@ body {
 }
 
 .gate-mosquito-art {
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 44px;
+  height: 44px;
   overflow: visible;
 }
 
 .gate-mosquito-run-0 {
-  animation: mosquito-flight-one 12s linear both;
+  animation: mosquito-flight-one 19s linear both;
 }
 
 .gate-mosquito-run-1 {
-  animation: mosquito-flight-two 12s linear both;
+  animation: mosquito-flight-two 19s linear both;
 }
 
 .gate-mosquito-run-2 {
-  animation: mosquito-flight-three 12s linear both;
+  animation: mosquito-flight-three 19s linear both;
 }
 
 .gate-mosquito-run-3 {
-  animation: mosquito-flight-four 12s linear both;
+  animation: mosquito-flight-four 19s linear both;
 }
 
 .gate-mosquito .mosquito-wings {
@@ -1614,10 +1614,10 @@ body {
 
 .sponge-card-game-scene {
   background:
-    radial-gradient(circle at 48% -8%, rgba(125, 211, 252, 0.76), rgba(14, 165, 233, 0.36) 34%, transparent 60%),
-    radial-gradient(ellipse at 15% 100%, rgba(251, 191, 36, 0.24), transparent 42%),
-    radial-gradient(ellipse at 85% 100%, rgba(236, 72, 153, 0.24), transparent 42%),
-    linear-gradient(180deg, #0c4a6e 0%, #075985 38%, #042f4f 72%, #031926 100%);
+    linear-gradient(120deg, rgba(250, 204, 21, 0.18), transparent 28%),
+    linear-gradient(230deg, rgba(236, 72, 153, 0.18), transparent 32%),
+    radial-gradient(circle at 48% -8%, rgba(125, 211, 252, 0.62), rgba(14, 165, 233, 0.26) 34%, transparent 60%),
+    linear-gradient(180deg, #0c4a6e 0%, #075985 34%, #062f4f 68%, #160f2e 100%);
 }
 
 .sponge-card-game-scene::before {
@@ -1641,8 +1641,312 @@ body {
   animation: sponge-card-bubble-rise linear infinite;
 }
 
-.sponge-pack-shine::before,
-.sponge-card-foil::before {
+.sponge-vault-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sponge-card-tabs {
+  display: flex;
+  max-width: 100%;
+  gap: 0.35rem;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.28);
+  padding: 0.32rem;
+  backdrop-filter: blur(18px);
+}
+
+.sponge-card-tabs button {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.sponge-card-tabs button:hover {
+  background: rgba(255, 255, 255, 0.11);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.sponge-card-tabs button.is-active {
+  background: #fde047;
+  color: #082f49;
+  box-shadow: 0 0.65rem 1.35rem rgba(2, 6, 23, 0.28);
+}
+
+.sponge-panel,
+.sponge-lobby-hero,
+.sponge-lobby-tile,
+.sponge-store-pack,
+.sponge-opening-stage {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(145deg, rgba(15, 23, 42, 0.64), rgba(14, 116, 144, 0.22)),
+    rgba(2, 6, 23, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 1.25rem 3.4rem rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(22px);
+}
+
+.sponge-panel {
+  border-radius: 1.5rem;
+  padding: 1rem;
+}
+
+.sponge-lobby-hero {
+  position: relative;
+  min-height: 26rem;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  padding: clamp(1.1rem, 3.4vw, 2rem);
+}
+
+.sponge-lobby-hero::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.75), transparent 78%);
+}
+
+.sponge-lobby-pack {
+  position: absolute;
+  right: clamp(1rem, 4vw, 3rem);
+  bottom: clamp(-1.6rem, -2vw, -0.5rem);
+  width: min(32vw, 15rem);
+  min-width: 10rem;
+  transform: rotate(6deg);
+}
+
+.sponge-lobby-tile {
+  display: flex;
+  min-height: 8.35rem;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  border-radius: 1.35rem;
+  padding: 1rem;
+  text-align: left;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.sponge-lobby-tile:hover {
+  border-color: rgba(253, 224, 71, 0.58);
+  background:
+    linear-gradient(145deg, rgba(15, 23, 42, 0.78), rgba(217, 70, 239, 0.2)),
+    rgba(2, 6, 23, 0.36);
+  transform: translateY(-0.1rem);
+}
+
+.sponge-store-pack {
+  display: flex;
+  min-height: 23rem;
+  flex-direction: column;
+  border-radius: 1.5rem;
+  padding: 1rem;
+}
+
+.sponge-store-pack.is-featured {
+  border-color: rgba(253, 224, 71, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 0 0 1px rgba(253, 224, 71, 0.14),
+    0 1.5rem 3.6rem rgba(2, 6, 23, 0.34);
+}
+
+.sponge-premium-pack {
+  transform-style: preserve-3d;
+  animation: sponge-pack-float 5.4s ease-in-out infinite;
+}
+
+.sponge-card-back-face {
+  isolation: isolate;
+}
+
+.sponge-card-back-grid {
+  position: absolute;
+  inset: -10%;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 1.35rem 1.35rem;
+  transform: rotate(10deg);
+  opacity: 0.42;
+}
+
+.sponge-card-back-orbit {
+  position: absolute;
+  width: 74%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(253, 224, 71, 0.35);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 1.4rem rgba(255, 255, 255, 0.13),
+    0 0 2.4rem rgba(253, 224, 71, 0.18);
+}
+
+.sponge-opening-stage {
+  min-height: clamp(34rem, 76vh, 50rem);
+  overflow: hidden;
+  border-radius: 1.75rem;
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.sponge-opening-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+  gap: clamp(0.85rem, 2vw, 1.2rem);
+  align-items: center;
+  padding-top: clamp(2rem, 5vw, 4.5rem);
+}
+
+.sponge-reveal-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 18rem;
+  aspect-ratio: 3 / 4;
+  margin-inline: auto;
+  border: 0;
+  background: transparent;
+  perspective: 1200px;
+  touch-action: pan-y;
+}
+
+.sponge-reveal-card[aria-disabled="true"] {
+  cursor: default;
+}
+
+.sponge-reveal-card-inner {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform-style: preserve-3d;
+  transition: transform 620ms cubic-bezier(0.2, 0.82, 0.26, 1);
+}
+
+.sponge-reveal-card-side {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.sponge-reveal-card-back {
+  border-radius: 1.35rem;
+  box-shadow:
+    0 1.4rem 2.8rem rgba(2, 6, 23, 0.4),
+    0 0 0 1px rgba(253, 224, 71, 0.12);
+}
+
+.sponge-reveal-card-front {
+  transform: rotateY(180deg);
+}
+
+.sponge-reveal-card-open .sponge-reveal-card-inner {
+  transform: rotateY(180deg);
+}
+
+.sponge-reveal-card-active .sponge-reveal-card-back {
+  animation: sponge-active-card-pulse 1.35s ease-in-out infinite;
+}
+
+.sponge-dupe-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.2rem;
+  background: rgba(2, 6, 23, 0.24);
+  padding: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .sponge-vault-header {
+    flex-direction: column;
+  }
+
+  .sponge-card-tabs {
+    width: 100%;
+    border-radius: 1rem;
+  }
+
+  .sponge-card-tabs button {
+    padding-inline: 0.72rem;
+  }
+
+  .sponge-lobby-hero {
+    min-height: 24rem;
+  }
+
+  .sponge-lobby-pack {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: min(70vw, 13rem);
+    margin: 2rem auto 0;
+    transform: rotate(3deg);
+  }
+
+  .sponge-store-pack {
+    min-height: 18rem;
+  }
+
+  .sponge-opening-stage {
+    min-height: 38rem;
+  }
+
+  .sponge-opening-track {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding: 2rem 0.25rem 1rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .sponge-reveal-card {
+    flex: 0 0 min(74vw, 18rem);
+    scroll-snap-align: center;
+  }
+
+  .sponge-dupe-row {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sponge-premium-pack,
+  .sponge-reveal-card-active .sponge-reveal-card-back {
+    animation: none;
+  }
+
+  .sponge-reveal-card-inner {
+    transition-duration: 1ms;
+  }
+}
+
+.sponge-pack-shine::before {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -1689,6 +1993,28 @@ body {
   100% {
     opacity: 1;
     transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes sponge-pack-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-0.55rem) rotate(1deg);
+  }
+}
+
+@keyframes sponge-active-card-pulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: translateY(-0.45rem) scale(1.025);
+    filter: brightness(1.12);
   }
 }
 
@@ -2909,13 +3235,13 @@ body {
   }
 
   .gate-mosquito {
-    width: 3.35rem;
-    height: 3.35rem;
+    width: 66px;
+    height: 66px;
   }
 
   .gate-mosquito-art {
-    width: 1.72rem;
-    height: 1.72rem;
+    width: 42px;
+    height: 42px;
   }
 
   .door-sigil-upper,
@@ -3012,7 +3338,7 @@ body {
   .gate-mosquito-run-2,
   .gate-mosquito-run-3 {
     animation-name: mosquito-flight-reduced;
-    animation-duration: 8.5s;
+    animation-duration: 12s;
   }
 
   .animate-slide-left,
