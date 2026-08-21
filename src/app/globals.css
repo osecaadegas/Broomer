@@ -1526,6 +1526,92 @@ body {
     0 0.75rem 1.6rem rgba(0, 0, 0, 0.54);
 }
 
+.gate-mosquito {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 74;
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: inherit;
+  background: transparent;
+  cursor: crosshair;
+  opacity: 0;
+  touch-action: manipulation;
+  transform: translate3d(-4rem, 18vh, 0);
+  filter:
+    drop-shadow(0 0 0.45rem rgba(0, 0, 0, 0.86))
+    drop-shadow(0 0 0.18rem rgba(217, 188, 101, 0.16));
+  will-change: transform, opacity;
+}
+
+.gate-mosquito:focus-visible {
+  outline: 2px solid rgba(217, 188, 101, 0.72);
+  outline-offset: 0.2rem;
+}
+
+.gate-mosquito-art {
+  width: 1.85rem;
+  height: 1.85rem;
+  overflow: visible;
+}
+
+.gate-mosquito-run-0 {
+  animation: mosquito-flight-one 7.6s linear both;
+}
+
+.gate-mosquito-run-1 {
+  animation: mosquito-flight-two 7.6s linear both;
+}
+
+.gate-mosquito-run-2 {
+  animation: mosquito-flight-three 7.6s linear both;
+}
+
+.gate-mosquito-run-3 {
+  animation: mosquito-flight-four 7.6s linear both;
+}
+
+.gate-mosquito .mosquito-wings {
+  transform-origin: 50% 42%;
+  animation: mosquito-wing-flicker 90ms steps(2, end) infinite;
+}
+
+.gate-mosquito .mosquito-legs {
+  transform-origin: 50% 54%;
+  animation: mosquito-leg-twitch 260ms ease-in-out infinite;
+}
+
+.gate-mosquito .mosquito-splat {
+  opacity: 0;
+  transform: scale(0.18);
+  transform-origin: 50% 50%;
+}
+
+.gate-mosquito-hit {
+  opacity: 1;
+  pointer-events: none;
+  animation: mosquito-hit-hold 620ms ease-out both !important;
+  filter:
+    drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.95))
+    drop-shadow(0 0 0.22rem rgba(127, 29, 29, 0.62));
+}
+
+.gate-mosquito-hit .mosquito-body,
+.gate-mosquito-hit .mosquito-wings,
+.gate-mosquito-hit .mosquito-legs {
+  opacity: 0;
+}
+
+.gate-mosquito-hit .mosquito-splat {
+  animation: mosquito-splat-pop 620ms cubic-bezier(0.2, 0.82, 0.26, 1) both;
+}
+
 .sponge-card-game-scene {
   background:
     radial-gradient(circle at 48% -8%, rgba(125, 211, 252, 0.76), rgba(14, 165, 233, 0.36) 34%, transparent 60%),
@@ -1791,6 +1877,169 @@ body {
   }
   50% {
     opacity: 0.38;
+  }
+}
+
+@keyframes mosquito-flight-one {
+  0% {
+    opacity: 0;
+    transform: translate3d(-4rem, 18vh, 0) rotate(6deg) scale(0.78);
+  }
+  9% {
+    opacity: 0.7;
+  }
+  25% {
+    transform: translate3d(20vw, 10vh, 0) rotate(-16deg) scale(0.84);
+  }
+  48% {
+    transform: translate3d(44vw, 29vh, 0) rotate(18deg) scale(0.9);
+  }
+  72% {
+    opacity: 0.72;
+    transform: translate3d(73vw, 18vh, 0) rotate(-12deg) scale(0.82);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(100vw + 4rem), 34vh, 0) rotate(14deg)
+      scale(0.72);
+  }
+}
+
+@keyframes mosquito-flight-two {
+  0% {
+    opacity: 0;
+    transform: translate3d(calc(100vw + 4rem), 56vh, 0) rotate(-7deg)
+      scale(0.82);
+  }
+  10% {
+    opacity: 0.68;
+  }
+  28% {
+    transform: translate3d(78vw, 43vh, 0) rotate(15deg) scale(0.88);
+  }
+  52% {
+    transform: translate3d(50vw, 62vh, 0) rotate(-18deg) scale(0.86);
+  }
+  76% {
+    opacity: 0.74;
+    transform: translate3d(23vw, 47vh, 0) rotate(11deg) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-4rem, 64vh, 0) rotate(-10deg) scale(0.72);
+  }
+}
+
+@keyframes mosquito-flight-three {
+  0% {
+    opacity: 0;
+    transform: translate3d(12vw, -4rem, 0) rotate(8deg) scale(0.74);
+  }
+  11% {
+    opacity: 0.66;
+  }
+  31% {
+    transform: translate3d(29vw, 23vh, 0) rotate(-14deg) scale(0.84);
+  }
+  55% {
+    transform: translate3d(58vw, 14vh, 0) rotate(17deg) scale(0.88);
+  }
+  80% {
+    opacity: 0.72;
+    transform: translate3d(81vw, 36vh, 0) rotate(-9deg) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(92vw, calc(100vh + 4rem), 0) rotate(12deg)
+      scale(0.7);
+  }
+}
+
+@keyframes mosquito-flight-four {
+  0% {
+    opacity: 0;
+    transform: translate3d(84vw, calc(100vh + 4rem), 0) rotate(-6deg)
+      scale(0.78);
+  }
+  10% {
+    opacity: 0.7;
+  }
+  30% {
+    transform: translate3d(68vw, 69vh, 0) rotate(15deg) scale(0.84);
+  }
+  54% {
+    transform: translate3d(41vw, 52vh, 0) rotate(-18deg) scale(0.9);
+  }
+  78% {
+    opacity: 0.73;
+    transform: translate3d(20vw, 29vh, 0) rotate(10deg) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-4rem, 18vh, 0) rotate(-12deg) scale(0.72);
+  }
+}
+
+@keyframes mosquito-wing-flicker {
+  0% {
+    transform: scaleX(0.76) rotate(-3deg);
+    opacity: 0.36;
+  }
+  100% {
+    transform: scaleX(1.14) rotate(3deg);
+    opacity: 0.56;
+  }
+}
+
+@keyframes mosquito-leg-twitch {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes mosquito-hit-hold {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.82) rotate(-8deg);
+  }
+  28% {
+    transform: translate(-50%, -50%) scale(1.18) rotate(4deg);
+  }
+  100% {
+    opacity: 0.94;
+    transform: translate(-50%, -50%) scale(0.94) rotate(0deg);
+  }
+}
+
+@keyframes mosquito-splat-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.16) rotate(-12deg);
+  }
+  32% {
+    opacity: 1;
+    transform: scale(1.18) rotate(6deg);
+  }
+  100% {
+    opacity: 0.92;
+    transform: scale(0.98) rotate(0deg);
+  }
+}
+
+@keyframes mosquito-flight-reduced {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate3d(72vw, 28vh, 0) scale(0.88);
+  }
+  18%,
+  82% {
+    opacity: 0.72;
+    transform: translate3d(72vw, 28vh, 0) scale(0.88);
   }
 }
 
@@ -2659,6 +2908,16 @@ body {
     row-gap: clamp(1.9rem, 5.8vh, 3rem);
   }
 
+  .gate-mosquito {
+    width: 3.35rem;
+    height: 3.35rem;
+  }
+
+  .gate-mosquito-art {
+    width: 1.72rem;
+    height: 1.72rem;
+  }
+
   .door-sigil-upper,
   .door-sigil-lower {
     width: 3rem;
@@ -2732,6 +2991,11 @@ body {
   .gate-lock-sigil svg,
   .gate-seal-picked,
   .gate-seal-dormant-pulse,
+  .gate-mosquito-run-0,
+  .gate-mosquito-run-1,
+  .gate-mosquito-run-2,
+  .gate-mosquito-run-3,
+  .gate-mosquito-hit,
   .door-hole-eye,
   .door-hole-eye-lid,
   .door-hole-eye-iris,
@@ -2741,6 +3005,14 @@ body {
 
   .chess-transition-bubble {
     display: none;
+  }
+
+  .gate-mosquito-run-0,
+  .gate-mosquito-run-1,
+  .gate-mosquito-run-2,
+  .gate-mosquito-run-3 {
+    animation-name: mosquito-flight-reduced;
+    animation-duration: 6.4s;
   }
 
   .animate-slide-left,
@@ -2757,6 +3029,8 @@ body {
   .dutchman-ghost,
   .ghost-aura,
   .ghost-smoke,
+  .gate-mosquito .mosquito-wings,
+  .gate-mosquito .mosquito-legs,
   .gate-edge-smoke,
   .gate-edge-smoke::before,
   .chess-bubble-transition::after,

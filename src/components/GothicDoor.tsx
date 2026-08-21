@@ -7,6 +7,9 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent,
+  type PointerEvent,
+  type TouchEvent,
 } from "react";
 import { PlaneAnswerReveal } from "@/components/PlaneAnswerReveal";
 import type { PlaneAnswer } from "@/lib/supabase/types";
@@ -35,6 +38,8 @@ const rides = [
 type DoorSymbol = "upper" | "lower";
 type GhostMode = "cross" | "center" | "peek";
 type DoorIdleKind = "ghost" | "breath" | "listen" | "fingers" | "eye";
+type MosquitoPhase = "hidden" | "flying" | "hit";
+type MosquitoHitPoint = { x: number; y: number } | null;
 
 const SIGIL_STEP_DEGREES = 45;
 const UPPER_SIGIL_TARGET = 180;
@@ -50,8 +55,10 @@ const PLANE_FLIGHT_MS = 5400;
 const GATE_REVEAL_MS = 3100;
 const ADMIN_PRESS_MS = 1400;
 const ADMIN_CLICK_WINDOW_MS = 1800;
-const CARD_GATE_WORD = "krabby";
-const CARD_GATE_HOLD_MS = 1150;
+const MOSQUITO_FIRST_DELAY_MS = 4200;
+const MOSQUITO_INTERVAL_MS = 13500;
+const MOSQUITO_FLIGHT_MS = 7600;
+const MOSQUITO_KILL_MS = 620;
 const IDLE_MESSAGES = [
   "A shadow crosses the other side.",
   "The door exhales.",
@@ -130,6 +137,64 @@ function DoorIdleEvent({
         {IDLE_MESSAGES[messageIndex]}
       </p>
     </>
+  );
+}
+
+function MosquitoIcon({ phase }: Readonly<{ phase: MosquitoPhase }>) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 64 64"
+      className={`gate-mosquito-art ${
+        phase === "hit" ? "gate-mosquito-art-hit" : ""
+      }`}
+    >
+      <g className="mosquito-splat">
+        <path
+          d="M31 13 37 26 52 23 40 34 52 48 34 43 23 55 21 39 7 34 22 27Z"
+          fill="#58151c"
+        />
+        <circle cx="31" cy="34" r="10" fill="#7f1d1d" />
+        <circle cx="20" cy="27" r="3" fill="#9f2a2f" />
+        <circle cx="45" cy="43" r="3.5" fill="#9f2a2f" />
+      </g>
+      <g className="mosquito-wings" fill="rgba(218, 231, 214, 0.42)">
+        <ellipse cx="27" cy="25" rx="13" ry="7" transform="rotate(-27 27 25)" />
+        <ellipse cx="39" cy="25" rx="13" ry="7" transform="rotate(27 39 25)" />
+      </g>
+      <g className="mosquito-legs" stroke="#1d1510" strokeWidth="2" strokeLinecap="round">
+        <path d="M25 38 12 45" />
+        <path d="M30 41 22 54" />
+        <path d="M39 38 52 45" />
+        <path d="M34 41 42 54" />
+      </g>
+      <g className="mosquito-body">
+        <path
+          d="M32 15c5 0 9 6 9 14s-4 18-9 18-9-10-9-18 4-14 9-14Z"
+          fill="#2b1a13"
+        />
+        <path
+          d="M32 14c4-1 8 1 10 5l9-5"
+          stroke="#1d1510"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <path
+          d="M27 24h10M25 31h14M27 38h10"
+          stroke="#7c4f28"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <circle cx="32" cy="14" r="5" fill="#1d1510" />
+        <path
+          d="M28 11 22 6M36 11 42 6"
+          stroke="#1d1510"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      </g>
+    </svg>
   );
 }
 
@@ -313,40 +378,73 @@ export function GothicDoor({
   const [idleMessageIndex, setIdleMessageIndex] = useState(-1);
   const [idleEventActive, setIdleEventActive] = useState(false);
   const [idleGhostMode, setIdleGhostMode] = useState<GhostMode>("center");
-  const [cardGatePrimed, setCardGatePrimed] = useState(false);
+  const [mosquitoPhase, setMosquitoPhase] =
+    useState<MosquitoPhase>("hidden");
+  const [mosquitoRun, setMosquitoRun] = useState(0);
+  const [mosquitoHitPoint, setMosquitoHitPoint] =
+    useState<MosquitoHitPoint>(null);
   const adminPressTimerRef = useRef<number | null>(null);
   const adminClicksRef = useRef({ count: 0, firstAt: 0 });
-  const cardGateBufferRef = useRef("");
-  const cardGateHoldTimerRef = useRef<number | null>(null);
   const cardGateOpeningRef = useRef(false);
+  const mosquitoTimerRef = useRef<number | null>(null);
+  const mosquitoFlightTimerRef = useRef<number | null>(null);
+  const mosquitoHitTimerRef = useRef<number | null>(null);
+  const mosquitoHitPendingRef = useRef(false);
 
-  const clearCardGateHoldTimer = useCallback(() => {
-    if (cardGateHoldTimerRef.current == null) return;
-    window.clearTimeout(cardGateHoldTimerRef.current);
-    cardGateHoldTimerRef.current = null;
+  const clearMosquitoTimers = useCallback(() => {
+    if (mosquitoTimerRef.current != null) {
+      window.clearTimeout(mosquitoTimerRef.current);
+      mosquitoTimerRef.current = null;
+    }
+    if (mosquitoFlightTimerRef.current != null) {
+      window.clearTimeout(mosquitoFlightTimerRef.current);
+      mosquitoFlightTimerRef.current = null;
+    }
+    if (mosquitoHitTimerRef.current != null) {
+      window.clearTimeout(mosquitoHitTimerRef.current);
+      mosquitoHitTimerRef.current = null;
+    }
   }, []);
 
   const revealCardGate = useCallback(() => {
     if (sliding || cardGateOpeningRef.current) return;
     cardGateOpeningRef.current = true;
-    clearCardGateHoldTimer();
+    clearMosquitoTimers();
     setPicked("cards");
-    setCardGatePrimed(false);
     playGateAtmosphere();
     setSliding(true);
     window.setTimeout(onCards, GATE_REVEAL_MS);
-  }, [clearCardGateHoldTimer, onCards, sliding]);
+  }, [clearMosquitoTimers, onCards, sliding]);
+
+  const hitMosquito = useCallback(
+    (clientX: number, clientY: number) => {
+      if (
+        mosquitoPhase !== "flying" ||
+        sliding ||
+        mosquitoHitPendingRef.current ||
+        cardGateOpeningRef.current
+      ) {
+        return;
+      }
+
+      mosquitoHitPendingRef.current = true;
+      clearMosquitoTimers();
+      setMosquitoHitPoint({ x: clientX, y: clientY });
+      setMosquitoPhase("hit");
+      if (navigator.userActivation?.isActive) {
+        navigator.vibrate?.([18, 30, 42]);
+      }
+      mosquitoHitTimerRef.current = window.setTimeout(
+        revealCardGate,
+        MOSQUITO_KILL_MS,
+      );
+    },
+    [clearMosquitoTimers, mosquitoPhase, revealCardGate, sliding],
+  );
 
   function handlePick(char: string) {
     if (sliding || cardGateOpeningRef.current) return;
     setPicked(char);
-    if (char === "hint") {
-      cardGateBufferRef.current = "";
-      setCardGatePrimed(true);
-      return;
-    }
-
-    setCardGatePrimed(false);
     if (!isEntryRide(char)) return;
 
     playGateAtmosphere();
@@ -357,44 +455,21 @@ export function GothicDoor({
     }, GATE_REVEAL_MS);
   }
 
-  useEffect(() => {
-    if (!cardGatePrimed || sliding) return;
+  function handleMosquitoPointerDown(event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    hitMosquito(event.clientX, event.clientY);
+  }
 
-    function handleCardGateKey(event: globalThis.KeyboardEvent) {
-      const target = event.target as HTMLElement | null;
-      if (
-        target &&
-        ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
-      ) {
-        return;
-      }
-      if (
-        event.ctrlKey ||
-        event.metaKey ||
-        event.altKey ||
-        event.key.length !== 1
-      ) {
-        return;
-      }
+  function handleMosquitoClick(event: MouseEvent<HTMLButtonElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    hitMosquito(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+  }
 
-      cardGateBufferRef.current =
-        `${cardGateBufferRef.current}${event.key.toLowerCase()}`.slice(-16);
-      if (!cardGateBufferRef.current.endsWith(CARD_GATE_WORD)) return;
-
-      revealCardGate();
-    }
-
-    window.addEventListener("keydown", handleCardGateKey);
-    return () => window.removeEventListener("keydown", handleCardGateKey);
-  }, [cardGatePrimed, revealCardGate, sliding]);
-
-  function handleHintPointerDown() {
-    if (sliding || !cardGatePrimed || cardGateOpeningRef.current) return;
-    clearCardGateHoldTimer();
-    cardGateHoldTimerRef.current = window.setTimeout(
-      revealCardGate,
-      CARD_GATE_HOLD_MS,
-    );
+  function handleMosquitoTouchStart(event: TouchEvent<HTMLButtonElement>) {
+    const touch = event.touches[0];
+    if (!touch) return;
+    event.preventDefault();
+    hitMosquito(touch.clientX, touch.clientY);
   }
 
   function handleSymbolRotate(symbol: DoorSymbol) {
@@ -523,9 +598,31 @@ export function GothicDoor({
         window.clearTimeout(adminPressTimerRef.current);
         adminPressTimerRef.current = null;
       }
-      clearCardGateHoldTimer();
+      clearMosquitoTimers();
     };
-  }, [clearCardGateHoldTimer, gone]);
+  }, [clearMosquitoTimers, gone]);
+
+  useEffect(() => {
+    clearMosquitoTimers();
+    if (sliding || doorsOpen || gone) return clearMosquitoTimers;
+
+    const scheduleNextMosquito = (delay: number) => {
+      mosquitoTimerRef.current = window.setTimeout(() => {
+        mosquitoHitPendingRef.current = false;
+        setMosquitoHitPoint(null);
+        setMosquitoRun((run) => run + 1);
+        setMosquitoPhase("flying");
+        mosquitoFlightTimerRef.current = window.setTimeout(() => {
+          mosquitoHitPendingRef.current = false;
+          setMosquitoPhase("hidden");
+          scheduleNextMosquito(MOSQUITO_INTERVAL_MS);
+        }, MOSQUITO_FLIGHT_MS);
+      }, delay);
+    };
+
+    scheduleNextMosquito(MOSQUITO_FIRST_DELAY_MS);
+    return clearMosquitoTimers;
+  }, [clearMosquitoTimers, doorsOpen, gone, sliding]);
 
   useEffect(() => {
     if (sliding) return;
@@ -657,6 +754,29 @@ export function GothicDoor({
         messageIndex={idleMessageIndex}
         ghostMode={idleGhostMode}
       />
+      {mosquitoPhase !== "hidden" && !sliding && !doorsOpen && (
+        <button
+          key={`mosquito-${mosquitoRun}`}
+          type="button"
+          onPointerDown={handleMosquitoPointerDown}
+          onTouchStart={handleMosquitoTouchStart}
+          onClick={handleMosquitoClick}
+          aria-label="Tiny mosquito"
+          className={`gate-mosquito gate-mosquito-run-${mosquitoRun % 4} ${
+            mosquitoPhase === "hit" ? "gate-mosquito-hit" : ""
+          }`}
+          style={
+            mosquitoPhase === "hit" && mosquitoHitPoint
+              ? {
+                  left: `${mosquitoHitPoint.x}px`,
+                  top: `${mosquitoHitPoint.y}px`,
+                }
+              : undefined
+          }
+        >
+          <MosquitoIcon phase={mosquitoPhase} />
+        </button>
+      )}
 
       {/* LEFT DOOR */}
       <div
@@ -931,18 +1051,6 @@ export function GothicDoor({
                   key={ride.value}
                   type="button"
                   onClick={() => handlePick(ride.value)}
-                  onPointerDown={
-                    ride.value === "hint" ? handleHintPointerDown : undefined
-                  }
-                  onPointerUp={
-                    ride.value === "hint" ? clearCardGateHoldTimer : undefined
-                  }
-                  onPointerCancel={
-                    ride.value === "hint" ? clearCardGateHoldTimer : undefined
-                  }
-                  onPointerLeave={
-                    ride.value === "hint" ? clearCardGateHoldTimer : undefined
-                  }
                   aria-label={ride.label}
                   disabled={sliding}
                   className={`gate-seal group relative flex h-16 w-16 items-center justify-center transition-all duration-300 sm:h-20 sm:w-20 ${selectionClass} ${
@@ -974,10 +1082,6 @@ export function GothicDoor({
               <p>
                 Two seals guard the fleur. Turn their longest points toward its
                 heart.
-              </p>
-              <p className="mt-2 text-[#9f895d]/70">
-                The fifth passage has no seal. Hold the unanswered mark until
-                it answers.
               </p>
             </div>
           )}
