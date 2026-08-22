@@ -1203,18 +1203,18 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
     <section className="sponge-card-game-scene fixed inset-0 z-[90] overflow-y-auto text-white">
       <BubbleField />
 
-      <div className="relative z-10 mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 py-4 sm:px-6 sm:py-6">
+      <div className="sponge-vault-shell relative z-10 mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 py-4 sm:px-6 sm:py-6">
         <header className="sponge-vault-header">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.34em] text-cyan-100/70">
               hidden reef passage
             </p>
-            <h1 className="mt-1 text-4xl font-black leading-none text-yellow-300 drop-shadow-[0_0.28rem_0_rgba(8,47,73,0.9)] sm:text-6xl">
-              KRUSTY VAULT
+            <h1 className="sponge-vault-title mt-1 text-4xl font-black leading-none text-white sm:text-6xl">
+              Krusty Vault
             </h1>
           </div>
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-            <div className="rounded-2xl border-2 border-yellow-300/70 bg-slate-950/45 px-4 py-2 text-center shadow-[0_0_1.5rem_rgba(250,204,21,0.18)] backdrop-blur">
+            <div className="sponge-points-card">
               <p className="text-2xl font-black text-white">{game.points}</p>
               <p className="text-[9px] font-black uppercase tracking-widest text-yellow-200">
                 Points
@@ -1223,14 +1223,14 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
             <button
               type="button"
               onClick={onExit}
-              className="rounded-2xl border border-white/20 bg-black/35 px-4 py-3 text-xs font-black uppercase tracking-widest text-white/75 backdrop-blur transition hover:bg-black/55"
+              className="sponge-vault-back-button"
             >
               Back
             </button>
           </div>
         </header>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="sponge-vault-toolbar mt-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
             {THEME_ORDER.map((themeId) => {
               const theme = CARD_THEMES[themeId];
@@ -1239,10 +1239,8 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                   key={theme.id}
                   type="button"
                   onClick={() => setSelectedTheme(theme.id)}
-                  className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-widest transition ${
-                    selectedTheme === theme.id
-                      ? "border-yellow-200 bg-yellow-300 text-slate-950"
-                      : "border-white/15 bg-white/10 text-white/70 hover:bg-white/15"
+                  className={`sponge-theme-pill ${
+                    selectedTheme === theme.id ? "is-active" : ""
                   }`}
                 >
                   {theme.name}
@@ -1252,7 +1250,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
             <button
               type="button"
               disabled
-              className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-black uppercase tracking-widest text-white/35"
+              className="sponge-theme-pill is-disabled"
             >
               Next Theme
             </button>
@@ -1298,7 +1296,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                     ].map(([label, value]) => (
                       <div
                         key={label}
-                        className="rounded-2xl border border-white/15 bg-black/22 p-3 backdrop-blur"
+                        className="sponge-lobby-stat"
                       >
                         <p className="text-2xl font-black text-yellow-200">
                           {value}
@@ -1366,7 +1364,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                     type="button"
                     disabled={!hydrated || !freeReady}
                     onClick={() => openPack(starterPack, "free")}
-                    className="rounded-2xl bg-yellow-300 px-4 py-4 text-sm font-black uppercase tracking-wide text-slate-950 shadow-lg transition active:scale-95 disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/40"
+                    className="sponge-primary-action"
                   >
                     {!hydrated
                       ? "Loading"
@@ -1394,7 +1392,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                         {product.size} cards
                       </p>
                     </div>
-                    <div className="my-5 rounded-2xl border border-white/12 bg-black/22 p-3">
+                    <div className="sponge-odds-card my-5 p-3">
                       <p className="text-[10px] font-black uppercase tracking-widest text-white/45">
                         Odds
                       </p>
@@ -1406,7 +1404,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                       type="button"
                       disabled={!hydrated || game.points < product.cost}
                       onClick={() => openPack(product, "points")}
-                      className="mt-auto rounded-2xl bg-pink-300 px-4 py-3 text-sm font-black uppercase tracking-wide text-purple-950 shadow-lg transition active:scale-95 disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/40"
+                      className="sponge-secondary-action mt-auto"
                     >
                       Buy For {product.cost}
                     </button>
@@ -1429,7 +1427,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                         Pack Opening
                       </h2>
                     </div>
-                    <div className="rounded-2xl border border-white/15 bg-black/25 px-4 py-2 text-center">
+                    <div className="sponge-opening-counter">
                       <p className="text-2xl font-black text-yellow-200">
                         {openingSession.revealed.filter(Boolean).length}/
                         {openingSession.pulls.length}
@@ -1477,14 +1475,14 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                           <button
                             type="button"
                             onClick={() => setView("inventory")}
-                            className="rounded-2xl bg-lime-300 px-5 py-3 text-sm font-black uppercase tracking-wide text-lime-950 shadow-lg transition active:scale-95"
+                            className="sponge-success-action"
                           >
                             Inventory
                           </button>
                           <button
                             type="button"
                             onClick={() => setView("store")}
-                            className="rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-black uppercase tracking-wide text-white transition hover:bg-white/15"
+                            className="sponge-ghost-action"
                           >
                             Store
                           </button>
@@ -1502,7 +1500,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                     <button
                       type="button"
                       onClick={() => setView("store")}
-                      className="mt-4 rounded-2xl bg-yellow-300 px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-950"
+                      className="sponge-primary-action mt-4"
                     >
                       Store
                     </button>
@@ -1531,7 +1529,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                     type="button"
                     disabled={duplicateCount <= 0}
                     onClick={tradeAllDuplicates}
-                    className="rounded-2xl bg-lime-300 px-4 py-3 text-xs font-black uppercase tracking-widest text-lime-950 transition active:scale-95 disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/40"
+                    className="sponge-success-action"
                   >
                     Trade All
                   </button>
@@ -1559,7 +1557,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                             <button
                               type="button"
                               onClick={() => tradeDuplicate(entry.card.id, 1)}
-                              className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-white/15"
+                              className="sponge-mini-action"
                             >
                               Trade One
                             </button>
@@ -1568,7 +1566,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                               onClick={() =>
                                 tradeDuplicate(entry.card.id, entry.duplicateCount)
                               }
-                              className="rounded-xl bg-yellow-300 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-950 transition active:scale-95"
+                              className="sponge-mini-action is-bright"
                             >
                               Trade Stack
                             </button>
@@ -1577,7 +1575,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                       </article>
                     ))
                   ) : (
-                    <div className="rounded-3xl border border-white/12 bg-black/20 p-6 text-center">
+                    <div className="sponge-empty-state">
                       <p className="text-lg font-black text-white">
                         Duplicate vault empty
                       </p>
@@ -1611,7 +1609,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                       />
                     ))
                   ) : (
-                    <div className="col-span-full rounded-3xl border border-white/12 bg-black/20 p-6 text-center">
+                    <div className="sponge-empty-state col-span-full">
                       <p className="text-lg font-black text-white">
                         Inventory empty
                       </p>
@@ -1649,10 +1647,8 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                     key={key}
                     type="button"
                     onClick={() => setFilter(key)}
-                    className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wide transition ${
-                      filter === key
-                        ? "bg-yellow-300 text-blue-950"
-                        : "bg-white/10 text-white/70 hover:bg-white/15"
+                    className={`sponge-filter-pill ${
+                      filter === key ? "is-active" : ""
                     }`}
                   >
                     {key === "all" ? "All" : RARITY_META[key].label}

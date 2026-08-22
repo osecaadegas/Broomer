@@ -11,15 +11,17 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { QuestionManager } from "@/components/QuestionManager";
 import { PlaneGateSettings } from "@/components/PlaneGateSettings";
 import { UnoAnswerManager } from "@/components/UnoAnswerManager";
+import { CardVaultAdminControls } from "@/components/CardVaultAdminControls";
 import {
   ClipboardIcon,
   ClipboardListIcon,
+  PlusIcon,
   SparklesIcon,
 } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
-type AdminSection = "entrance" | "uno" | "broom";
+type AdminSection = "entrance" | "uno" | "broom" | "cards";
 
 const sections = [
   {
@@ -39,6 +41,12 @@ const sections = [
     label: "Broom questions",
     description: "Manage the questionnaire",
     icon: ClipboardListIcon,
+  },
+  {
+    id: "cards" as const,
+    label: "Card vault",
+    description: "Points and timer",
+    icon: PlusIcon,
   },
 ];
 
@@ -86,24 +94,27 @@ export default async function AdminPage({
   const unoQuestions = unoQuestionsResult.data as SupabaseUnoQuestionRow[];
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-slate-50">
       <SiteHeader />
-      <div className="mx-auto max-w-4xl px-4 pb-16 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
         <header className="pb-6 pt-8 sm:pt-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">
-            Admin dashboard
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Questionnaire control center
-          </h1>
-          <p className="mt-1 text-sm text-slate-600 sm:text-base">
-            Configure each entrance path without mixing their content.
-          </p>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">
+              Admin dashboard
+            </p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+              Control center
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+              Configure the entrance paths, quiz content, and card vault from
+              one protected area.
+            </p>
+          </div>
         </header>
 
         <nav
           aria-label="Admin categories"
-          className="grid gap-2 border-b border-slate-200 pb-6 sm:grid-cols-3"
+          className="grid gap-3 border-b border-slate-200 pb-6 sm:grid-cols-2 lg:grid-cols-4"
         >
           {sections.map((section) => {
             const active = section.id === activeSection;
@@ -113,16 +124,16 @@ export default async function AdminPage({
                 key={section.id}
                 href={`/admin?section=${section.id}`}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-20 items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${
+                className={`flex min-h-20 items-center gap-3 rounded-xl border px-4 py-3 text-left shadow-sm transition ${
                   active
-                    ? "border-indigo-300 bg-indigo-50 text-indigo-800 shadow-sm"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-slate-50"
+                    ? "border-indigo-300 bg-indigo-50 text-indigo-900"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/40"
                 }`}
               >
                 <span
                   className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
                     active
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-indigo-600 text-white shadow-sm"
                       : "bg-slate-100 text-slate-500"
                   }`}
                 >
@@ -167,6 +178,7 @@ export default async function AdminPage({
           {activeSection === "broom" && (
             <QuestionManager initialQuestions={initial} />
           )}
+          {activeSection === "cards" && <CardVaultAdminControls />}
         </section>
       </div>
     </main>

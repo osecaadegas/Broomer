@@ -1614,10 +1614,10 @@ body {
 
 .sponge-card-game-scene {
   background:
-    linear-gradient(120deg, rgba(250, 204, 21, 0.18), transparent 28%),
-    linear-gradient(230deg, rgba(236, 72, 153, 0.18), transparent 32%),
-    radial-gradient(circle at 48% -8%, rgba(125, 211, 252, 0.62), rgba(14, 165, 233, 0.26) 34%, transparent 60%),
-    linear-gradient(180deg, #0c4a6e 0%, #075985 34%, #062f4f 68%, #160f2e 100%);
+    radial-gradient(circle at 16% 0%, rgba(253, 224, 71, 0.2), transparent 30rem),
+    radial-gradient(circle at 86% 12%, rgba(236, 72, 153, 0.2), transparent 28rem),
+    radial-gradient(circle at 50% -8%, rgba(125, 211, 252, 0.56), rgba(14, 165, 233, 0.18) 34%, transparent 58%),
+    linear-gradient(145deg, #06111f 0%, #05324c 38%, #087087 64%, #1f1a3d 100%);
 }
 
 .sponge-card-game-scene::before {
@@ -1628,7 +1628,7 @@ body {
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
     linear-gradient(0deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 4.5rem 4.5rem;
+  background-size: 5.5rem 5.5rem;
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.65), transparent 78%);
 }
 
@@ -1646,6 +1646,109 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1rem;
+  background:
+    linear-gradient(135deg, rgba(2, 6, 23, 0.58), rgba(8, 47, 73, 0.34)),
+    rgba(2, 6, 23, 0.28);
+  padding: clamp(1rem, 2.6vw, 1.4rem);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    0 1.3rem 3rem rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(24px);
+}
+
+.sponge-vault-title {
+  text-shadow:
+    0 0.18rem 0 rgba(8, 47, 73, 0.75),
+    0 0 2rem rgba(34, 211, 238, 0.28);
+}
+
+.sponge-points-card {
+  min-width: 6.8rem;
+  border: 1px solid rgba(253, 224, 71, 0.5);
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.75), rgba(2, 6, 23, 0.48)),
+    rgba(8, 47, 73, 0.36);
+  padding: 0.65rem 0.95rem;
+  text-align: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 1.5rem rgba(250, 204, 21, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.sponge-vault-back-button {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.9rem;
+  background: rgba(2, 6, 23, 0.36);
+  padding: 0.9rem 1rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.sponge-vault-back-button:hover {
+  border-color: rgba(253, 224, 71, 0.35);
+  background: rgba(2, 6, 23, 0.54);
+  color: rgba(255, 255, 255, 0.95);
+  transform: translateY(-0.05rem);
+}
+
+.sponge-vault-toolbar {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  background: rgba(2, 6, 23, 0.28);
+  padding: 0.55rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.sponge-theme-pill {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.6rem 0.9rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.sponge-theme-pill:hover {
+  border-color: rgba(253, 224, 71, 0.32);
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.sponge-theme-pill.is-active {
+  border-color: rgba(253, 224, 71, 0.88);
+  background: linear-gradient(135deg, #fde047, #facc15);
+  color: #082f49;
+  box-shadow:
+    0 0.65rem 1.2rem rgba(2, 6, 23, 0.24),
+    0 0 1.3rem rgba(253, 224, 71, 0.22);
+}
+
+.sponge-theme-pill.is-disabled {
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.32);
 }
 
 .sponge-card-tabs {
@@ -1653,16 +1756,16 @@ body {
   max-width: 100%;
   gap: 0.35rem;
   overflow-x: auto;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 999px;
-  background: rgba(2, 6, 23, 0.28);
-  padding: 0.32rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.9rem;
+  background: rgba(15, 23, 42, 0.36);
+  padding: 0.25rem;
   backdrop-filter: blur(18px);
 }
 
 .sponge-card-tabs button {
   flex: 0 0 auto;
-  border-radius: 999px;
+  border-radius: 0.7rem;
   padding: 0.55rem 0.85rem;
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.64rem;
@@ -1693,16 +1796,16 @@ body {
 .sponge-opening-stage {
   border: 1px solid rgba(255, 255, 255, 0.16);
   background:
-    linear-gradient(145deg, rgba(15, 23, 42, 0.64), rgba(14, 116, 144, 0.22)),
-    rgba(2, 6, 23, 0.3);
+    linear-gradient(145deg, rgba(15, 23, 42, 0.68), rgba(14, 116, 144, 0.2)),
+    rgba(2, 6, 23, 0.34);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 1.25rem 3.4rem rgba(2, 6, 23, 0.28);
+    0 1.35rem 3.2rem rgba(2, 6, 23, 0.3);
   backdrop-filter: blur(22px);
 }
 
 .sponge-panel {
-  border-radius: 1.5rem;
+  border-radius: 1rem;
   padding: 1rem;
 }
 
@@ -1710,7 +1813,7 @@ body {
   position: relative;
   min-height: 26rem;
   overflow: hidden;
-  border-radius: 1.75rem;
+  border-radius: 1.15rem;
   padding: clamp(1.1rem, 3.4vw, 2rem);
 }
 
@@ -1740,13 +1843,34 @@ body {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  border-radius: 1.35rem;
+  border-radius: 1rem;
   padding: 1rem;
   text-align: left;
   transition:
     border-color 180ms ease,
     background 180ms ease,
     transform 180ms ease;
+}
+
+.sponge-lobby-stat,
+.sponge-odds-card,
+.sponge-opening-counter,
+.sponge-empty-state {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.9rem;
+  background: rgba(2, 6, 23, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.sponge-lobby-stat,
+.sponge-opening-counter {
+  padding: 0.75rem;
+}
+
+.sponge-empty-state {
+  padding: 1.4rem;
+  text-align: center;
 }
 
 .sponge-lobby-tile:hover {
@@ -1761,8 +1885,135 @@ body {
   display: flex;
   min-height: 23rem;
   flex-direction: column;
-  border-radius: 1.5rem;
+  border-radius: 1rem;
   padding: 1rem;
+}
+
+.sponge-primary-action,
+.sponge-secondary-action,
+.sponge-success-action,
+.sponge-ghost-action,
+.sponge-mini-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.sponge-primary-action,
+.sponge-secondary-action {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  font-size: 0.82rem;
+}
+
+.sponge-primary-action {
+  background: linear-gradient(135deg, #fde047, #facc15);
+  color: #082f49;
+  box-shadow:
+    0 0.9rem 1.8rem rgba(2, 6, 23, 0.28),
+    0 0 1.4rem rgba(253, 224, 71, 0.22);
+}
+
+.sponge-secondary-action {
+  background: linear-gradient(135deg, #f9a8d4, #f472b6);
+  color: #3b0764;
+  box-shadow:
+    0 0.9rem 1.8rem rgba(2, 6, 23, 0.28),
+    0 0 1.4rem rgba(244, 114, 182, 0.18);
+}
+
+.sponge-success-action,
+.sponge-ghost-action {
+  padding: 0.8rem 1.05rem;
+  font-size: 0.75rem;
+}
+
+.sponge-success-action {
+  background: linear-gradient(135deg, #bef264, #84cc16);
+  color: #173007;
+  box-shadow: 0 0.9rem 1.8rem rgba(2, 6, 23, 0.22);
+}
+
+.sponge-ghost-action {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.sponge-mini-action {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.62rem 0.72rem;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.62rem;
+}
+
+.sponge-mini-action.is-bright {
+  border-color: rgba(253, 224, 71, 0.55);
+  background: #fde047;
+  color: #082f49;
+}
+
+.sponge-primary-action:hover,
+.sponge-secondary-action:hover,
+.sponge-success-action:hover,
+.sponge-ghost-action:hover,
+.sponge-mini-action:hover {
+  transform: translateY(-0.06rem);
+}
+
+.sponge-primary-action:active,
+.sponge-secondary-action:active,
+.sponge-success-action:active,
+.sponge-ghost-action:active,
+.sponge-mini-action:active {
+  transform: scale(0.98);
+}
+
+.sponge-primary-action:disabled,
+.sponge-secondary-action:disabled,
+.sponge-success-action:disabled {
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.38);
+  box-shadow: none;
+  transform: none;
+}
+
+.sponge-filter-pill {
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.42rem 0.7rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.sponge-filter-pill:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.sponge-filter-pill.is-active {
+  background: #fde047;
+  color: #082f49;
 }
 
 .sponge-store-pack.is-featured {
@@ -1826,7 +2077,7 @@ body {
   position: relative;
   min-height: clamp(34rem, 76vh, 50rem);
   overflow: hidden;
-  border-radius: 1.75rem;
+  border-radius: 1.2rem;
   padding: clamp(1rem, 3vw, 1.4rem);
   perspective: 1600px;
   background:
