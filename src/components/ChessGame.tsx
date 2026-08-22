@@ -13,6 +13,10 @@ import {
   SparklesIcon,
   XIcon,
 } from "@/components/icons";
+import {
+  awardCardGamePoints,
+  CHESS_WIN_POINTS,
+} from "@/lib/card-game-rewards";
 
 interface Props {
   onExit: () => void;
@@ -44,6 +48,7 @@ interface GameResult {
   reason: GameResultReason;
   winner: Role | null;
   loser: Role | null;
+  rewardPoints: number;
 }
 
 interface MoveAnimation {
@@ -446,12 +451,19 @@ export function ChessGame({ onExit }: Readonly<Props>) {
     winner: Role | null,
     loser: Role | null,
   ) {
+    if (gameResultRef.current) return;
+
     resultSequenceRef.current += 1;
+    const rewardPoints =
+      winner != null && winner === roleRef.current ? CHESS_WIN_POINTS : 0;
+    if (rewardPoints > 0) awardCardGamePoints(rewardPoints);
+
     const nextResult = {
       id: resultSequenceRef.current,
       reason,
       winner,
       loser,
+      rewardPoints,
     };
     gameResultRef.current = nextResult;
     setGameResult(nextResult);
@@ -1198,6 +1210,11 @@ export function ChessGame({ onExit }: Readonly<Props>) {
             <span>
               {gameResult.reason === "checkmate" ? "Checkmate" : "Forfeit"}
             </span>
+            {gameResult.rewardPoints > 0 && (
+              <strong className="mt-2 rounded-full border border-yellow-200/40 bg-yellow-200/15 px-3 py-1 text-sm font-black text-yellow-100">
+                +{gameResult.rewardPoints} points
+              </strong>
+            )}
           </div>
         </div>
       )}

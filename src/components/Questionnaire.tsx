@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import {
   hasOptions,
@@ -21,6 +21,10 @@ import {
 } from "@/components/icons";
 import { RESPONSE_MOOD_SELFIE_KEY } from "@/lib/questionnaire";
 import { RESPONSE_MOOD_TALK_KEY } from "@/lib/questionnaire";
+import {
+  awardCardGamePoints,
+  QUIZ_ANSWER_POINTS,
+} from "@/lib/card-game-rewards";
 
 type Answer = string | string[];
 
@@ -93,6 +97,9 @@ export function Questionnaire({
   const [noPos, setNoPos] = useState({ left: 45, top: 0 });
   const [moodInterlude, setMoodInterlude] = useState(false);
   const [moodInterludeCompleted, setMoodInterludeCompleted] = useState(false);
+  const [pointNotice, setPointNotice] = useState<string | null>(null);
+  const rewardedQuestionIdsRef = useRef<Set<number>>(new Set());
+  const pointNoticeTimerRef = useRef<number | null>(null);
 
   const visible = useMemo(
     () =>
@@ -115,6 +122,14 @@ export function Questionnaire({
   );
   const atmosphereTheme = getAtmosphereTheme(lightsOn, enchanted);
 
+  useEffect(() => {
+    return () => {
+      if (pointNoticeTimerRef.current != null) {
+        window.clearTimeout(pointNoticeTimerRef.current);
+      }
+    };
+  }, []);
+
   function isEmpty(id: number): boolean {
     const value = answers[String(id)];
     if (Array.isArray(value)) return value.length === 0;
@@ -130,9 +145,41 @@ export function Questionnaire({
     });
   }
 
+  function isRewardableAnswer(questionToReward: Question, value: Answer) {
+    if (Array.isArray(value)) {
+      if (questionToReward.type === "multiple" && questionToReward.multipleMax) {
+        return value.length === questionToReward.multipleMax;
+      }
+      return value.length > 0;
+    }
+    return value.trim() !== "";
+  }
+
+  function rewardQuestionAnswer(questionToReward: Question, value: Answer) {
+    if (rewardedQuestionIdsRef.current.has(questionToReward.id)) return;
+    if (!isRewardableAnswer(questionToReward, value)) return;
+
+    rewardedQuestionIdsRef.current.add(questionToReward.id);
+    awardCardGamePoints(QUIZ_ANSWER_POINTS);
+    setPointNotice(`+${QUIZ_ANSWER_POINTS} points`);
+
+    if (pointNoticeTimerRef.current != null) {
+      window.clearTimeout(pointNoticeTimerRef.current);
+    }
+    pointNoticeTimerRef.current = window.setTimeout(() => {
+      setPointNotice(null);
+      pointNoticeTimerRef.current = null;
+    }, 1400);
+  }
+
   function setAnswer(id: number, value: Answer) {
     setAnswers((prev) => ({ ...prev, [String(id)]: value }));
     clearError(id);
+    const answeredQuestion =
+      visible.find((visibleQuestion) => visibleQuestion.id === id) ?? question;
+    if (answeredQuestion?.id === id) {
+      rewardQuestionAnswer(answeredQuestion, value);
+    }
 
     if (
       currentSafe === 0 &&
@@ -169,33 +216,29 @@ export function Questionnaire({
   }
 
   function toggleMultiple(id: number, option: string) {
-    setAnswers((prev) => {
-      const currentValue = Array.isArray(prev[String(id)])
-        ? (prev[String(id)] as string[])
-        : [];
-      const isAlreadySelected = currentValue.includes(option);
+    const currentValue = Array.isArray(answers[String(id)])
+      ? (answers[String(id)] as string[])
+      : [];
+    const isAlreadySelected = currentValue.includes(option);
+    let nextValue = currentValue;
 
-      if (isAlreadySelected) {
-        return {
-          ...prev,
-          [String(id)]: currentValue.filter((item) => item !== option),
-        };
-      }
+    if (isAlreadySelected) {
+      nextValue = currentValue.filter((item) => item !== option);
+    } else if (
+      question.multipleMax == null ||
+      currentValue.length < question.multipleMax
+    ) {
+      nextValue = [...currentValue, option];
+    }
 
-      // Enforce multipleMax if present
-      if (
-        question.multipleMax != null &&
-        currentValue.length >= question.multipleMax
-      ) {
-        return prev; // don't add more
-      }
+    if (nextValue === currentValue) return;
 
-      return {
-        ...prev,
-        [String(id)]: [...currentValue, option],
-      };
-    });
+    setAnswers((prev) => ({
+      ...prev,
+      [String(id)]: nextValue,
+    }));
     clearError(id);
+    rewardQuestionAnswer(question, nextValue);
   }
 
   function goBack() {
@@ -301,6 +344,8 @@ export function Questionnaire({
     setCurrent(0);
     setSubmitted(false);
     setSubmitError(null);
+    setPointNotice(null);
+    rewardedQuestionIdsRef.current.clear();
     setMoodInterlude(false);
     setMoodInterludeCompleted(false);
   }
@@ -460,6 +505,15 @@ export function Questionnaire({
               className={`mt-2 animate-card-in font-serif text-xs italic ${atmosphereTheme.whisper}`}
             >
               {atmosphereWhisper}
+            </p>
+          )}
+
+          {pointNotice && (
+            <p
+              aria-live="polite"
+              className="mt-3 inline-flex rounded-full border border-yellow-200/40 bg-yellow-200/12 px-3 py-1 text-xs font-black uppercase tracking-wider text-yellow-100 shadow-lg shadow-black/20"
+            >
+              {pointNotice}
             </p>
           )}
 

@@ -1,8 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent } from "react";
+import {
+  CARD_GAME_PROGRESS_EVENT,
+  CARD_GAME_STARTING_POINTS,
+  CARD_GAME_STORAGE_KEY,
+} from "@/lib/card-game-rewards";
 
 type ThemeId = "spongebob";
 type Rarity = "common" | "rare" | "epic";
@@ -72,6 +77,7 @@ type OpeningSession = {
   source: PackSource;
   pulls: Pull[];
   revealed: boolean[];
+  packOpen: boolean;
   createdAt: number;
 };
 
@@ -81,10 +87,11 @@ type DuplicateEntry = {
   value: number;
 };
 
-const STORAGE_KEY = "broomer_krusty_card_game";
 const PACK_COST = 150;
 const FREE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const RANDOM_MAX = 0x100000000;
+const PACK_RIP_ANIMATION_MS = 1450;
+const CARD_TURN_ANIMATION_MS = 980;
 
 const RARITY_ORDER: Rarity[] = ["common", "rare", "epic"];
 
@@ -393,7 +400,7 @@ const LEGACY_CARD_ID_MAP = new Map(
 function createDefaultGame(): StoredCardGame {
   return {
     version: 2,
-    points: PACK_COST * 5,
+    points: CARD_GAME_STARTING_POINTS,
     cards: {},
     packsOpened: 0,
     dupesSold: 0,
@@ -417,7 +424,7 @@ function normalizeCardCounts(raw: unknown): Record<string, number> {
 function readStoredGame(): StoredCardGame {
   const fallback = createDefaultGame();
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(CARD_GAME_STORAGE_KEY);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw) as LegacyStoredCardGame;
     const lastFreePackAtByTheme: Partial<Record<ThemeId, number>> = {};
@@ -630,12 +637,21 @@ function CollectibleCardView({
   );
 }
 
-function SpongePackIcon({ theme }: { theme: CardTheme }) {
+function SpongePackIcon({
+  theme,
+  dramatic = false,
+}: {
+  theme: CardTheme;
+  dramatic?: boolean;
+}) {
   return (
     <div
-      className={`sponge-premium-pack relative mx-auto grid aspect-[3/4] w-full max-w-[13rem] place-items-center overflow-hidden rounded-[2rem] border-4 border-yellow-200 bg-gradient-to-br ${theme.gradient} p-5 shadow-[0_2rem_5rem_rgba(0,0,0,0.42)]`}
+      className={`sponge-premium-pack relative mx-auto grid aspect-[3/4] w-full max-w-[13rem] place-items-center overflow-hidden rounded-[2rem] border-4 border-yellow-200 bg-gradient-to-br ${theme.gradient} p-5 shadow-[0_2rem_5rem_rgba(0,0,0,0.42)] ${
+        dramatic ? "sponge-pack-theater-object" : ""
+      }`}
     >
       <span className="sponge-pack-shine absolute inset-0" />
+      <span className="sponge-pack-depth absolute inset-y-3 right-0 w-5 rounded-r-[1.7rem]" />
       <span className="absolute inset-4 rounded-[1.5rem] border border-white/25" />
       <span className="absolute left-5 top-5 h-9 w-9 rounded-full border border-yellow-200/60 bg-yellow-200/15" />
       <span className="absolute bottom-6 right-5 h-12 w-12 rounded-full border border-cyan-100/50 bg-cyan-100/10" />
@@ -668,76 +684,216 @@ function BubbleField() {
   );
 }
 
-function RevealCard({
-  pull,
-  index,
-  active,
-  revealed,
+function PackRipStage({
+  theme,
+  cardCount,
+  ripping,
+  onRip,
+}: {
+  theme: CardTheme;
+  cardCount: number;
+  ripping: boolean;
+  onRip: () => void;
+}) {
+  return (
+    <div className={`sponge-pack-rip-stage ${ripping ? "is-ripping" : ""}`}>
+      <div className="sponge-pack-rip-light" />
+      <div className="sponge-pack-rip-model" aria-hidden>
+        <div
+          className={`sponge-pack-half sponge-pack-half-left bg-gradient-to-br ${theme.gradient}`}
+        >
+          <span className="sponge-pack-half-gloss" />
+          <span className="sponge-pack-half-logo">{theme.shortName}</span>
+        </div>
+        <div
+          className={`sponge-pack-half sponge-pack-half-right bg-gradient-to-br ${theme.gradient}`}
+        >
+          <span className="sponge-pack-half-gloss" />
+          <span className="sponge-pack-half-logo">{theme.shortName}</span>
+        </div>
+        <div className="sponge-pack-tear-line">
+          {Array.from({ length: 8 }, (_, index) => (
+            <span key={index} />
+          ))}
+        </div>
+        <div className="sponge-pack-inner-stack">
+          {Array.from({ length: Math.min(cardCount, 5) }, (_, index) => (
+            <span
+              key={index}
+              style={
+                {
+                  "--rip-card": index,
+                  "--rip-rest-y": `${index * 0.26}rem`,
+                  "--rip-rest-rotate": `${(index - 2) * 3}deg`,
+                  "--rip-x": `${(index - 2) * 1.1}rem`,
+                  "--rip-y": `${-4.2 - index * 0.36}rem`,
+                  "--rip-rotate": `${(index - 2) * 4}deg`,
+                  "--rip-delay": `${190 + index * 70}ms`,
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
+      </div>
+      <div className="sponge-pack-theater-controls">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
+            Seal intact
+          </p>
+          <p className="mt-1 text-2xl font-black text-white">
+            {cardCount} cards loaded
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={ripping}
+          onClick={onRip}
+          className="sponge-pack-rip-button"
+        >
+          {ripping ? "Ripping" : "Rip Pack"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StackedRevealDeck({
+  session,
+  activeIndex,
+  turningIndex,
   onReveal,
 }: {
-  pull: Pull;
-  index: number;
-  active: boolean;
-  revealed: boolean;
+  session: OpeningSession;
+  activeIndex: number;
+  turningIndex: number | null;
   onReveal: (index: number) => void;
 }) {
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
     null,
   );
-  const theme = CARD_THEMES[pull.card.themeId];
+  const theme = CARD_THEMES[session.themeId];
+  const activePull =
+    activeIndex >= 0 ? session.pulls[activeIndex] : undefined;
+  const remainingBacks =
+    activeIndex >= 0
+      ? session.pulls.slice(activeIndex + 1, activeIndex + 6)
+      : [];
+  const revealedPulls = session.pulls
+    .map((pull, index) => ({ pull, index }))
+    .filter(({ index }) => session.revealed[index]);
 
   function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
-    if (!active || revealed) return;
+    if (!activePull || turningIndex !== null) return;
     setStartPoint({ x: event.clientX, y: event.clientY });
   }
 
   function handlePointerUp(event: PointerEvent<HTMLButtonElement>) {
-    if (!active || revealed) return;
+    if (!activePull || turningIndex !== null) return;
     const moved =
       startPoint != null
         ? Math.hypot(event.clientX - startPoint.x, event.clientY - startPoint.y)
         : 0;
-    if (moved >= 0) onReveal(index);
+    if (moved >= 0) onReveal(activeIndex);
     setStartPoint(null);
   }
 
   return (
-    <button
-      type="button"
-      aria-label={`Reveal card ${index + 1}`}
-      aria-disabled={!active && !revealed}
-      tabIndex={active || revealed ? 0 : -1}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onKeyDown={(event) => {
-        if (!active || revealed) return;
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onReveal(index);
-        }
-      }}
-      className={`sponge-reveal-card ${revealed ? "sponge-reveal-card-open" : ""} ${
-        active ? "sponge-reveal-card-active" : ""
-      }`}
-    >
-      <span className="sponge-reveal-card-inner">
-        <span className="sponge-reveal-card-side sponge-reveal-card-back">
-          <CardBack theme={theme} />
-        </span>
-        <span className="sponge-reveal-card-side sponge-reveal-card-front">
-          <CollectibleCardView card={pull.card} large />
-          <span
-            className={`absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-black uppercase shadow-lg ${
-              pull.isNew
-                ? "bg-lime-300 text-lime-950"
-                : "bg-amber-300 text-amber-950"
-            }`}
-          >
-            {pull.isNew ? "New" : `Dupe +${pull.duplicateValue}`}
-          </span>
-        </span>
-      </span>
-    </button>
+    <div className="sponge-stack-opening">
+      <div className="sponge-stack-spotlight" />
+      <div className="sponge-stack-stage">
+        <div className="sponge-stack-status">
+          <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
+            Next pull
+          </p>
+          <p className="text-2xl font-black text-white">
+            {activePull ? activePull.card.rarity : "Complete"}
+          </p>
+        </div>
+        <div className="sponge-card-stack">
+          {remainingBacks.map((pull, index) => (
+            <div
+              key={`${pull.card.id}-${index}`}
+              className="sponge-stacked-card-back"
+              style={
+                {
+                  "--stack-opacity": 0.92 - index * 0.1,
+                  "--stack-x": `${index * -0.55}rem`,
+                  "--stack-y": `${index * 0.52}rem`,
+                  "--stack-z": `${index * -1.2}rem`,
+                  "--stack-rotation": `${index * -2}deg`,
+                  "--stack-scale": 1 - index * 0.035,
+                } as CSSProperties
+              }
+            >
+              <CardBack theme={theme} />
+            </div>
+          ))}
+          {activePull ? (
+            <button
+              type="button"
+              aria-label={`Reveal card ${activeIndex + 1}`}
+              aria-disabled={turningIndex !== null}
+              onPointerDown={handlePointerDown}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={() => setStartPoint(null)}
+              onKeyDown={(event) => {
+                if (turningIndex !== null) return;
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onReveal(activeIndex);
+                }
+              }}
+              data-rarity={activePull.card.rarity}
+              className={`sponge-card-stack-top ${
+                turningIndex === activeIndex ? "is-turning" : ""
+              }`}
+            >
+              <span className="sponge-card-stack-inner">
+                <span className="sponge-card-stack-side sponge-card-stack-back">
+                  <CardBack theme={theme} />
+                </span>
+                <span className="sponge-card-stack-side sponge-card-stack-front">
+                  <CollectibleCardView card={activePull.card} large />
+                  <span
+                    className={`absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-black uppercase shadow-lg ${
+                      activePull.isNew
+                        ? "bg-lime-300 text-lime-950"
+                        : "bg-amber-300 text-amber-950"
+                    }`}
+                  >
+                    {activePull.isNew
+                      ? "New"
+                      : `Dupe +${activePull.duplicateValue}`}
+                  </span>
+                </span>
+              </span>
+            </button>
+          ) : (
+            <div className="sponge-card-stack-complete">
+              <p>Pack complete</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="sponge-revealed-strip" aria-label="Revealed cards">
+        {revealedPulls.length > 0 ? (
+          revealedPulls.map(({ pull, index }) => (
+            <div
+              key={`${pull.card.id}-${index}`}
+              className="sponge-revealed-card"
+              style={{ "--revealed-index": index } as CSSProperties}
+            >
+              <CollectibleCardView card={pull.card} compact />
+            </div>
+          ))
+        ) : (
+          <div className="sponge-revealed-card-empty">
+            <p>Awaiting first pull</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -751,7 +907,11 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
   const [openingSession, setOpeningSession] = useState<OpeningSession | null>(
     null,
   );
+  const [packRipActive, setPackRipActive] = useState(false);
+  const [turningCardIndex, setTurningCardIndex] = useState<number | null>(null);
   const [notice, setNotice] = useState("Vault ready.");
+  const packRipTimerRef = useRef<number | null>(null);
+  const cardTurnTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -767,9 +927,33 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (packRipTimerRef.current != null) {
+        window.clearTimeout(packRipTimerRef.current);
+      }
+      if (cardTurnTimerRef.current != null) {
+        window.clearTimeout(cardTurnTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
+    window.localStorage.setItem(CARD_GAME_STORAGE_KEY, JSON.stringify(game));
   }, [game, hydrated]);
+
+  useEffect(() => {
+    function syncStoredGame() {
+      setGame(readStoredGame());
+    }
+
+    window.addEventListener("storage", syncStoredGame);
+    window.addEventListener(CARD_GAME_PROGRESS_EVENT, syncStoredGame);
+    return () => {
+      window.removeEventListener("storage", syncStoredGame);
+      window.removeEventListener(CARD_GAME_PROGRESS_EVENT, syncStoredGame);
+    };
+  }, []);
 
   const selectedThemeMeta = CARD_THEMES[selectedTheme];
   const selectedThemeCards = useMemo(
@@ -885,6 +1069,14 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
           : current.lastFreePackAtByTheme,
     }));
 
+    if (packRipTimerRef.current != null) {
+      window.clearTimeout(packRipTimerRef.current);
+      packRipTimerRef.current = null;
+    }
+    if (cardTurnTimerRef.current != null) {
+      window.clearTimeout(cardTurnTimerRef.current);
+      cardTurnTimerRef.current = null;
+    }
     setOpeningSession({
       id: `${product.id}-${Date.now()}`,
       productName: product.name,
@@ -892,8 +1084,11 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
       source,
       pulls,
       revealed: pulls.map(() => false),
+      packOpen: false,
       createdAt: Date.now(),
     });
+    setPackRipActive(false);
+    setTurningCardIndex(null);
     setNotice(
       pulls.some((pull) => pull.isNew)
         ? "New card secured."
@@ -903,14 +1098,54 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
   }
 
   function revealCard(index: number) {
-    setOpeningSession((current) => {
-      if (!current || current.revealed[index]) return current;
-      const nextRevealIndex = current.revealed.findIndex((revealed) => !revealed);
-      if (index !== nextRevealIndex) return current;
-      const revealed = [...current.revealed];
-      revealed[index] = true;
-      return { ...current, revealed };
-    });
+    if (turningCardIndex !== null) return;
+    if (
+      !openingSession ||
+      !openingSession.packOpen ||
+      openingSession.revealed[index]
+    ) {
+      return;
+    }
+
+    const nextRevealIndex = openingSession.revealed.findIndex(
+      (revealed) => !revealed,
+    );
+    if (index !== nextRevealIndex) return;
+
+    setTurningCardIndex(index);
+    setNotice("Card pressure rising.");
+    if (cardTurnTimerRef.current != null) {
+      window.clearTimeout(cardTurnTimerRef.current);
+    }
+    cardTurnTimerRef.current = window.setTimeout(() => {
+      setOpeningSession((current) => {
+        if (!current || current.revealed[index]) return current;
+        const revealed = [...current.revealed];
+        revealed[index] = true;
+        return { ...current, revealed };
+      });
+      setTurningCardIndex(null);
+      cardTurnTimerRef.current = null;
+      setNotice("Card locked in.");
+    }, CARD_TURN_ANIMATION_MS);
+  }
+
+  function crackPack() {
+    if (!openingSession || openingSession.packOpen || packRipActive) return;
+
+    setPackRipActive(true);
+    setNotice("Pack seal tearing.");
+    if (packRipTimerRef.current != null) {
+      window.clearTimeout(packRipTimerRef.current);
+    }
+    packRipTimerRef.current = window.setTimeout(() => {
+      setOpeningSession((current) =>
+        current ? { ...current, packOpen: true } : current,
+      );
+      setPackRipActive(false);
+      packRipTimerRef.current = null;
+      setNotice("Deck released.");
+    }, PACK_RIP_ANIMATION_MS);
   }
 
   function tradeDuplicate(cardId: string, amount: number) {
@@ -958,7 +1193,9 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
   }
 
   const openingRevealIndex =
-    openingSession?.revealed.findIndex((revealed) => !revealed) ?? -1;
+    openingSession?.packOpen
+      ? (openingSession.revealed.findIndex((revealed) => !revealed) ?? -1)
+      : -1;
   const openingComplete =
     openingSession != null && openingSession.revealed.every(Boolean);
 
@@ -1203,36 +1440,57 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                     </div>
                   </div>
 
-                  <div className="sponge-opening-track">
-                    {openingSession.pulls.map((pull, index) => (
-                      <RevealCard
-                        key={`${openingSession.id}-${pull.card.id}-${index}`}
-                        pull={pull}
-                        index={index}
-                        active={index === openingRevealIndex}
-                        revealed={openingSession.revealed[index]}
+                  {!openingSession.packOpen ? (
+                    <PackRipStage
+                      theme={selectedThemeMeta}
+                      cardCount={openingSession.pulls.length}
+                      ripping={packRipActive}
+                      onRip={crackPack}
+                    />
+                  ) : (
+                    <>
+                      <div className="sponge-opening-drama-bar">
+                        <span className="sponge-opening-drama-scan" />
+                        <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
+                          Card{" "}
+                          {openingComplete
+                            ? openingSession.pulls.length
+                            : openingRevealIndex + 1}
+                        </p>
+                        <p className="text-sm font-black text-yellow-100">
+                          {openingComplete
+                            ? "Pack complete"
+                            : "Reef lights locked"}
+                        </p>
+                      </div>
+
+                      <StackedRevealDeck
+                        key={openingSession.id}
+                        session={openingSession}
+                        activeIndex={openingRevealIndex}
+                        turningIndex={turningCardIndex}
                         onReveal={revealCard}
                       />
-                    ))}
-                  </div>
 
-                  {openingComplete && (
-                    <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setView("inventory")}
-                        className="rounded-2xl bg-lime-300 px-5 py-3 text-sm font-black uppercase tracking-wide text-lime-950 shadow-lg transition active:scale-95"
-                      >
-                        Inventory
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setView("store")}
-                        className="rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-black uppercase tracking-wide text-white transition hover:bg-white/15"
-                      >
-                        Store
-                      </button>
-                    </div>
+                      {openingComplete && (
+                        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setView("inventory")}
+                            className="rounded-2xl bg-lime-300 px-5 py-3 text-sm font-black uppercase tracking-wide text-lime-950 shadow-lg transition active:scale-95"
+                          >
+                            Inventory
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setView("store")}
+                            className="rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-black uppercase tracking-wide text-white transition hover:bg-white/15"
+                          >
+                            Store
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               ) : (
