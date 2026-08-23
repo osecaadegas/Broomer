@@ -2509,7 +2509,7 @@ body {
     transform 220ms ease;
 }
 
-.sponge-card-stack-top:not(.is-turning):hover .sponge-card-stack-inner {
+.sponge-card-stack-top:not(.is-turning):not(.is-revealed):hover .sponge-card-stack-inner {
   filter:
     drop-shadow(0 1.5rem 1.6rem rgba(2, 6, 23, 0.4))
     drop-shadow(0 0 1.7rem rgba(253, 224, 71, 0.24));
@@ -2539,7 +2539,7 @@ body {
 }
 
 .sponge-card-stack-top.is-turning .sponge-card-stack-inner {
-  animation: sponge-stack-card-turn 980ms cubic-bezier(0.14, 0.82, 0.18, 1.1) both;
+  animation: sponge-stack-card-turn 1280ms cubic-bezier(0.14, 0.82, 0.18, 1.1) both;
   filter:
     drop-shadow(0 2rem 2rem rgba(2, 6, 23, 0.44))
     drop-shadow(0 0 2.1rem rgba(253, 224, 71, 0.28));
@@ -2559,6 +2559,27 @@ body {
     drop-shadow(0 0 1.6rem rgba(253, 224, 71, 0.36));
 }
 
+.sponge-card-stack-top.is-revealed .sponge-card-stack-inner {
+  filter:
+    drop-shadow(0 2rem 2rem rgba(2, 6, 23, 0.44))
+    drop-shadow(0 0 2.1rem rgba(253, 224, 71, 0.28));
+  transform: translate3d(3.2rem, -1.45rem, 4.8rem) rotateY(180deg) rotateZ(5deg) scale(1.06);
+}
+
+.sponge-card-stack-top[data-rarity="rare"].is-revealed .sponge-card-stack-inner {
+  filter:
+    drop-shadow(0 2rem 2rem rgba(2, 6, 23, 0.44))
+    drop-shadow(0 0 2.4rem rgba(103, 232, 249, 0.44));
+}
+
+.sponge-card-stack-top[data-rarity="epic"].is-revealed .sponge-card-stack-inner {
+  filter:
+    drop-shadow(0 2.2rem 2rem rgba(2, 6, 23, 0.48))
+    drop-shadow(0 0 3rem rgba(232, 121, 249, 0.52))
+    drop-shadow(0 0 1.6rem rgba(253, 224, 71, 0.36));
+  transform: translate3d(3.4rem, -1.7rem, 5.4rem) rotateY(180deg) rotateZ(6deg) scale(1.09);
+}
+
 .sponge-card-stack-complete {
   display: grid;
   place-items: center;
@@ -2570,41 +2591,6 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   box-shadow: 0 1.4rem 2.4rem rgba(2, 6, 23, 0.34);
-}
-
-.sponge-revealed-strip {
-  position: relative;
-  z-index: 3;
-  display: flex;
-  width: min(100%, 58rem);
-  min-height: 8.5rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  overflow-x: auto;
-  padding: 0.4rem 0.2rem 0.8rem;
-}
-
-.sponge-revealed-card {
-  flex: 0 0 clamp(5.2rem, 10vw, 7rem);
-  opacity: 0;
-  transform: translateY(1rem) scale(0.92);
-  animation: sponge-revealed-card-land 420ms cubic-bezier(0.18, 0.84, 0.28, 1.08) both;
-}
-
-.sponge-revealed-card-empty {
-  display: grid;
-  min-height: 6rem;
-  min-width: min(100%, 16rem);
-  place-items: center;
-  border: 1px dashed rgba(255, 255, 255, 0.16);
-  border-radius: 1.2rem;
-  background: rgba(2, 6, 23, 0.22);
-  color: rgba(255, 255, 255, 0.46);
-  font-size: 0.7rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .sponge-reveal-card {
@@ -2797,10 +2783,6 @@ body {
     width: min(76vw, 18rem);
   }
 
-  .sponge-revealed-strip {
-    justify-content: flex-start;
-  }
-
   .sponge-reveal-card {
     flex: 0 0 min(74vw, 18rem);
     scroll-snap-align: center;
@@ -2824,7 +2806,6 @@ body {
   .sponge-opening-drama-scan,
   .sponge-card-stack-top.is-turning .sponge-card-stack-inner,
   .sponge-card-stack-top[data-rarity="epic"].is-turning .sponge-card-stack-inner,
-  .sponge-revealed-card,
   .sponge-reveal-card-active .sponge-reveal-card-back,
   .sponge-reveal-card-active .sponge-reveal-card-back::before,
   .sponge-reveal-card[data-rarity="epic"].sponge-reveal-card-open .sponge-reveal-card-inner {
@@ -3059,11 +3040,14 @@ body {
   0% {
     transform: translate3d(0, 0, 1rem) rotateY(0deg) rotateZ(0deg) scale(1);
   }
-  32% {
+  28% {
     transform: translate3d(0.4rem, -0.8rem, 5rem) rotateY(82deg) rotateZ(-2deg) scale(1.06);
   }
-  68% {
-    transform: translate3d(2.2rem, -1.2rem, 5.6rem) rotateY(158deg) rotateZ(4deg) scale(1.08);
+  58% {
+    transform: translate3d(2.2rem, -1.2rem, 5.6rem) rotateY(160deg) rotateZ(4deg) scale(1.09);
+  }
+  82% {
+    transform: translate3d(3.2rem, -1.45rem, 4.8rem) rotateY(180deg) rotateZ(5deg) scale(1.08);
   }
   100% {
     transform: translate3d(3.2rem, -1.45rem, 4.8rem) rotateY(180deg) rotateZ(5deg) scale(1.06);
@@ -3074,25 +3058,17 @@ body {
   0% {
     transform: translate3d(0, 0, 1rem) rotateY(0deg) rotateZ(0deg) scale(1);
   }
-  26% {
+  24% {
     transform: translate3d(0.2rem, -1rem, 6.2rem) rotateY(74deg) rotateZ(-5deg) scale(1.1);
   }
-  58% {
-    transform: translate3d(2rem, -1.6rem, 7rem) rotateY(146deg) rotateZ(7deg) scale(1.16);
+  52% {
+    transform: translate3d(2rem, -1.6rem, 7rem) rotateY(150deg) rotateZ(7deg) scale(1.16);
+  }
+  80% {
+    transform: translate3d(3.4rem, -1.7rem, 5.4rem) rotateY(180deg) rotateZ(6deg) scale(1.12);
   }
   100% {
     transform: translate3d(3.4rem, -1.7rem, 5.4rem) rotateY(180deg) rotateZ(6deg) scale(1.09);
-  }
-}
-
-@keyframes sponge-revealed-card-land {
-  0% {
-    opacity: 0;
-    transform: translateY(1rem) scale(0.92);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 

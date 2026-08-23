@@ -91,7 +91,7 @@ const PACK_COST = 150;
 const FREE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const RANDOM_MAX = 0x100000000;
 const PACK_RIP_ANIMATION_MS = 1450;
-const CARD_TURN_ANIMATION_MS = 980;
+const CARD_TURN_ANIMATION_MS = 1280;
 
 const RARITY_ORDER: Rarity[] = ["common", "rare", "epic"];
 
@@ -761,39 +761,57 @@ function StackedRevealDeck({
   session,
   activeIndex,
   turningIndex,
+  settledIndex,
   onReveal,
+  onAdvance,
 }: {
   session: OpeningSession;
   activeIndex: number;
   turningIndex: number | null;
+  settledIndex: number | null;
   onReveal: (index: number) => void;
+  onAdvance: () => void;
 }) {
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
     null,
   );
   const theme = CARD_THEMES[session.themeId];
-  const activePull =
-    activeIndex >= 0 ? session.pulls[activeIndex] : undefined;
-  const remainingBacks =
-    activeIndex >= 0
-      ? session.pulls.slice(activeIndex + 1, activeIndex + 6)
-      : [];
-  const revealedPulls = session.pulls
-    .map((pull, index) => ({ pull, index }))
-    .filter(({ index }) => session.revealed[index]);
+  const displayIndex = settledIndex ?? activeIndex;
+  const displayPull =
+    displayIndex >= 0 ? session.pulls[displayIndex] : undefined;
+  const remainingStartIndex =
+    settledIndex !== null
+      ? activeIndex >= 0
+        ? activeIndex
+        : session.pulls.length
+      : displayIndex >= 0
+        ? displayIndex + 1
+        : session.pulls.length;
+  const remainingBacks = session.pulls.slice(
+    remainingStartIndex,
+    remainingStartIndex + 5,
+  );
+  const cardIsSettled = settledIndex !== null && settledIndex === displayIndex;
+  const cardIsTurning = turningIndex !== null && turningIndex === displayIndex;
 
   function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
-    if (!activePull || turningIndex !== null) return;
+    if (!displayPull || turningIndex !== null) return;
     setStartPoint({ x: event.clientX, y: event.clientY });
   }
 
   function handlePointerUp(event: PointerEvent<HTMLButtonElement>) {
-    if (!activePull || turningIndex !== null) return;
+    if (!displayPull || turningIndex !== null) return;
     const moved =
       startPoint != null
         ? Math.hypot(event.clientX - startPoint.x, event.clientY - startPoint.y)
         : 0;
-    if (moved >= 0) onReveal(activeIndex);
+    if (moved >= 0) {
+      if (cardIsSettled) {
+        onAdvance();
+      } else {
+        onReveal(displayIndex);
+      }
+    }
     setStartPoint(null);
   }
 
@@ -803,10 +821,10 @@ function StackedRevealDeck({
       <div className="sponge-stack-stage">
         <div className="sponge-stack-status">
           <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
-            Next pull
+            {cardIsSettled ? "Revealed" : "Next pull"}
           </p>
           <p className="text-2xl font-black text-white">
-            {activePull ? activePull.card.rarity : "Complete"}
+            {displayPull ? displayPull.card.rarity : "Complete"}
           </p>
         </div>
         <div className="sponge-card-stack">
@@ -828,10 +846,14 @@ function StackedRevealDeck({
               <CardBack theme={theme} />
             </div>
           ))}
-          {activePull ? (
+          {displayPull ? (
             <button
               type="button"
-              aria-label={`Reveal card ${activeIndex + 1}`}
+              aria-label={
+                cardIsSettled
+                  ? `Continue after ${displayPull.card.name}`
+                  : `Reveal card ${displayIndex + 1}`
+              }
               aria-disabled={turningIndex !== null}
               onPointerDown={handlePointerDown}
               onPointerUp={handlePointerUp}
@@ -840,30 +862,34 @@ function StackedRevealDeck({
                 if (turningIndex !== null) return;
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  onReveal(activeIndex);
+                  if (cardIsSettled) {
+                    onAdvance();
+                  } else {
+                    onReveal(displayIndex);
+                  }
                 }
               }}
-              data-rarity={activePull.card.rarity}
+              data-rarity={displayPull.card.rarity}
               className={`sponge-card-stack-top ${
-                turningIndex === activeIndex ? "is-turning" : ""
-              }`}
+                cardIsTurning ? "is-turning" : ""
+              } ${cardIsSettled ? "is-revealed" : ""}`}
             >
               <span className="sponge-card-stack-inner">
                 <span className="sponge-card-stack-side sponge-card-stack-back">
                   <CardBack theme={theme} />
                 </span>
                 <span className="sponge-card-stack-side sponge-card-stack-front">
-                  <CollectibleCardView card={activePull.card} large />
+                  <CollectibleCardView card={displayPull.card} large />
                   <span
                     className={`absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-black uppercase shadow-lg ${
-                      activePull.isNew
+                      displayPull.isNew
                         ? "bg-lime-300 text-lime-950"
                         : "bg-amber-300 text-amber-950"
                     }`}
                   >
-                    {activePull.isNew
+                    {displayPull.isNew
                       ? "New"
-                      : `Dupe +${activePull.duplicateValue}`}
+                      : `Dupe +${displayPull.duplicateValue}`}
                   </span>
                 </span>
               </span>
@@ -876,23 +902,6 @@ function StackedRevealDeck({
         </div>
       </div>
 
-      <div className="sponge-revealed-strip" aria-label="Revealed cards">
-        {revealedPulls.length > 0 ? (
-          revealedPulls.map(({ pull, index }) => (
-            <div
-              key={`${pull.card.id}-${index}`}
-              className="sponge-revealed-card"
-              style={{ "--revealed-index": index } as CSSProperties}
-            >
-              <CollectibleCardView card={pull.card} compact />
-            </div>
-          ))
-        ) : (
-          <div className="sponge-revealed-card-empty">
-            <p>Awaiting first pull</p>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -909,6 +918,9 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
   );
   const [packRipActive, setPackRipActive] = useState(false);
   const [turningCardIndex, setTurningCardIndex] = useState<number | null>(null);
+  const [focusedRevealIndex, setFocusedRevealIndex] = useState<number | null>(
+    null,
+  );
   const [notice, setNotice] = useState("Vault ready.");
   const packRipTimerRef = useRef<number | null>(null);
   const cardTurnTimerRef = useRef<number | null>(null);
@@ -1089,6 +1101,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
     });
     setPackRipActive(false);
     setTurningCardIndex(null);
+    setFocusedRevealIndex(null);
     setNotice(
       pulls.some((pull) => pull.isNew)
         ? "New card secured."
@@ -1098,7 +1111,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
   }
 
   function revealCard(index: number) {
-    if (turningCardIndex !== null) return;
+    if (turningCardIndex !== null || focusedRevealIndex !== null) return;
     if (
       !openingSession ||
       !openingSession.packOpen ||
@@ -1112,6 +1125,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
     );
     if (index !== nextRevealIndex) return;
 
+    const revealedPull = openingSession.pulls[index];
     setTurningCardIndex(index);
     setNotice("Card pressure rising.");
     if (cardTurnTimerRef.current != null) {
@@ -1124,10 +1138,16 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
         revealed[index] = true;
         return { ...current, revealed };
       });
+      setFocusedRevealIndex(index);
       setTurningCardIndex(null);
       cardTurnTimerRef.current = null;
-      setNotice("Card locked in.");
+      setNotice(`${revealedPull.card.name} locked in.`);
     }, CARD_TURN_ANIMATION_MS);
+  }
+
+  function advanceRevealedCard() {
+    if (turningCardIndex !== null) return;
+    setFocusedRevealIndex(null);
   }
 
   function crackPack() {
@@ -1198,6 +1218,8 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
       : -1;
   const openingComplete =
     openingSession != null && openingSession.revealed.every(Boolean);
+  const openingDisplayIndex =
+    openingSession?.packOpen ? (focusedRevealIndex ?? openingRevealIndex) : -1;
 
   return (
     <section className="sponge-card-game-scene fixed inset-0 z-[90] overflow-y-auto text-white">
@@ -1451,9 +1473,9 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                         <span className="sponge-opening-drama-scan" />
                         <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
                           Card{" "}
-                          {openingComplete
-                            ? openingSession.pulls.length
-                            : openingRevealIndex + 1}
+                          {openingDisplayIndex >= 0
+                            ? openingDisplayIndex + 1
+                            : openingSession.pulls.length}
                         </p>
                         <p className="text-sm font-black text-yellow-100">
                           {openingComplete
@@ -1467,7 +1489,9 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                         session={openingSession}
                         activeIndex={openingRevealIndex}
                         turningIndex={turningCardIndex}
+                        settledIndex={focusedRevealIndex}
                         onReveal={revealCard}
+                        onAdvance={advanceRevealedCard}
                       />
 
                       {openingComplete && (
