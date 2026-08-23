@@ -527,23 +527,57 @@ function oddsLabel(product: PackProduct) {
 function CardBack({
   theme,
   compact = false,
+  priority = false,
 }: {
   theme: CardTheme;
   compact?: boolean;
+  priority?: boolean;
 }) {
+  const backArt = PACK_ART_BY_THEME[theme.id];
+
   return (
     <div
       className={`sponge-card-back-face absolute inset-0 grid place-items-center overflow-hidden rounded-[inherit] bg-gradient-to-br ${theme.gradient}`}
     >
+      <div
+        className="sponge-card-back-art"
+        aria-hidden="true"
+        style={{ position: "absolute" }}
+      >
+        <Image
+          src={backArt.hero}
+          alt=""
+          fill
+          sizes={compact ? "96px" : "(max-width: 640px) 62vw, 280px"}
+          className="object-cover"
+          priority={priority}
+        />
+      </div>
+      <span className="sponge-card-back-foil" aria-hidden="true" />
       <span className="sponge-card-back-grid" />
       <span className="sponge-card-back-orbit" />
-      <span
-        className={`relative grid place-items-center rounded-2xl border border-yellow-200/70 bg-black/30 font-black uppercase tracking-[0.22em] text-yellow-200 shadow-[0_0_2rem_rgba(250,204,21,0.28)] ${
-          compact ? "h-16 w-12 text-[8px]" : "h-24 w-20 text-[10px]"
-        }`}
-      >
-        {theme.shortName}
-      </span>
+      <div className={`sponge-card-back-badge ${compact ? "is-compact" : ""}`}>
+        <span>{theme.shortName}</span>
+        {!compact && <strong>Krusty Cards</strong>}
+      </div>
+      {!compact && (
+        <div className="sponge-card-back-cameos" aria-hidden="true">
+          {backArt.cameo.map((src, index) => (
+            <span
+              key={src}
+              className="sponge-card-back-cameo"
+              style={
+                {
+                  position: "relative",
+                  "--back-cameo-rotate": `${(index - 1) * 8}deg`,
+                } as CSSProperties
+              }
+            >
+              <Image src={src} alt="" fill sizes="54px" className="object-cover" />
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -552,10 +586,12 @@ function CardArtwork({
   card,
   locked = false,
   compact = false,
+  large = false,
 }: {
   card: CollectibleCard;
   locked?: boolean;
   compact?: boolean;
+  large?: boolean;
 }) {
   const theme = CARD_THEMES[card.themeId];
 
@@ -570,17 +606,23 @@ function CardArtwork({
       aria-label={`${card.name} card artwork`}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
-      <div className="absolute inset-x-2 bottom-1 top-1">
+      <div
+        className={`sponge-card-art-frame ${large ? "is-large" : ""}`}
+        style={{ position: "absolute" }}
+      >
         <Image
           src={card.artImage}
           alt=""
           fill
           sizes={
-            compact
-              ? "(max-width: 640px) 30vw, 170px"
-              : "(max-width: 640px) 70vw, 260px"
+            large
+              ? "(max-width: 640px) 72vw, 280px"
+              : compact
+                ? "(max-width: 640px) 30vw, 170px"
+                : "(max-width: 640px) 70vw, 260px"
           }
-          className="object-contain drop-shadow-[0_0.9rem_0.9rem_rgba(2,8,23,0.58)]"
+          className="sponge-card-art-image"
+          priority={large}
         />
       </div>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_26%,rgba(255,255,255,0.24),transparent_34%),linear-gradient(180deg,transparent_54%,rgba(2,6,23,0.24))]" />
@@ -627,7 +669,7 @@ function CollectibleCardView({
           </span>
         </div>
         <div className="relative mx-1.5 mt-1 flex-1 overflow-hidden rounded-lg border-2 border-[#f2e3bd] bg-sky-200">
-          <CardArtwork card={card} locked={locked} compact={compact} />
+          <CardArtwork card={card} locked={locked} compact={compact} large={large} />
           {locked && (
             <div className="absolute inset-0 grid place-items-center bg-slate-950/30 text-2xl font-black text-white/80">
               ?
@@ -1086,7 +1128,7 @@ function StackedRevealDeck({
                 } as CSSProperties
               }
             >
-              <CardBack theme={theme} />
+              <CardBack theme={theme} priority={index === 0} />
             </div>
           ))}
           {displayPull ? (
@@ -1119,7 +1161,7 @@ function StackedRevealDeck({
             >
               <span className="sponge-card-stack-inner">
                 <span className="sponge-card-stack-side sponge-card-stack-back">
-                  <CardBack theme={theme} />
+                  <CardBack theme={theme} priority />
                 </span>
                 <span className="sponge-card-stack-side sponge-card-stack-front">
                   <CollectibleCardView card={displayPull.card} large />
