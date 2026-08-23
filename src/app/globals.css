@@ -2672,11 +2672,11 @@ body {
 
 .sponge-pack-rip-mouth {
   position: absolute;
-  inset: 14.2% 7% auto;
+  inset: 14.4% 6.5% auto;
   z-index: 7;
   height: var(--pack-rip-open-height);
   overflow: hidden;
-  border-radius: 0 0 35% 35%;
+  border-radius: 0 0 38% 38%;
   opacity: var(--pack-rip-mouth-opacity);
   transform: translate3d(0, var(--pack-rip-open-y), 6.4rem) scaleY(var(--pack-rip-mouth-scale));
   transform-origin: top center;
@@ -2693,12 +2693,12 @@ body {
 
 .sponge-pack-rip-slit {
   position: absolute;
-  left: 7%;
-  top: 15.3%;
+  left: 6.5%;
+  top: 14.7%;
   z-index: 12;
   width: var(--pack-rip-tear-width);
-  max-width: 86%;
-  height: 1.28rem;
+  max-width: 87%;
+  height: 1.38rem;
   overflow: hidden;
   pointer-events: none;
   transform: translateZ(8rem);
@@ -2726,11 +2726,11 @@ body {
 
 .sponge-pack-tear-line {
   position: absolute;
-  left: 9%;
-  top: 12.7%;
+  left: 6.5%;
+  top: 12.55%;
   z-index: 14;
   width: var(--pack-rip-tear-width);
-  max-width: 82%;
+  max-width: 87%;
   height: 0.46rem;
   overflow: hidden;
   pointer-events: none;
@@ -2750,9 +2750,11 @@ body {
 }
 
 .sponge-pack-tear-flap {
-  top: 12.8%;
+  left: 6%;
+  right: 6%;
+  top: 12.25%;
   z-index: 9;
-  height: 12%;
+  height: 9.6%;
   background:
     linear-gradient(160deg, rgba(255, 255, 255, 0.18), transparent 18%),
     repeating-linear-gradient(96deg, rgba(254, 240, 138, 0.16) 0 1px, transparent 1px 0.42rem),
@@ -2760,6 +2762,7 @@ body {
   box-shadow:
     inset 0 -0.8rem 1.2rem rgba(2, 6, 23, 0.2),
     0 1.3rem 1.7rem rgba(2, 6, 23, 0.26);
+  opacity: var(--pack-rip-fiber-opacity);
 }
 
 .sponge-pack-foil-curl {
@@ -2778,37 +2781,38 @@ body {
 }
 
 .sponge-pack-tear-flap-left {
-  left: 5%;
-  width: 47%;
-  border-radius: 0.2rem 0 0.35rem 0.2rem;
-  clip-path: polygon(0 0, 100% 0, 94% 32%, 100% 64%, 86% 100%, 0 88%);
+  border-radius: 0.42rem 0.42rem 0.16rem 0.16rem;
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 96% 50%, 92% 78%, 87% 54%, 82% 86%, 76% 55%, 70% 82%, 64% 58%, 58% 88%, 52% 54%, 46% 82%, 39% 56%, 33% 88%, 27% 54%, 20% 80%, 13% 55%, 7% 76%, 0 60%);
   transform: var(--pack-rip-left-flap-transform);
-  transform-origin: 96% 0;
+  transform-origin: left top;
 }
 
 .sponge-pack-tear-flap-right {
-  right: 5%;
-  width: 47%;
-  border-radius: 0 0.2rem 0.2rem 0.35rem;
-  clip-path: polygon(6% 0, 100% 0, 100% 88%, 14% 100%, 0 64%, 7% 32%);
+  top: 16.15%;
+  z-index: 8;
+  height: 6%;
+  border-top-width: 0;
+  border-radius: 0.14rem 0.14rem 0.42rem 0.42rem;
+  clip-path: polygon(0 35%, 5% 8%, 10% 46%, 16% 12%, 22% 52%, 29% 16%, 35% 48%, 42% 12%, 49% 54%, 56% 18%, 63% 50%, 70% 14%, 77% 52%, 84% 18%, 91% 46%, 96% 12%, 100% 34%, 100% 100%, 0 100%);
   transform: var(--pack-rip-right-flap-transform);
-  transform-origin: 4% 0;
+  transform-origin: left bottom;
 }
 
 .sponge-pack-rip-strip {
-  left: 16%;
-  top: 10.8%;
+  left: 5.5%;
+  top: 10.35%;
   z-index: 13;
   display: flex;
   overflow: visible;
-  width: 68%;
-  height: 0.92rem;
+  width: 76%;
+  height: 0.84rem;
   align-items: center;
   justify-content: space-around;
   border-width: 1px;
-  border-radius: 0.16rem;
+  border-radius: 0.12rem;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), transparent 38%),
+    repeating-linear-gradient(90deg, rgba(8, 47, 73, 0.26) 0 0.18rem, transparent 0.18rem 0.42rem),
     linear-gradient(90deg, #fef08a, #facc15 38%, #fff7ad 55%, #f59e0b 82%, #92400e);
   color: #082f49;
   transform: var(--pack-rip-strip-transform);
@@ -2851,7 +2855,7 @@ body {
 
 .sponge-pack-rip-notch {
   position: absolute;
-  right: 8.5%;
+  left: 8.5%;
   bottom: 0.1rem;
   z-index: 4;
   width: 1.2rem;
@@ -2909,15 +2913,15 @@ body {
 
 .sponge-pack-pull-tab {
   position: absolute;
-  right: -1.25rem;
-  top: 8.8%;
+  left: -1.28rem;
+  top: 8.7%;
   z-index: 15;
   display: grid;
   min-width: 3.25rem;
   height: 1.65rem;
   place-items: center;
   border: 2px solid rgba(254, 240, 138, 0.92);
-  border-radius: 0.28rem 999px 999px 0.28rem;
+  border-radius: 999px 0.28rem 0.28rem 999px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.36), transparent 45%),
     linear-gradient(135deg, rgba(254, 240, 138, 0.98), rgba(251, 191, 36, 0.94));
@@ -2928,7 +2932,7 @@ body {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   touch-action: none;
-  transform: translate3d(var(--pack-rip-tab-x), var(--pack-rip-tab-y), 9rem) rotateZ(5deg);
+  transform: translate3d(var(--pack-rip-tab-x), var(--pack-rip-tab-y), 9rem) rotateZ(var(--pack-rip-tab-rotate));
   box-shadow:
     0 0.85rem 1.5rem rgba(2, 6, 23, 0.42),
     0 0 1.5rem rgba(253, 224, 71, 0.32);
@@ -2952,10 +2956,11 @@ body {
 .sponge-pack-inner-stack {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 11;
   display: grid;
   place-items: center;
-  transform: translateZ(-2.4rem);
+  pointer-events: none;
+  transform: translateZ(3rem);
 }
 
 .sponge-pack-inner-stack span {
@@ -2972,7 +2977,7 @@ body {
     0 0.9rem 2rem rgba(2, 6, 23, 0.34),
     inset 0 1px 0 rgba(255, 255, 255, 0.28);
   opacity: 0;
-  transform: translate3d(0, var(--rip-rest-y), -1rem) rotateZ(var(--rip-rest-rotate)) scale(0.82);
+  transform: translate3d(0, var(--rip-rest-y), 1rem) rotateX(-8deg) rotateZ(var(--rip-rest-rotate)) scale(0.78);
 }
 
 .sponge-pack-inner-stack span::before {
@@ -3049,7 +3054,7 @@ body {
 }
 
 .sponge-pack-rip-stage.is-ripping .sponge-pack-inner-stack span {
-  animation: sponge-pack-card-burst 2.05s cubic-bezier(0.18, 0.9, 0.2, 1) both;
+  animation: sponge-pack-card-burst 2.25s cubic-bezier(0.18, 0.9, 0.2, 1) both;
   animation-delay: var(--rip-delay);
 }
 
@@ -3606,7 +3611,7 @@ body {
   0%,
   16% {
     opacity: 1;
-    transform: translate3d(-0.05rem, 0.1rem, 1.8rem) rotateX(2.4deg) rotateZ(-0.9deg) skewX(-0.8deg) scale(1);
+    transform: translate3d(-0.03rem, 0.12rem, 1.8rem) rotateX(1.8deg) rotateZ(-0.6deg) skewX(-0.6deg) scale(1);
   }
   54% {
     opacity: 1;
@@ -3626,15 +3631,15 @@ body {
   0%,
   16% {
     opacity: 1;
-    transform: translate3d(0.2rem, -0.42rem, 5.3rem) rotateX(-18deg) rotateY(7deg) rotateZ(4deg);
+    transform: translate3d(0.48rem, -0.24rem, 4.95rem) rotateX(-8deg) rotateY(3deg) rotateZ(2deg);
   }
   52% {
-    opacity: 0.88;
-    transform: translate3d(0.38rem, -3.9rem, 7.9rem) rotateX(-96deg) rotateY(26deg) rotateZ(13deg);
+    opacity: 0.72;
+    transform: translate3d(1.18rem, -2.65rem, 8.4rem) rotateX(-72deg) rotateY(13deg) rotateZ(8deg);
   }
   100% {
     opacity: 0;
-    transform: translate3d(1.05rem, -7.8rem, 10rem) rotateX(-138deg) rotateY(42deg) rotateZ(25deg);
+    transform: translate3d(2.1rem, -5.8rem, 9.5rem) rotateX(-118deg) rotateY(20deg) rotateZ(13deg);
   }
 }
 
@@ -3642,15 +3647,15 @@ body {
   0%,
   16% {
     opacity: 1;
-    transform: translate3d(-1.08rem, -0.82rem, 8.8rem) rotateX(-62deg) rotateY(-44deg) rotateZ(-14deg);
+    transform: translate3d(0.38rem, -0.72rem, 8.3rem) rotateX(-56deg) rotateY(5deg) rotateZ(2deg);
   }
   52% {
     opacity: 1;
-    transform: translate3d(-3.65rem, -2.5rem, 10.1rem) rotateX(-86deg) rotateY(-66deg) rotateZ(-26deg);
+    transform: translate3d(0.78rem, -1.72rem, 9.2rem) rotateX(-78deg) rotateY(8deg) rotateZ(4deg);
   }
   100% {
-    opacity: 0.12;
-    transform: translate3d(-6.2rem, -4rem, 8.6rem) rotateX(-116deg) rotateY(-88deg) rotateZ(-43deg);
+    opacity: 0.24;
+    transform: translate3d(1.36rem, -2.55rem, 8.75rem) rotateX(-96deg) rotateY(12deg) rotateZ(5deg);
   }
 }
 
@@ -3658,30 +3663,30 @@ body {
   0%,
   16% {
     opacity: 1;
-    transform: translate3d(1.22rem, -0.84rem, 9rem) rotateX(-60deg) rotateY(48deg) rotateZ(15deg);
+    transform: translate3d(0.18rem, 0.28rem, 7.85rem) rotateX(36deg) rotateY(2deg) rotateZ(1deg);
   }
   52% {
-    opacity: 1;
-    transform: translate3d(3.9rem, -2.48rem, 10.3rem) rotateX(-84deg) rotateY(70deg) rotateZ(28deg);
+    opacity: 0.86;
+    transform: translate3d(0.28rem, 0.72rem, 7.65rem) rotateX(48deg) rotateY(3deg) rotateZ(2deg);
   }
   100% {
-    opacity: 0.12;
-    transform: translate3d(6.35rem, -3.98rem, 8.8rem) rotateX(-114deg) rotateY(90deg) rotateZ(45deg);
+    opacity: 0.36;
+    transform: translate3d(0.34rem, 0.92rem, 7.05rem) rotateX(56deg) rotateY(4deg) rotateZ(2deg);
   }
 }
 
 @keyframes sponge-pack-strip-whip {
   0% {
     opacity: 1;
-    transform: translate3d(7.4rem, -0.85rem, 7.8rem) rotateZ(18deg) rotateY(26deg) rotateX(8deg);
+    transform: translate3d(11.2rem, -0.38rem, 7.8rem) rotateZ(7deg) rotateY(20deg) rotateX(4deg);
   }
   42% {
     opacity: 1;
-    transform: translate3d(10.8rem, -2.05rem, 10.8rem) rotateZ(38deg) rotateY(54deg) rotateX(12deg);
+    transform: translate3d(13.3rem, -1.28rem, 10.2rem) rotateZ(22deg) rotateY(48deg) rotateX(9deg);
   }
   100% {
     opacity: 0;
-    transform: translate3d(14.5rem, -4.6rem, 9.4rem) rotateZ(72deg) rotateY(82deg) rotateX(16deg);
+    transform: translate3d(16.5rem, -2.85rem, 9.1rem) rotateZ(56deg) rotateY(84deg) rotateX(14deg);
   }
 }
 
@@ -3689,15 +3694,15 @@ body {
   0%,
   12% {
     opacity: 1;
-    transform: translate3d(0, 0.45rem, 6.4rem) scaleY(2.4);
+    transform: translate3d(0, 0.22rem, 6.4rem) scaleY(2.12);
   }
   42% {
     opacity: 1;
-    transform: translate3d(0, 0.15rem, 8.7rem) scaleY(3.28);
+    transform: translate3d(0, 0.05rem, 8.4rem) scaleY(2.82);
   }
   100% {
     opacity: 0.08;
-    transform: translate3d(0, -0.5rem, 7.2rem) scaleY(1.52);
+    transform: translate3d(0, -0.42rem, 7.2rem) scaleY(1.42);
   }
 }
 
@@ -3751,19 +3756,19 @@ body {
 @keyframes sponge-pack-card-burst {
   0% {
     opacity: 0;
-    transform: translate3d(0, 0.4rem, -1rem) rotateZ(0deg) scale(0.76);
+    transform: translate3d(0, 0.8rem, 1rem) rotateX(-10deg) rotateZ(0deg) scale(0.74);
   }
-  36% {
-    opacity: 1;
-    transform: translate3d(0, -1.4rem, 2.8rem) rotateZ(0deg) scale(0.9);
+  32% {
+    opacity: 0.96;
+    transform: translate3d(0, -1.55rem, 4.4rem) rotateX(-7deg) rotateZ(0deg) scale(0.88);
   }
-  68% {
+  66% {
     opacity: 1;
-    transform: translate3d(0, -3.8rem, 4.6rem) rotateZ(0deg) scale(0.96);
+    transform: translate3d(0, -4.05rem, 5.8rem) rotateX(-3deg) rotateZ(0deg) scale(0.95);
   }
   100% {
     opacity: 0.94;
-    transform: translate3d(var(--rip-x), var(--rip-y), 6.4rem) rotateZ(var(--rip-rotate)) scale(1);
+    transform: translate3d(var(--rip-x), var(--rip-y), 6.9rem) rotateX(0deg) rotateZ(var(--rip-rotate)) scale(1);
   }
 }
 
