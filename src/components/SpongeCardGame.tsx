@@ -90,8 +90,11 @@ type DuplicateEntry = {
 const PACK_COST = 150;
 const FREE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const RANDOM_MAX = 0x100000000;
-const PACK_RIP_ANIMATION_MS = 1450;
+const PACK_RIP_ANIMATION_MS = 2300;
 const CARD_TURN_ANIMATION_MS = 1280;
+const PACK_RIP_DRAG_THRESHOLD = 180;
+const PACK_RIP_RELEASE_PROGRESS = 0.94;
+const PACK_RIP_HAPTIC_MARKS = [0.18, 0.42, 0.68, 0.92];
 
 const RARITY_ORDER: Rarity[] = ["common", "rare", "epic"];
 
@@ -684,6 +687,15 @@ function BubbleField() {
   );
 }
 
+function triggerHaptic(pattern: number | number[]) {
+  if (typeof window === "undefined" || !window.navigator.vibrate) return;
+  try {
+    window.navigator.vibrate(pattern);
+  } catch {
+    // Vibration is best-effort and can be blocked by device/browser settings.
+  }
+}
+
 function PackRipStage({
   theme,
   cardCount,
@@ -695,62 +707,186 @@ function PackRipStage({
   ripping: boolean;
   onRip: () => void;
 }) {
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const [dragProgress, setDragProgress] = useState(0);
+  const dragProgressRef = useRef(0);
+  const hapticMarkRef = useRef(0);
+  const dragging = dragStart !== null && !ripping;
+
+  function resetDrag() {
+    setDragStart(null);
+    setDragProgress(0);
+    dragProgressRef.current = 0;
+    hapticMarkRef.current = 0;
+  }
+
+  function releasePack() {
+    if (ripping) return;
+    setDragProgress(1);
+    dragProgressRef.current = 1;
+    setDragStart(null);
+    hapticMarkRef.current = PACK_RIP_HAPTIC_MARKS.length;
+    triggerHaptic([18, 28, 42, 28, 80]);
+    onRip();
+  }
+
+  function updateDragProgress(clientX: number, clientY: number) {
+    if (!dragStart || ripping) return;
+    const pullX = Math.max(0, clientX - dragStart.x);
+    const pullLift = Math.max(0, dragStart.y - clientY) * 0.42;
+    const nextProgress = Math.min(
+      1,
+      (pullX + pullLift) / PACK_RIP_DRAG_THRESHOLD,
+    );
+    dragProgressRef.current = nextProgress;
+    setDragProgress(nextProgress);
+
+    while (
+      hapticMarkRef.current < PACK_RIP_HAPTIC_MARKS.length &&
+      nextProgress >= PACK_RIP_HAPTIC_MARKS[hapticMarkRef.current]
+    ) {
+      hapticMarkRef.current += 1;
+      triggerHaptic(hapticMarkRef.current === 4 ? 34 : 14);
+    }
+  }
+
+  const packStyle = {
+    "--pack-rip-progress": dragProgress,
+    "--pack-rip-tab-x": `${dragProgress * 8.4}rem`,
+    "--pack-rip-tab-y": `${dragProgress * -1.35}rem`,
+    "--pack-rip-model-transform": `rotateX(${10 + dragProgress * 9}deg) rotateY(${-16 + dragProgress * 12}deg) rotateZ(${-2 + dragProgress * 5}deg) translate3d(${dragProgress * 0.25}rem, ${dragProgress * -0.75}rem, ${2.5 + dragProgress * 2.8}rem) scale(${1 + dragProgress * 0.04})`,
+    "--pack-rip-lid-transform": `translate3d(${dragProgress * 1.2}rem, ${dragProgress * -4.7}rem, ${dragProgress * 4.8}rem) rotateX(${-8 - dragProgress * 68}deg) rotateY(${dragProgress * 20}deg) rotateZ(${dragProgress * 11}deg)`,
+    "--pack-rip-body-transform": `translate3d(${dragProgress * -0.16}rem, ${dragProgress * 0.32}rem, ${dragProgress * -0.4}rem) rotateX(${dragProgress * 3}deg) rotateZ(${-dragProgress * 1.4}deg)`,
+    "--pack-rip-tear-opacity": 0.48 + dragProgress * 0.52,
+    "--pack-rip-tear-scale": 1 + dragProgress * 0.5,
+    "--pack-rip-aura-opacity": 0.28 + dragProgress * 0.58,
+    "--pack-rip-aura-scale": 0.92 + dragProgress * 0.16,
+    "--pack-rip-meter": `${Math.round(dragProgress * 100)}%`,
+  } as CSSProperties;
+
   return (
-    <div className={`sponge-pack-rip-stage ${ripping ? "is-ripping" : ""}`}>
+    <div
+      className={`sponge-pack-rip-stage ${dragging ? "is-dragging" : ""} ${
+        ripping ? "is-ripping" : ""
+      }`}
+      style={packStyle}
+    >
       <div className="sponge-pack-rip-light" />
-      <div className="sponge-pack-rip-model" aria-hidden>
-        <div
-          className={`sponge-pack-half sponge-pack-half-left bg-gradient-to-br ${theme.gradient}`}
-        >
-          <span className="sponge-pack-half-gloss" />
-          <span className="sponge-pack-half-logo">{theme.shortName}</span>
-        </div>
-        <div
-          className={`sponge-pack-half sponge-pack-half-right bg-gradient-to-br ${theme.gradient}`}
-        >
-          <span className="sponge-pack-half-gloss" />
-          <span className="sponge-pack-half-logo">{theme.shortName}</span>
-        </div>
-        <div className="sponge-pack-tear-line">
-          {Array.from({ length: 8 }, (_, index) => (
-            <span key={index} />
-          ))}
-        </div>
-        <div className="sponge-pack-inner-stack">
+      <div className="sponge-pack-rip-model">
+        <div className="sponge-pack-rip-aura" aria-hidden />
+        <div className="sponge-pack-inner-stack" aria-hidden>
           {Array.from({ length: Math.min(cardCount, 5) }, (_, index) => (
             <span
               key={index}
               style={
                 {
                   "--rip-card": index,
-                  "--rip-rest-y": `${index * 0.26}rem`,
+                  "--rip-rest-y": `${index * 0.22}rem`,
                   "--rip-rest-rotate": `${(index - 2) * 3}deg`,
-                  "--rip-x": `${(index - 2) * 1.1}rem`,
-                  "--rip-y": `${-4.2 - index * 0.36}rem`,
-                  "--rip-rotate": `${(index - 2) * 4}deg`,
-                  "--rip-delay": `${190 + index * 70}ms`,
+                  "--rip-x": `${(index - 2) * 1.18}rem`,
+                  "--rip-y": `${-4.7 - index * 0.48}rem`,
+                  "--rip-rotate": `${(index - 2) * 5}deg`,
+                  "--rip-delay": `${360 + index * 120}ms`,
                 } as CSSProperties
               }
             />
           ))}
         </div>
+        <div
+          className={`sponge-pack-body bg-gradient-to-br ${theme.gradient}`}
+          aria-hidden
+        >
+          <span className="sponge-pack-half-gloss" />
+          <span className="sponge-pack-crimp sponge-pack-crimp-bottom" />
+          <span className="sponge-pack-half-logo">{theme.shortName}</span>
+          <span className="sponge-pack-body-window" />
+        </div>
+        <div
+          className={`sponge-pack-top-lid bg-gradient-to-br ${theme.gradient}`}
+          aria-hidden
+        >
+          <span className="sponge-pack-half-gloss" />
+          <span className="sponge-pack-crimp sponge-pack-crimp-top" />
+        </div>
+        <div className="sponge-pack-top-tear" aria-hidden>
+          {Array.from({ length: 11 }, (_, index) => (
+            <span key={index} />
+          ))}
+        </div>
+        <div className="sponge-pack-rip-sparks" aria-hidden>
+          {Array.from({ length: 12 }, (_, index) => (
+            <span
+              key={index}
+              style={
+                {
+                  "--spark-x": `${(index % 6) * 16}%`,
+                  "--spark-y": `${(index % 3) * 30}%`,
+                  "--spark-delay": `${180 + index * 34}ms`,
+                  "--spark-drift-x": `${(index - 5.5) * 0.52}rem`,
+                  "--spark-drift-y": `${-2.4 - (index % 4) * 0.42}rem`,
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={ripping}
+          aria-label="Pull the top seal open"
+          className="sponge-pack-pull-tab"
+          onPointerDown={(event) => {
+            if (ripping) return;
+            event.currentTarget.setPointerCapture(event.pointerId);
+            setDragStart({ x: event.clientX, y: event.clientY });
+            setDragProgress(0.04);
+            hapticMarkRef.current = 0;
+            triggerHaptic(10);
+          }}
+          onPointerMove={(event) => updateDragProgress(event.clientX, event.clientY)}
+          onPointerUp={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+            if (dragProgressRef.current >= PACK_RIP_RELEASE_PROGRESS) {
+              releasePack();
+            } else {
+              triggerHaptic(8);
+              resetDrag();
+            }
+          }}
+          onPointerCancel={resetDrag}
+          onKeyDown={(event) => {
+            if (ripping) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              releasePack();
+            }
+          }}
+        >
+          Pull
+        </button>
       </div>
       <div className="sponge-pack-theater-controls">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
-            Seal intact
+            {ripping ? "Seal breached" : "Top seal armed"}
           </p>
           <p className="mt-1 text-2xl font-black text-white">
             {cardCount} cards loaded
           </p>
         </div>
+        <div className="sponge-pack-rip-meter" aria-hidden>
+          <span />
+        </div>
         <button
           type="button"
           disabled={ripping}
-          onClick={onRip}
+          onClick={releasePack}
           className="sponge-pack-rip-button"
         >
-          {ripping ? "Ripping" : "Rip Pack"}
+          {ripping ? "Ripping" : "Auto Rip"}
         </button>
       </div>
     </div>
