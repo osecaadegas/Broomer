@@ -90,11 +90,28 @@ type DuplicateEntry = {
 const PACK_COST = 150;
 const FREE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const RANDOM_MAX = 0x100000000;
-const PACK_RIP_ANIMATION_MS = 2300;
+const PACK_RIP_ANIMATION_MS = 3200;
 const CARD_TURN_ANIMATION_MS = 1280;
-const PACK_RIP_DRAG_THRESHOLD = 180;
-const PACK_RIP_RELEASE_PROGRESS = 0.94;
-const PACK_RIP_HAPTIC_MARKS = [0.18, 0.42, 0.68, 0.92];
+const PACK_RIP_DRAG_THRESHOLD = 310;
+const PACK_RIP_RELEASE_PROGRESS = 0.88;
+const PACK_RIP_HAPTIC_MARKS = [0.16, 0.38, 0.64, 0.86];
+
+const PACK_ART_BY_THEME: Record<
+  ThemeId,
+  {
+    hero: string;
+    cameo: string[];
+  }
+> = {
+  spongebob: {
+    hero: "/cards/spongebob/epic/spongebob-golden-boss.jpg",
+    cameo: [
+      "/cards/spongebob/rare/sandy-shadow-queen.png",
+      "/cards/spongebob/common/krusty-krab-sign.jpg",
+      "/cards/spongebob/epic/squidward-night-club.jpg",
+    ],
+  },
+};
 
 const RARITY_ORDER: Rarity[] = ["common", "rare", "epic"];
 
@@ -714,6 +731,7 @@ function PackRipStage({
   const dragProgressRef = useRef(0);
   const hapticMarkRef = useRef(0);
   const dragging = dragStart !== null && !ripping;
+  const packArt = PACK_ART_BY_THEME[theme.id];
 
   function resetDrag() {
     setDragStart(null);
@@ -728,7 +746,7 @@ function PackRipStage({
     dragProgressRef.current = 1;
     setDragStart(null);
     hapticMarkRef.current = PACK_RIP_HAPTIC_MARKS.length;
-    triggerHaptic([18, 28, 42, 28, 80]);
+    triggerHaptic([10, 18, 10, 28, 16, 42, 24, 74]);
     onRip();
   }
 
@@ -755,14 +773,24 @@ function PackRipStage({
   const packStyle = {
     "--pack-rip-progress": dragProgress,
     "--pack-rip-tab-x": `${dragProgress * 8.4}rem`,
-    "--pack-rip-tab-y": `${dragProgress * -1.35}rem`,
-    "--pack-rip-model-transform": `rotateX(${10 + dragProgress * 9}deg) rotateY(${-16 + dragProgress * 12}deg) rotateZ(${-2 + dragProgress * 5}deg) translate3d(${dragProgress * 0.25}rem, ${dragProgress * -0.75}rem, ${2.5 + dragProgress * 2.8}rem) scale(${1 + dragProgress * 0.04})`,
-    "--pack-rip-lid-transform": `translate3d(${dragProgress * 1.2}rem, ${dragProgress * -4.7}rem, ${dragProgress * 4.8}rem) rotateX(${-8 - dragProgress * 68}deg) rotateY(${dragProgress * 20}deg) rotateZ(${dragProgress * 11}deg)`,
-    "--pack-rip-body-transform": `translate3d(${dragProgress * -0.16}rem, ${dragProgress * 0.32}rem, ${dragProgress * -0.4}rem) rotateX(${dragProgress * 3}deg) rotateZ(${-dragProgress * 1.4}deg)`,
-    "--pack-rip-tear-opacity": 0.48 + dragProgress * 0.52,
-    "--pack-rip-tear-scale": 1 + dragProgress * 0.5,
-    "--pack-rip-aura-opacity": 0.28 + dragProgress * 0.58,
-    "--pack-rip-aura-scale": 0.92 + dragProgress * 0.16,
+    "--pack-rip-tab-y": `${dragProgress * -1.1}rem`,
+    "--pack-rip-model-transform": `rotateX(${9 + dragProgress * 8}deg) rotateY(${-18 + dragProgress * 10}deg) rotateZ(${-3 + dragProgress * 4}deg) translate3d(${dragProgress * 0.28}rem, ${dragProgress * -0.6}rem, ${2.8 + dragProgress * 2.4}rem) scale(${1 + dragProgress * 0.035})`,
+    "--pack-rip-sleeve-transform": `translate3d(${-dragProgress * 0.05}rem, ${dragProgress * 0.1}rem, 1.8rem) rotateX(${dragProgress * 2.4}deg) rotateZ(${-dragProgress * 0.9}deg) skewX(${-dragProgress * 0.8}deg)`,
+    "--pack-rip-top-crimp-transform": `translate3d(${dragProgress * 0.2}rem, ${dragProgress * -0.42}rem, ${4.2 + dragProgress * 1.1}rem) rotateX(${-dragProgress * 18}deg) rotateY(${dragProgress * 7}deg) rotateZ(${dragProgress * 4}deg)`,
+    "--pack-rip-strip-transform": `translate3d(${dragProgress * 7.4}rem, ${dragProgress * -0.85}rem, 7.8rem) rotateZ(${dragProgress * 18}deg) rotateY(${dragProgress * 26}deg) rotateX(${dragProgress * 8}deg)`,
+    "--pack-rip-left-flap-transform": `translate3d(${-dragProgress * 1.08}rem, ${dragProgress * -0.82}rem, ${5.6 + dragProgress * 3.2}rem) rotateX(${-dragProgress * 62}deg) rotateY(${-dragProgress * 44}deg) rotateZ(${-dragProgress * 14}deg)`,
+    "--pack-rip-right-flap-transform": `translate3d(${dragProgress * 1.22}rem, ${dragProgress * -0.84}rem, ${5.65 + dragProgress * 3.35}rem) rotateX(${-dragProgress * 60}deg) rotateY(${dragProgress * 48}deg) rotateZ(${dragProgress * 15}deg)`,
+    "--pack-rip-mouth-scale": 0.78 + dragProgress * 1.62,
+    "--pack-rip-mouth-opacity": 0.02 + dragProgress * 0.98,
+    "--pack-rip-aura-opacity": 0.22 + dragProgress * 0.7,
+    "--pack-rip-aura-scale": 0.88 + dragProgress * 0.26,
+    "--pack-rip-thread-opacity": 0.45 + dragProgress * 0.55,
+    "--pack-rip-crease-opacity": 0.18 + dragProgress * 0.62,
+    "--pack-rip-tear-width": `${Math.max(4, dragProgress * 100)}%`,
+    "--pack-rip-open-height": `${0.1 + dragProgress * 1.9}rem`,
+    "--pack-rip-open-y": `${dragProgress * 0.45}rem`,
+    "--pack-rip-tear-shadow-opacity": 0.1 + dragProgress * 0.82,
+    "--pack-rip-fiber-opacity": Math.min(1, dragProgress * 1.4),
     "--pack-rip-meter": `${Math.round(dragProgress * 100)}%`,
   } as CSSProperties;
 
@@ -776,6 +804,7 @@ function PackRipStage({
       <div className="sponge-pack-rip-light" />
       <div className="sponge-pack-rip-model">
         <div className="sponge-pack-rip-aura" aria-hidden />
+        <div className="sponge-pack-showcase-floor" aria-hidden />
         <div className="sponge-pack-inner-stack" aria-hidden>
           {Array.from({ length: Math.min(cardCount, 5) }, (_, index) => (
             <span
@@ -788,29 +817,106 @@ function PackRipStage({
                   "--rip-x": `${(index - 2) * 1.18}rem`,
                   "--rip-y": `${-4.7 - index * 0.48}rem`,
                   "--rip-rotate": `${(index - 2) * 5}deg`,
-                  "--rip-delay": `${360 + index * 120}ms`,
+                  "--rip-delay": `${980 + index * 130}ms`,
                 } as CSSProperties
               }
             />
           ))}
         </div>
-        <div
-          className={`sponge-pack-body bg-gradient-to-br ${theme.gradient}`}
-          aria-hidden
-        >
+        <div className="sponge-pack-rip-mouth" aria-hidden>
+          <span />
+        </div>
+        <div className="sponge-pack-rip-slit" aria-hidden>
+          <span />
+          <span />
+        </div>
+        <div className="sponge-pack-tear-line" aria-hidden>
+          <span />
+        </div>
+        <div className="sponge-pack-sleeve" aria-hidden>
           <span className="sponge-pack-half-gloss" />
+          <span className="sponge-pack-foil-grain" />
+          <span className="sponge-pack-foil-field" />
+          <span className="sponge-pack-art-glow" />
           <span className="sponge-pack-crimp sponge-pack-crimp-bottom" />
-          <span className="sponge-pack-half-logo">{theme.shortName}</span>
-          <span className="sponge-pack-body-window" />
+          <span className="sponge-pack-cutout sponge-pack-cutout-left" />
+          <span className="sponge-pack-cutout sponge-pack-cutout-right" />
+          <span className="sponge-pack-side-rail sponge-pack-side-rail-left" />
+          <span className="sponge-pack-side-rail sponge-pack-side-rail-right" />
+          <span className="sponge-pack-center-seam" />
+          <div className="sponge-pack-cover-art">
+            <Image
+              src={packArt.hero}
+              alt=""
+              fill
+              sizes="(max-width: 640px) 54vw, 230px"
+              className="sponge-pack-cover-image object-cover"
+            />
+            <span className="sponge-pack-cover-art-glass" />
+          </div>
+          <div className="sponge-pack-lockup">
+            <span>{theme.shortName}</span>
+            <strong>Reef Rumble</strong>
+          </div>
+          <span className="sponge-pack-series">Trading card game</span>
+          <div className="sponge-pack-card-count">
+            <strong>{cardCount}</strong>
+            <span>card booster</span>
+          </div>
+          <div className="sponge-pack-cameos">
+            {packArt.cameo.map((src, index) => (
+              <span
+                key={src}
+                className="sponge-pack-cameo"
+                style={
+                  {
+                    "--cameo-rotate": `${(index - 1) * 7}deg`,
+                  } as CSSProperties
+                }
+              >
+                <Image
+                  src={src}
+                  alt=""
+                  fill
+                  sizes="56px"
+                  className="object-cover"
+                />
+              </span>
+            ))}
+          </div>
+          <div className="sponge-pack-edition">
+            <span>Collector foil</span>
+            <span>{theme.packName}</span>
+          </div>
+        </div>
+        <div className="sponge-pack-top-crimp" aria-hidden>
+          <span className="sponge-pack-crimp sponge-pack-crimp-top" />
+          <span className="sponge-pack-rip-notch" />
+          <span className="sponge-pack-rip-thread" />
+          <span className="sponge-pack-crimp-label">Tear seal</span>
         </div>
         <div
-          className={`sponge-pack-top-lid bg-gradient-to-br ${theme.gradient}`}
+          className="sponge-pack-tear-flap sponge-pack-tear-flap-left"
           aria-hidden
         >
-          <span className="sponge-pack-half-gloss" />
-          <span className="sponge-pack-crimp sponge-pack-crimp-top" />
+          <span className="sponge-pack-tear-shadow" />
+          <span className="sponge-pack-foil-curl" />
+          <span className="sponge-pack-foil-grain" />
         </div>
-        <div className="sponge-pack-top-tear" aria-hidden>
+        <div
+          className="sponge-pack-tear-flap sponge-pack-tear-flap-right"
+          aria-hidden
+        >
+          <span className="sponge-pack-tear-shadow" />
+          <span className="sponge-pack-foil-curl" />
+          <span className="sponge-pack-foil-grain" />
+        </div>
+        <div className="sponge-pack-rip-strip" aria-hidden>
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="sponge-pack-top-teeth" aria-hidden>
           {Array.from({ length: 11 }, (_, index) => (
             <span key={index} />
           ))}
