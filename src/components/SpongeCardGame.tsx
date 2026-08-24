@@ -92,9 +92,9 @@ const FREE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const RANDOM_MAX = 0x100000000;
 const PACK_RIP_ANIMATION_MS = 3200;
 const CARD_TURN_ANIMATION_MS = 1280;
-const PACK_RIP_DRAG_THRESHOLD = 310;
-const PACK_RIP_RELEASE_PROGRESS = 0.88;
-const PACK_RIP_HAPTIC_MARKS = [0.16, 0.38, 0.64, 0.86];
+const PACK_RIP_DRAG_THRESHOLD = 230;
+const PACK_RIP_RELEASE_PROGRESS = 0.72;
+const PACK_RIP_HAPTIC_MARKS = [0.14, 0.32, 0.52, 0.72];
 
 const PACK_ART_BY_THEME: Record<
   ThemeId,
@@ -643,54 +643,46 @@ function CollectibleCardView({
   compact?: boolean;
   large?: boolean;
 }) {
-  const meta = RARITY_META[card.rarity];
   const displayName = locked ? "Undiscovered" : card.name;
   const displayTitle = locked ? "Vault Locked" : card.title;
+  const powerLabel = compact ? "P" : "Power";
+  const jellyLabel = compact ? "J" : "Jelly";
 
   return (
     <div
-      className={`relative aspect-[3/4] w-full rounded-2xl bg-gradient-to-br p-[3px] shadow-xl ring-1 ${meta.frame} ${meta.ring} ${
-        large ? "max-w-[18rem]" : ""
-      }`}
+      className={`sponge-collectible-card ${compact ? "is-compact" : ""} ${
+        large ? "is-large" : ""
+      } ${locked ? "is-locked" : ""}`}
+      data-rarity={card.rarity}
     >
-      <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[13px] bg-[#fffaf0]">
-        <div className="flex min-h-9 items-center justify-between gap-1 px-2 pt-1.5">
-          <span
-            className={`min-w-0 truncate font-black leading-tight ${meta.text} ${
-              compact ? "text-[10px]" : "text-xs"
-            }`}
-          >
-            {displayName}
-          </span>
-          <span
-            className={`shrink-0 rounded-full px-1.5 py-[1px] text-[7px] font-black uppercase ${meta.chip}`}
-          >
-            {meta.label}
+      <div className="sponge-card-shell">
+        <div className="sponge-card-topline">
+          <div className="min-w-0">
+            <p className="sponge-card-name">{displayName}</p>
+            {!compact && <p className="sponge-card-title">{displayTitle}</p>}
+          </div>
+          <span className="sponge-rarity-chip">
+            {RARITY_META[card.rarity].label}
           </span>
         </div>
-        <div className="relative mx-1.5 mt-1 flex-1 overflow-hidden rounded-lg border-2 border-[#f2e3bd] bg-sky-200">
+        <div className="sponge-card-image-well">
           <CardArtwork card={card} locked={locked} compact={compact} large={large} />
           {locked && (
-            <div className="absolute inset-0 grid place-items-center bg-slate-950/30 text-2xl font-black text-white/80">
+            <div className="sponge-card-lock-mark">
               ?
             </div>
           )}
         </div>
-        {!compact && (
-          <p className="line-clamp-1 px-2 pt-1 text-[9px] font-bold text-slate-500">
-            {displayTitle}
-          </p>
-        )}
-        <div className="flex items-center justify-between gap-1 px-2 pb-1.5 pt-1 text-[8px] font-black text-slate-700">
-          <span className="rounded bg-orange-100 px-1 py-[1px] text-orange-700">
-            {locked ? "P ?" : `P ${card.power}`}
+        <div className="sponge-card-footer">
+          <span className="sponge-stat-chip">
+            {powerLabel} {locked ? "?" : card.power}
           </span>
-          <span className="rounded bg-pink-100 px-1 py-[1px] text-pink-700">
-            {locked ? "J ?" : `J ${card.jelly}`}
+          <span className="sponge-stat-chip">
+            {jellyLabel} {locked ? "?" : card.jelly}
           </span>
         </div>
         {typeof count === "number" && count > 1 && !locked && (
-          <span className="absolute -right-1 -top-1 grid h-6 min-w-6 place-items-center rounded-full border-2 border-white bg-slate-950 px-1 text-[10px] font-black text-white">
+          <span className="sponge-copy-badge">
             x{count}
           </span>
         )}
@@ -814,26 +806,22 @@ function PackRipStage({
 
   const packStyle = {
     "--pack-rip-progress": dragProgress,
-    "--pack-rip-tab-x": `${dragProgress * 13.2}rem`,
-    "--pack-rip-tab-y": `${dragProgress * -0.42}rem`,
-    "--pack-rip-tab-rotate": `${-4 + dragProgress * 10}deg`,
-    "--pack-rip-model-transform": `rotateX(${9 + dragProgress * 8}deg) rotateY(${-18 + dragProgress * 10}deg) rotateZ(${-3 + dragProgress * 4}deg) translate3d(${dragProgress * 0.28}rem, ${dragProgress * -0.6}rem, ${2.8 + dragProgress * 2.4}rem) scale(${1 + dragProgress * 0.035})`,
-    "--pack-rip-sleeve-transform": `translate3d(${-dragProgress * 0.03}rem, ${dragProgress * 0.12}rem, 1.8rem) rotateX(${dragProgress * 1.8}deg) rotateZ(${-dragProgress * 0.6}deg) skewX(${-dragProgress * 0.6}deg)`,
-    "--pack-rip-top-crimp-transform": `translate3d(${dragProgress * 0.48}rem, ${dragProgress * -0.24}rem, ${4.2 + dragProgress * 0.75}rem) rotateX(${-dragProgress * 8}deg) rotateY(${dragProgress * 3}deg) rotateZ(${dragProgress * 2}deg)`,
-    "--pack-rip-strip-transform": `translate3d(${dragProgress * 11.2}rem, ${dragProgress * -0.38}rem, 7.8rem) rotateZ(${dragProgress * 7}deg) rotateY(${dragProgress * 20}deg) rotateX(${dragProgress * 4}deg)`,
-    "--pack-rip-left-flap-transform": `translate3d(${dragProgress * 0.38}rem, ${dragProgress * -0.72}rem, ${5.6 + dragProgress * 2.7}rem) rotateX(${-dragProgress * 56}deg) rotateY(${dragProgress * 5}deg) rotateZ(${dragProgress * 2}deg)`,
-    "--pack-rip-right-flap-transform": `translate3d(${dragProgress * 0.18}rem, ${dragProgress * 0.28}rem, ${5.65 + dragProgress * 2.2}rem) rotateX(${dragProgress * 36}deg) rotateY(${dragProgress * 2}deg) rotateZ(${dragProgress * 1}deg)`,
-    "--pack-rip-mouth-scale": 0.78 + dragProgress * 1.34,
-    "--pack-rip-mouth-opacity": 0.02 + dragProgress * 0.98,
-    "--pack-rip-aura-opacity": 0.22 + dragProgress * 0.7,
-    "--pack-rip-aura-scale": 0.88 + dragProgress * 0.26,
-    "--pack-rip-thread-opacity": 0.45 + dragProgress * 0.55,
-    "--pack-rip-crease-opacity": 0.18 + dragProgress * 0.62,
-    "--pack-rip-tear-width": `${Math.max(4, dragProgress * 100)}%`,
-    "--pack-rip-open-height": `${0.12 + dragProgress * 1.48}rem`,
-    "--pack-rip-open-y": `${dragProgress * 0.22}rem`,
-    "--pack-rip-tear-shadow-opacity": 0.1 + dragProgress * 0.82,
-    "--pack-rip-fiber-opacity": Math.min(1, dragProgress * 1.4),
+    "--pack-rip-tab-x": `${dragProgress * 6.1}rem`,
+    "--pack-rip-tab-y": `${dragProgress * -0.14}rem`,
+    "--pack-rip-tab-rotate": `${-0.6 + dragProgress * 1.2}deg`,
+    "--pack-rip-model-transform": `rotateX(${3.8 + dragProgress * 0.45}deg) rotateY(${-2.8 + dragProgress * 0.65}deg) rotateZ(${-0.25 + dragProgress * 0.25}deg) translate3d(${dragProgress * 0.03}rem, ${dragProgress * -0.04}rem, ${0.75 + dragProgress * 0.12}rem) scale(${1 + dragProgress * 0.002})`,
+    "--pack-rip-sleeve-transform": `translate3d(0, ${dragProgress * 0.035}rem, 1.8rem) rotateX(${dragProgress * 0.22}deg)`,
+    "--pack-rip-top-crimp-transform": `translate3d(${dragProgress * 0.1}rem, ${dragProgress * -0.06}rem, ${3.8 + dragProgress * 0.12}rem) rotateX(${-dragProgress * 4}deg) rotateZ(${dragProgress * 0.35}deg)`,
+    "--pack-rip-strip-transform": `translate3d(${dragProgress * 4.9}rem, ${dragProgress * -0.04}rem, 7.45rem) rotateZ(${dragProgress * 0.8}deg)`,
+    "--pack-rip-strip-width": `${2.7 + dragProgress * 1.1}rem`,
+    "--pack-rip-aura-opacity": 0.14 + dragProgress * 0.28,
+    "--pack-rip-aura-scale": 0.88 + dragProgress * 0.09,
+    "--pack-rip-thread-opacity": 0.28 + dragProgress * 0.34,
+    "--pack-rip-crease-opacity": 0.16 + dragProgress * 0.26,
+    "--pack-rip-tear-width": `${Math.max(5, dragProgress * 78)}%`,
+    "--pack-rip-open-height": `${dragProgress * 0.42}rem`,
+    "--pack-rip-tear-shadow-opacity": 0.08 + dragProgress * 0.28,
+    "--pack-rip-fiber-opacity": Math.min(0.56, dragProgress * 0.76),
     "--pack-rip-meter": `${Math.round(dragProgress * 100)}%`,
   } as CSSProperties;
 
@@ -865,13 +853,6 @@ function PackRipStage({
               }
             />
           ))}
-        </div>
-        <div className="sponge-pack-rip-mouth" aria-hidden>
-          <span />
-        </div>
-        <div className="sponge-pack-rip-slit" aria-hidden>
-          <span />
-          <span />
         </div>
         <div className="sponge-pack-tear-line" aria-hidden>
           <span />
@@ -936,49 +917,9 @@ function PackRipStage({
           <span className="sponge-pack-crimp sponge-pack-crimp-top" />
           <span className="sponge-pack-rip-notch" />
           <span className="sponge-pack-rip-thread" />
-          <span className="sponge-pack-crimp-label">Tear seal</span>
-        </div>
-        <div
-          className="sponge-pack-tear-flap sponge-pack-tear-flap-left"
-          aria-hidden
-        >
-          <span className="sponge-pack-tear-shadow" />
-          <span className="sponge-pack-foil-curl" />
-          <span className="sponge-pack-foil-grain" />
-        </div>
-        <div
-          className="sponge-pack-tear-flap sponge-pack-tear-flap-right"
-          aria-hidden
-        >
-          <span className="sponge-pack-tear-shadow" />
-          <span className="sponge-pack-foil-curl" />
-          <span className="sponge-pack-foil-grain" />
         </div>
         <div className="sponge-pack-rip-strip" aria-hidden>
           <span />
-          <span />
-          <span />
-        </div>
-        <div className="sponge-pack-top-teeth" aria-hidden>
-          {Array.from({ length: 11 }, (_, index) => (
-            <span key={index} />
-          ))}
-        </div>
-        <div className="sponge-pack-rip-sparks" aria-hidden>
-          {Array.from({ length: 12 }, (_, index) => (
-            <span
-              key={index}
-              style={
-                {
-                  "--spark-x": `${(index % 6) * 16}%`,
-                  "--spark-y": `${(index % 3) * 30}%`,
-                  "--spark-delay": `${180 + index * 34}ms`,
-                  "--spark-drift-x": `${(index - 5.5) * 0.52}rem`,
-                  "--spark-drift-y": `${-2.4 - (index % 4) * 0.42}rem`,
-                } as CSSProperties
-              }
-            />
-          ))}
         </div>
         <button
           type="button"
@@ -1020,10 +961,10 @@ function PackRipStage({
       <div className="sponge-pack-theater-controls">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
-            {ripping ? "Seal breached" : "Top seal armed"}
+            {ripping ? "Seal breached" : "Hold the yellow pull tab"}
           </p>
           <p className="mt-1 text-2xl font-black text-white">
-            {cardCount} cards loaded
+            {ripping ? "Cards waking up" : `${cardCount} cards inside`}
           </p>
         </div>
         <div className="sponge-pack-rip-meter" aria-hidden>
@@ -1035,7 +976,7 @@ function PackRipStage({
           onClick={releasePack}
           className="sponge-pack-rip-button"
         >
-          {ripping ? "Ripping" : "Auto Rip"}
+          {ripping ? "Opening" : "Open Pack"}
         </button>
       </div>
     </div>
@@ -1108,8 +1049,19 @@ function StackedRevealDeck({
           <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
             {cardIsSettled ? "Revealed" : "Next pull"}
           </p>
-          <p className="text-2xl font-black text-white">
-            {displayPull ? displayPull.card.rarity : "Complete"}
+          <p className="sponge-stack-status-title">
+            {displayPull
+              ? cardIsSettled
+                ? displayPull.card.name
+                : RARITY_META[displayPull.card.rarity].label
+              : "Complete"}
+          </p>
+          <p className="sponge-stack-status-action">
+            {displayPull
+              ? cardIsSettled
+                ? "Tap the card to shelve it"
+                : "Tap the card to reveal"
+              : "Every card is secured"}
           </p>
         </div>
         <div className="sponge-card-stack">
@@ -1299,6 +1251,22 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
   const duplicateValue = duplicateEntries.reduce(
     (sum, entry) => sum + entry.value,
     0,
+  );
+  const collectionProgress = Math.round(
+    (uniqueOwned / Math.max(1, selectedThemeCards.length)) * 100,
+  );
+  const rarityProgress = useMemo(
+    () =>
+      RARITY_ORDER.map((rarity) => {
+        const cards = selectedThemeCards.filter((card) => card.rarity === rarity);
+        const owned = cards.filter((card) => (game.cards[card.id] ?? 0) > 0);
+        return {
+          rarity,
+          total: cards.length,
+          owned: owned.length,
+        };
+      }),
+    [game.cards, selectedThemeCards],
   );
 
   const visibleCollectionCards = useMemo(
@@ -1614,6 +1582,26 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                       </div>
                     ))}
                   </div>
+                  <div className="sponge-progress-block mt-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-100/58">
+                        Collection scan
+                      </p>
+                      <p className="text-sm font-black text-yellow-200">
+                        {collectionProgress}%
+                      </p>
+                    </div>
+                    <div
+                      className="sponge-progress-rail mt-2"
+                      style={
+                        {
+                          "--sponge-progress": `${collectionProgress}%`,
+                        } as CSSProperties
+                      }
+                    >
+                      <span />
+                    </div>
+                  </div>
                 </div>
                 <div className="sponge-lobby-pack" aria-hidden>
                   <SpongePackIcon theme={selectedThemeMeta} />
@@ -1682,7 +1670,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                 )}
               </section>
 
-              <section className="grid gap-3 md:grid-cols-3">
+              <section className="sponge-store-grid">
                 {selectedPacks.map((product) => (
                   <article
                     key={product.id}
@@ -1731,7 +1719,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                         {openingSession.productName}
                       </p>
                       <h2 className="mt-1 text-3xl font-black text-white sm:text-5xl">
-                        Pack Opening
+                        Seal Chamber
                       </h2>
                     </div>
                     <div className="sponge-opening-counter">
@@ -1765,7 +1753,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                         <p className="text-sm font-black text-yellow-100">
                           {openingComplete
                             ? "Pack complete"
-                            : "Reef lights locked"}
+                            : "The next card is still hidden"}
                         </p>
                       </div>
 
@@ -1907,7 +1895,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                     {ownedCards.length}
                   </p>
                 </div>
-                <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 xl:grid-cols-5">
+                <div className="sponge-owned-grid mt-4">
                   {ownedCards.length > 0 ? (
                     ownedCards.map((card) => (
                       <CollectibleCardView
@@ -1950,6 +1938,24 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                 </div>
               </div>
 
+              <div className="sponge-collection-summary mt-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-100/55">
+                    Binder progress
+                  </p>
+                  <p className="mt-1 text-2xl font-black text-white">
+                    {collectionProgress}% collected
+                  </p>
+                </div>
+                <div className="sponge-rarity-breakdown">
+                  {rarityProgress.map((entry) => (
+                    <span key={entry.rarity} data-rarity={entry.rarity}>
+                      {RARITY_META[entry.rarity].label} {entry.owned}/{entry.total}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {(["all", ...RARITY_ORDER] as const).map((key) => (
                   <button
@@ -1965,7 +1971,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
                 ))}
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
+              <div className="sponge-collection-grid mt-4">
                 {visibleCollectionCards.map((card) => {
                   const count = game.cards[card.id] ?? 0;
                   return (
