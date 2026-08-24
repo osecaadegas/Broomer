@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, PointerEvent } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
 import {
   CARD_GAME_PROGRESS_EVENT,
   CARD_GAME_STARTING_POINTS,
@@ -13,6 +13,23 @@ type ThemeId = "spongebob";
 type Rarity = "common" | "rare" | "epic";
 type GameView = "lobby" | "store" | "opening" | "inventory" | "collections";
 type PackSource = "free" | "points";
+type PackOpeningState =
+  | "idle"
+  | "holding"
+  | "opening"
+  | "rewards-ready"
+  | "revealing"
+  | "complete";
+type OpeningAnimationType = "standard" | "bunny-omen" | "deep-wait";
+type PackSound =
+  | "hold"
+  | "cancel"
+  | "open"
+  | "flip"
+  | "rare"
+  | "epic"
+  | "new"
+  | "complete";
 
 type CardTheme = {
   id: ThemeId;
@@ -72,12 +89,17 @@ type Pull = {
 
 type OpeningSession = {
   id: string;
+  productId: string;
   productName: string;
   themeId: ThemeId;
   source: PackSource;
+  animationType: OpeningAnimationType;
   pulls: Pull[];
   revealed: boolean[];
   packOpen: boolean;
+  collectionBefore: number;
+  collectionAfter: number;
+  collectionTotal: number;
   createdAt: number;
 };
 
@@ -90,11 +112,63 @@ type DuplicateEntry = {
 const PACK_COST = 150;
 const FREE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const RANDOM_MAX = 0x100000000;
-const PACK_RIP_ANIMATION_MS = 3200;
-const CARD_TURN_ANIMATION_MS = 1280;
-const PACK_RIP_DRAG_THRESHOLD = 230;
-const PACK_RIP_RELEASE_PROGRESS = 0.72;
-const PACK_RIP_HAPTIC_MARKS = [0.14, 0.32, 0.52, 0.72];
+const PACK_OPENING_SEQUENCE_MS = 2850;
+const HOLD_TO_OPEN_MS = 1150;
+const HOLD_HAPTIC_MARKS = [0.18, 0.42, 0.68, 0.92];
+const SOUND_PREF_KEY = `${CARD_GAME_STORAGE_KEY}:sound`;
+
+const RARITY_REVEAL_MS: Record<Rarity, number> = {
+  common: 760,
+  rare: 1080,
+  epic: 1650,
+};
+
+const OPENING_ANIMATION_REGISTRY: Record<
+  OpeningAnimationType,
+  {
+    label: string;
+    secret?: boolean;
+    cue: string;
+    className: string;
+  }
+> = {
+  standard: {
+    label: "Reef seal",
+    cue: "The reef seal is listening.",
+    className: "is-standard-opening",
+  },
+  "bunny-omen": {
+    label: "Bunny omen",
+    secret: true,
+    cue: "...ears behind the pack",
+    className: "is-bunny-omen-opening",
+  },
+  "deep-wait": {
+    label: "Deep wait",
+    secret: true,
+    cue: "...wait",
+    className: "is-deep-wait-opening",
+  },
+};
+
+const PACK_SOUND_SETTINGS: Record<
+  PackSound,
+  {
+    frequency: number;
+    duration: number;
+    gain: number;
+    type: OscillatorType;
+  }
+> = {
+  hold: { frequency: 154, duration: 0.1, gain: 0.025, type: "sine" },
+  cancel: { frequency: 92, duration: 0.08, gain: 0.018, type: "triangle" },
+  open: { frequency: 220, duration: 0.22, gain: 0.035, type: "sawtooth" },
+  flip: { frequency: 330, duration: 0.12, gain: 0.025, type: "triangle" },
+  rare: { frequency: 470, duration: 0.18, gain: 0.03, type: "sine" },
+  epic: { frequency: 660, duration: 0.32, gain: 0.038, type: "triangle" },
+  new: { frequency: 520, duration: 0.2, gain: 0.032, type: "sine" },
+  complete: { frequency: 390, duration: 0.24, gain: 0.028, type: "triangle" },
+};
 
 const PACK_ART_BY_THEME: Record<
   ThemeId,
@@ -518,10 +592,48 @@ function rollPack(product: PackProduct) {
   );
 }
 
+function pickOpeningAnimationType(): OpeningAnimationType {
+  const roll = randomUnit();
+  if (roll < 0.045) return "deep-wait";
+  if (roll < 0.11) return "bunny-omen";
+  return "standard";
+}
+
 function oddsLabel(product: PackProduct) {
   return RARITY_ORDER.map(
     (rarity) => `${RARITY_META[rarity].shortLabel} ${product.odds[rarity]}%`,
   ).join(" / ");
+}
+
+function rarityRank(rarity: Rarity) {
+  return RARITY_ORDER.indexOf(rarity);
+}
+
+function getCollectionNumber(card: CollectibleCard) {
+  return (
+    CARDS_BY_THEME[card.themeId].findIndex((candidate) => candidate.id === card.id) + 1
+  );
+}
+
+function countOwnedCards(
+  cards: Record<string, number>,
+  themeId: ThemeId,
+) {
+  return CARDS_BY_THEME[themeId].filter((card) => (cards[card.id] ?? 0) > 0)
+    .length;
+}
+
+function getBestPullIndex(pulls: Pull[]) {
+  return pulls.reduce((bestIndex, pull, index) => {
+    const bestPull = pulls[bestIndex];
+    const pullScore =
+      rarityRank(pull.card.rarity) * 1000 + pull.card.power + pull.card.jelly;
+    const bestScore =
+      rarityRank(bestPull.card.rarity) * 1000 +
+      bestPull.card.power +
+      bestPull.card.jelly;
+    return pullScore > bestScore ? index : bestIndex;
+  }, 0);
 }
 
 function CardBack({
@@ -747,399 +859,713 @@ function triggerHaptic(pattern: number | number[]) {
   }
 }
 
-function PackRipStage({
+function playPackSound(
+  sound: PackSound,
+  enabled: boolean,
+  contextRef: { current: AudioContext | null },
+) {
+  if (!enabled || typeof window === "undefined") return;
+
+  try {
+    const WebAudioContext =
+      window.AudioContext ??
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!WebAudioContext) return;
+
+    const context = contextRef.current ?? new WebAudioContext();
+    contextRef.current = context;
+    const settings = PACK_SOUND_SETTINGS[sound];
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = settings.type;
+    oscillator.frequency.setValueAtTime(settings.frequency, now);
+    oscillator.frequency.exponentialRampToValueAtTime(
+      Math.max(40, settings.frequency * 0.62),
+      now + settings.duration,
+    );
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(settings.gain, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + settings.duration);
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + settings.duration + 0.02);
+  } catch {
+    // Audio feedback should never block the pack opening flow.
+  }
+}
+
+function closePackAudioContext(contextRef: { current: AudioContext | null }) {
+  const audioContext = contextRef.current;
+  contextRef.current = null;
+  audioContext?.close().catch(() => undefined);
+}
+
+function PackParticleField({ dense = false }: { dense?: boolean }) {
+  return (
+    <div className="sponge-cine-particles" aria-hidden>
+      {Array.from({ length: dense ? 28 : 18 }, (_, index) => (
+        <span
+          key={index}
+          style={
+            {
+              "--particle-x": `${(index * 29) % 100}%`,
+              "--particle-y": `${(index * 47) % 100}%`,
+              "--particle-delay": `${(index % 9) * 0.28}s`,
+              "--particle-size": `${0.22 + (index % 4) * 0.08}rem`,
+            } as CSSProperties
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
+function PackDisplay({
   theme,
   cardCount,
-  ripping,
-  onRip,
+  state,
+  holdProgress,
+  animationType,
 }: {
   theme: CardTheme;
   cardCount: number;
-  ripping: boolean;
-  onRip: () => void;
+  state: PackOpeningState;
+  holdProgress: number;
+  animationType: OpeningAnimationType;
 }) {
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(
-    null,
-  );
-  const [dragProgress, setDragProgress] = useState(0);
-  const dragProgressRef = useRef(0);
-  const hapticMarkRef = useRef(0);
-  const dragging = dragStart !== null && !ripping;
   const packArt = PACK_ART_BY_THEME[theme.id];
-
-  function resetDrag() {
-    setDragStart(null);
-    setDragProgress(0);
-    dragProgressRef.current = 0;
-    hapticMarkRef.current = 0;
-  }
-
-  function releasePack() {
-    if (ripping) return;
-    setDragProgress(1);
-    dragProgressRef.current = 1;
-    setDragStart(null);
-    hapticMarkRef.current = PACK_RIP_HAPTIC_MARKS.length;
-    triggerHaptic([10, 18, 10, 28, 16, 42, 24, 74]);
-    onRip();
-  }
-
-  function updateDragProgress(clientX: number, clientY: number) {
-    if (!dragStart || ripping) return;
-    const pullX = Math.max(0, clientX - dragStart.x);
-    const pullLift = Math.max(0, dragStart.y - clientY) * 0.42;
-    const nextProgress = Math.min(
-      1,
-      (pullX + pullLift) / PACK_RIP_DRAG_THRESHOLD,
-    );
-    dragProgressRef.current = nextProgress;
-    setDragProgress(nextProgress);
-
-    while (
-      hapticMarkRef.current < PACK_RIP_HAPTIC_MARKS.length &&
-      nextProgress >= PACK_RIP_HAPTIC_MARKS[hapticMarkRef.current]
-    ) {
-      hapticMarkRef.current += 1;
-      triggerHaptic(hapticMarkRef.current === 4 ? 34 : 14);
-    }
-  }
-
-  const packStyle = {
-    "--pack-rip-progress": dragProgress,
-    "--pack-rip-tab-x": `${dragProgress * 6.1}rem`,
-    "--pack-rip-tab-y": `${dragProgress * -0.14}rem`,
-    "--pack-rip-tab-rotate": `${-0.6 + dragProgress * 1.2}deg`,
-    "--pack-rip-model-transform": `rotateX(${3.8 + dragProgress * 0.45}deg) rotateY(${-2.8 + dragProgress * 0.65}deg) rotateZ(${-0.25 + dragProgress * 0.25}deg) translate3d(${dragProgress * 0.03}rem, ${dragProgress * -0.04}rem, ${0.75 + dragProgress * 0.12}rem) scale(${1 + dragProgress * 0.002})`,
-    "--pack-rip-sleeve-transform": `translate3d(0, ${dragProgress * 0.035}rem, 1.8rem) rotateX(${dragProgress * 0.22}deg)`,
-    "--pack-rip-top-crimp-transform": `translate3d(${dragProgress * 0.1}rem, ${dragProgress * -0.06}rem, ${3.8 + dragProgress * 0.12}rem) rotateX(${-dragProgress * 4}deg) rotateZ(${dragProgress * 0.35}deg)`,
-    "--pack-rip-strip-transform": `translate3d(${dragProgress * 4.9}rem, ${dragProgress * -0.04}rem, 7.45rem) rotateZ(${dragProgress * 0.8}deg)`,
-    "--pack-rip-strip-width": `${2.7 + dragProgress * 1.1}rem`,
-    "--pack-rip-aura-opacity": 0.14 + dragProgress * 0.28,
-    "--pack-rip-aura-scale": 0.88 + dragProgress * 0.09,
-    "--pack-rip-thread-opacity": 0.28 + dragProgress * 0.34,
-    "--pack-rip-crease-opacity": 0.16 + dragProgress * 0.26,
-    "--pack-rip-tear-width": `${Math.max(5, dragProgress * 78)}%`,
-    "--pack-rip-open-height": `${dragProgress * 0.42}rem`,
-    "--pack-rip-tear-shadow-opacity": 0.08 + dragProgress * 0.28,
-    "--pack-rip-fiber-opacity": Math.min(0.56, dragProgress * 0.76),
-    "--pack-rip-meter": `${Math.round(dragProgress * 100)}%`,
-  } as CSSProperties;
+  const animation = OPENING_ANIMATION_REGISTRY[animationType];
 
   return (
     <div
-      className={`sponge-pack-rip-stage ${dragging ? "is-dragging" : ""} ${
-        ripping ? "is-ripping" : ""
-      }`}
-      style={packStyle}
+      className={`sponge-cine-pack-scene ${animation.className}`}
+      data-state={state}
+      style={
+        {
+          "--hold-progress": holdProgress,
+          "--hold-percent": `${Math.round(holdProgress * 100)}%`,
+        } as CSSProperties
+      }
     >
-      <div className="sponge-pack-rip-light" />
-      <div className="sponge-pack-rip-model">
-        <div className="sponge-pack-rip-aura" aria-hidden />
-        <div className="sponge-pack-showcase-floor" aria-hidden />
-        <div className="sponge-pack-inner-stack" aria-hidden>
-          {Array.from({ length: Math.min(cardCount, 5) }, (_, index) => (
-            <span
-              key={index}
-              style={
-                {
-                  "--rip-card": index,
-                  "--rip-rest-y": `${index * 0.22}rem`,
-                  "--rip-rest-rotate": `${(index - 2) * 1.6}deg`,
-                  "--rip-x": `${(index - 2) * 0.56}rem`,
-                  "--rip-y": `${-5.2 - index * 0.32}rem`,
-                  "--rip-rotate": `${(index - 2) * 2.8}deg`,
-                  "--rip-delay": `${1180 + index * 100}ms`,
-                } as CSSProperties
-              }
-            />
-          ))}
-        </div>
-        <div className="sponge-pack-tear-line" aria-hidden>
-          <span />
-        </div>
-        <div className="sponge-pack-sleeve" aria-hidden>
-          <span className="sponge-pack-half-gloss" />
-          <span className="sponge-pack-foil-grain" />
-          <span className="sponge-pack-foil-field" />
-          <span className="sponge-pack-art-glow" />
-          <span className="sponge-pack-crimp sponge-pack-crimp-bottom" />
-          <span className="sponge-pack-cutout sponge-pack-cutout-left" />
-          <span className="sponge-pack-cutout sponge-pack-cutout-right" />
-          <span className="sponge-pack-side-rail sponge-pack-side-rail-left" />
-          <span className="sponge-pack-side-rail sponge-pack-side-rail-right" />
-          <span className="sponge-pack-center-seam" />
-          <div className="sponge-pack-cover-art">
+      <div className="sponge-cine-pack-aura" aria-hidden />
+      <div className="sponge-cine-pack-shadow" aria-hidden />
+      <div className="sponge-cine-secret-cue" aria-hidden>
+        {animation.secret ? animation.cue : ""}
+      </div>
+      <div className="sponge-cine-pack-shell">
+        <span className="sponge-cine-pack-ears" aria-hidden />
+        <div className="sponge-cine-pack" aria-label={`${theme.packName} pack`}>
+          <span className="sponge-cine-pack-seam" aria-hidden />
+          <span className="sponge-cine-pack-crack one" aria-hidden />
+          <span className="sponge-cine-pack-crack two" aria-hidden />
+          <span className="sponge-cine-pack-crack three" aria-hidden />
+          <div className="sponge-cine-pack-art">
             <Image
               src={packArt.hero}
               alt=""
               fill
-              sizes="(max-width: 640px) 54vw, 230px"
-              className="sponge-pack-cover-image object-cover"
+              sizes="(max-width: 640px) 62vw, 260px"
+              className="object-cover"
+              priority
             />
-            <span className="sponge-pack-cover-art-glass" />
           </div>
-          <div className="sponge-pack-lockup">
+          <div className="sponge-cine-pack-glass" aria-hidden />
+          <div className="sponge-cine-pack-title">
             <span>{theme.shortName}</span>
             <strong>Reef Rumble</strong>
           </div>
-          <span className="sponge-pack-series">Trading card game</span>
-          <div className="sponge-pack-card-count">
+          <div className="sponge-cine-pack-count">
             <strong>{cardCount}</strong>
-            <span>card booster</span>
+            <span>cards</span>
           </div>
-          <div className="sponge-pack-cameos">
+          <div className="sponge-cine-pack-cameos" aria-hidden>
             {packArt.cameo.map((src, index) => (
-              <span
-                key={src}
-                className="sponge-pack-cameo"
-                style={
-                  {
-                    "--cameo-rotate": `${(index - 1) * 7}deg`,
-                  } as CSSProperties
-                }
-              >
+              <span key={src}>
                 <Image
                   src={src}
                   alt=""
                   fill
-                  sizes="56px"
+                  sizes="46px"
                   className="object-cover"
+                  priority={index === 0}
                 />
               </span>
             ))}
           </div>
-          <div className="sponge-pack-edition">
-            <span>Collector foil</span>
-            <span>{theme.packName}</span>
-          </div>
+          <span className="sponge-cine-pack-bottom-label">
+            Broomer reef issue
+          </span>
         </div>
-        <div className="sponge-pack-top-crimp" aria-hidden>
-          <span className="sponge-pack-crimp sponge-pack-crimp-top" />
-          <span className="sponge-pack-rip-notch" />
-          <span className="sponge-pack-rip-thread" />
-        </div>
-        <div className="sponge-pack-rip-strip" aria-hidden>
-          <span />
-        </div>
-        <button
-          type="button"
-          disabled={ripping}
-          aria-label="Pull the top seal open"
-          className="sponge-pack-pull-tab"
-          onPointerDown={(event) => {
-            if (ripping) return;
-            event.currentTarget.setPointerCapture(event.pointerId);
-            setDragStart({ x: event.clientX, y: event.clientY });
-            setDragProgress(0.04);
-            hapticMarkRef.current = 0;
-            triggerHaptic(10);
-          }}
-          onPointerMove={(event) => updateDragProgress(event.clientX, event.clientY)}
-          onPointerUp={(event) => {
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-              event.currentTarget.releasePointerCapture(event.pointerId);
-            }
-            if (dragProgressRef.current >= PACK_RIP_RELEASE_PROGRESS) {
-              releasePack();
-            } else {
-              triggerHaptic(8);
-              resetDrag();
-            }
-          }}
-          onPointerCancel={resetDrag}
-          onKeyDown={(event) => {
-            if (ripping) return;
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              releasePack();
-            }
-          }}
-        >
-          Pull
-        </button>
-      </div>
-      <div className="sponge-pack-theater-controls">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
-            {ripping ? "Seal breached" : "Hold the yellow pull tab"}
-          </p>
-          <p className="mt-1 text-2xl font-black text-white">
-            {ripping ? "Cards waking up" : `${cardCount} cards inside`}
-          </p>
-        </div>
-        <div className="sponge-pack-rip-meter" aria-hidden>
-          <span />
-        </div>
-        <button
-          type="button"
-          disabled={ripping}
-          onClick={releasePack}
-          className="sponge-pack-rip-button"
-        >
-          {ripping ? "Opening" : "Open Pack"}
-        </button>
       </div>
     </div>
   );
 }
 
-function StackedRevealDeck({
-  session,
-  activeIndex,
-  turningIndex,
-  settledIndex,
-  onReveal,
-  onAdvance,
+function HoldToOpen({
+  disabled,
+  opening,
+  onComplete,
+  onProgressChange,
+  playSound,
 }: {
-  session: OpeningSession;
-  activeIndex: number;
-  turningIndex: number | null;
-  settledIndex: number | null;
-  onReveal: (index: number) => void;
-  onAdvance: () => void;
+  disabled: boolean;
+  opening: boolean;
+  onComplete: () => void;
+  onProgressChange: (progress: number) => void;
+  playSound: (sound: PackSound) => void;
 }) {
-  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
-    null,
-  );
-  const theme = CARD_THEMES[session.themeId];
-  const displayIndex = settledIndex ?? activeIndex;
-  const displayPull =
-    displayIndex >= 0 ? session.pulls[displayIndex] : undefined;
-  const remainingStartIndex =
-    settledIndex !== null
-      ? activeIndex >= 0
-        ? activeIndex
-        : session.pulls.length
-      : displayIndex >= 0
-        ? displayIndex + 1
-        : session.pulls.length;
-  const remainingBacks = session.pulls.slice(
-    remainingStartIndex,
-    remainingStartIndex + 5,
-  );
-  const cardIsSettled = settledIndex !== null && settledIndex === displayIndex;
-  const cardIsTurning = turningIndex !== null && turningIndex === displayIndex;
+  const [holding, setHolding] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const progressRef = useRef(0);
+  const holdStartedAtRef = useRef(0);
+  const frameRef = useRef<number | null>(null);
+  const hapticMarkRef = useRef(0);
+  const holdingRef = useRef(false);
 
-  function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
-    if (!displayPull || turningIndex !== null) return;
-    setStartPoint({ x: event.clientX, y: event.clientY });
+  function setNextProgress(nextProgress: number) {
+    progressRef.current = nextProgress;
+    setProgress(nextProgress);
+    onProgressChange(nextProgress);
   }
 
-  function handlePointerUp(event: PointerEvent<HTMLButtonElement>) {
-    if (!displayPull || turningIndex !== null) return;
-    const moved =
-      startPoint != null
-        ? Math.hypot(event.clientX - startPoint.x, event.clientY - startPoint.y)
-        : 0;
-    if (moved >= 0) {
-      if (cardIsSettled) {
-        onAdvance();
-      } else {
-        onReveal(displayIndex);
-      }
+  function stopHold(reset = true) {
+    if (frameRef.current != null) {
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
     }
-    setStartPoint(null);
+    holdingRef.current = false;
+    setHolding(false);
+    hapticMarkRef.current = 0;
+    if (reset && progressRef.current < 1) {
+      if (progressRef.current > 0.05) {
+        triggerHaptic(8);
+        playSound("cancel");
+      }
+      setNextProgress(0);
+    }
   }
+
+  function finishHold() {
+    stopHold(false);
+    setNextProgress(1);
+    triggerHaptic([12, 18, 18, 28, 26, 58]);
+    onComplete();
+  }
+
+  function tickHold() {
+    const elapsed = performance.now() - holdStartedAtRef.current;
+    const nextProgress = Math.min(1, elapsed / HOLD_TO_OPEN_MS);
+    setNextProgress(nextProgress);
+
+    while (
+      hapticMarkRef.current < HOLD_HAPTIC_MARKS.length &&
+      nextProgress >= HOLD_HAPTIC_MARKS[hapticMarkRef.current]
+    ) {
+      hapticMarkRef.current += 1;
+      triggerHaptic(hapticMarkRef.current === HOLD_HAPTIC_MARKS.length ? 28 : 10);
+    }
+
+    if (nextProgress >= 1) {
+      finishHold();
+      return;
+    }
+
+    frameRef.current = window.requestAnimationFrame(tickHold);
+  }
+
+  function startHold() {
+    if (disabled || opening || holdingRef.current) return;
+    holdStartedAtRef.current = performance.now();
+    hapticMarkRef.current = 0;
+    holdingRef.current = true;
+    setHolding(true);
+    playSound("hold");
+    triggerHaptic(8);
+    frameRef.current = window.requestAnimationFrame(tickHold);
+  }
+
+  function isHoldKey(event: KeyboardEvent<HTMLButtonElement>) {
+    return (
+      event.key === "Enter" ||
+      event.key === " " ||
+      event.key === "Spacebar" ||
+      event.code === "Space"
+    );
+  }
+
+  useEffect(
+    () => () => {
+      if (frameRef.current != null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+    },
+    [],
+  );
 
   return (
-    <div className="sponge-stack-opening">
-      <div className="sponge-stack-spotlight" />
-      <div className="sponge-stack-stage">
-        <div className="sponge-stack-status">
-          <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
-            {cardIsSettled ? "Revealed" : "Next pull"}
-          </p>
-          <p className="sponge-stack-status-title">
-            {displayPull
-              ? cardIsSettled
-                ? displayPull.card.name
-                : RARITY_META[displayPull.card.rarity].label
-              : "Complete"}
-          </p>
-          <p className="sponge-stack-status-action">
-            {displayPull
-              ? cardIsSettled
-                ? "Tap the card to shelve it"
-                : "Tap the card to reveal"
-              : "Every card is secured"}
-          </p>
-        </div>
-        <div className="sponge-card-stack">
-          {remainingBacks.map((pull, index) => (
-            <div
-              key={`${pull.card.id}-${index}`}
-              className="sponge-stacked-card-back"
-              style={
-                {
-                  "--stack-opacity": 0.92 - index * 0.1,
-                  "--stack-x": `${index * -0.55}rem`,
-                  "--stack-y": `${index * 0.52}rem`,
-                  "--stack-z": `${index * -1.2}rem`,
-                  "--stack-rotation": `${index * -2}deg`,
-                  "--stack-scale": 1 - index * 0.035,
-                } as CSSProperties
-              }
-            >
-              <CardBack theme={theme} priority={index === 0} />
-            </div>
-          ))}
-          {displayPull ? (
-            <button
-              type="button"
-              aria-label={
-                cardIsSettled
-                  ? `Continue after ${displayPull.card.name}`
-                  : `Reveal card ${displayIndex + 1}`
-              }
-              aria-disabled={turningIndex !== null}
-              onPointerDown={handlePointerDown}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={() => setStartPoint(null)}
-              onKeyDown={(event) => {
-                if (turningIndex !== null) return;
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  if (cardIsSettled) {
-                    onAdvance();
-                  } else {
-                    onReveal(displayIndex);
-                  }
-                }
-              }}
-              data-rarity={displayPull.card.rarity}
-              className={`sponge-card-stack-top ${
-                cardIsTurning ? "is-turning" : ""
-              } ${cardIsSettled ? "is-revealed" : ""}`}
-            >
-              <span className="sponge-card-stack-inner">
-                <span className="sponge-card-stack-side sponge-card-stack-back">
-                  <CardBack theme={theme} priority />
-                </span>
-                <span className="sponge-card-stack-side sponge-card-stack-front">
-                  <CollectibleCardView card={displayPull.card} large />
-                  <span
-                    className={`absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-black uppercase shadow-lg ${
-                      displayPull.isNew
-                        ? "bg-lime-300 text-lime-950"
-                        : "bg-amber-300 text-amber-950"
-                    }`}
-                  >
-                    {displayPull.isNew
-                      ? "New"
-                      : `Dupe +${displayPull.duplicateValue}`}
-                  </span>
-                </span>
-              </span>
-            </button>
-          ) : (
-            <div className="sponge-card-stack-complete">
-              <p>Pack complete</p>
-            </div>
-          )}
+    <div
+      className={`sponge-hold-panel ${holding ? "is-holding" : ""}`}
+      style={{ "--hold-percent": `${Math.round(progress * 100)}%` } as CSSProperties}
+    >
+      <button
+        type="button"
+        className="sponge-hold-target"
+        disabled={disabled}
+        aria-label="Hold to open pack"
+        aria-describedby="sponge-hold-progress-label"
+        onPointerDown={(event) => {
+          if (disabled) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          startHold();
+        }}
+        onPointerUp={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+          }
+          stopHold();
+        }}
+        onPointerCancel={() => stopHold()}
+        onMouseDown={(event) => {
+          if (event.button !== 0 || disabled) return;
+          startHold();
+        }}
+        onMouseUp={() => stopHold()}
+        onMouseLeave={() => stopHold()}
+        onTouchStart={(event) => {
+          if (disabled) return;
+          event.preventDefault();
+          startHold();
+        }}
+        onTouchEnd={(event) => {
+          event.preventDefault();
+          stopHold();
+        }}
+        onTouchCancel={() => stopHold()}
+        onKeyDown={(event) => {
+          if (event.repeat || disabled) return;
+          if (isHoldKey(event)) {
+            event.preventDefault();
+            startHold();
+          }
+        }}
+        onKeyUp={(event) => {
+          if (isHoldKey(event)) {
+            event.preventDefault();
+            stopHold();
+          }
+        }}
+      >
+        <span>{opening ? "Opening" : holding ? "Keep holding" : "Hold to open"}</span>
+        <strong>{Math.round(progress * 100)}%</strong>
+      </button>
+      <div
+        id="sponge-hold-progress-label"
+        className="sponge-hold-progress"
+        aria-hidden
+      >
+        <span />
+      </div>
+    </div>
+  );
+}
+
+function CollectionProgressStrip({
+  before,
+  after,
+  total,
+}: {
+  before: number;
+  after: number;
+  total: number;
+}) {
+  const beforePercent = Math.round((before / Math.max(1, total)) * 100);
+  const afterPercent = Math.round((after / Math.max(1, total)) * 100);
+
+  return (
+    <div
+      className="sponge-cine-collection-progress"
+      style={
+        {
+          "--collection-before": `${beforePercent}%`,
+          "--collection-after": `${afterPercent}%`,
+        } as CSSProperties
+      }
+    >
+      <div>
+        <span>Collection</span>
+        <strong>
+          {after} / {total}
+        </strong>
+      </div>
+      <div className="sponge-cine-progress-track" aria-hidden>
+        <span />
+      </div>
+      <p>{afterPercent}%</p>
+    </div>
+  );
+}
+
+function OpeningRewardCard({
+  pull,
+  index,
+  total,
+  revealed,
+  revealing,
+  onReveal,
+}: {
+  pull: Pull;
+  index: number;
+  total: number;
+  revealed: boolean;
+  revealing: boolean;
+  onReveal: (index: number) => void;
+}) {
+  const collectionNumber = getCollectionNumber(pull.card);
+
+  return (
+    <button
+      type="button"
+      className={`sponge-cine-reward-card ${revealed ? "is-revealed" : ""} ${
+        revealing ? "is-revealing" : ""
+      }`}
+      data-rarity={revealed || revealing ? pull.card.rarity : undefined}
+      disabled={revealed || revealing}
+      aria-label={
+        revealed
+          ? `${pull.card.name}, ${RARITY_META[pull.card.rarity].label}`
+          : `Reveal mystery card ${index + 1}`
+      }
+      onClick={() => onReveal(index)}
+    >
+      <span className="sponge-cine-card-depth">
+        <span className="sponge-cine-card-face sponge-cine-card-back-face">
+          <span className="sponge-cine-mystery-mark">?</span>
+          <span className="sponge-cine-mystery-label">
+            Card {index + 1}
+          </span>
+        </span>
+        <span className="sponge-cine-card-face sponge-cine-card-front-face">
+          <span className="sponge-cine-reward-rarity">
+            {RARITY_META[pull.card.rarity].label}
+          </span>
+          <span className="sponge-cine-reward-art">
+            <Image
+              src={pull.card.artImage}
+              alt=""
+              fill
+              sizes="(max-width: 640px) 38vw, 160px"
+              className="object-cover"
+            />
+          </span>
+          <span className="sponge-cine-reward-name">{pull.card.name}</span>
+          <span className="sponge-cine-reward-title">{pull.card.title}</span>
+          <span
+            className={`sponge-cine-reward-badge ${
+              pull.isNew ? "is-new" : "is-dupe"
+            }`}
+          >
+            {pull.isNew ? "New!" : `Duplicate x${pull.copy}`}
+          </span>
+          <span className="sponge-cine-reward-number">
+            #{collectionNumber} / {total}
+          </span>
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function PackSummary({
+  session,
+  canOpenAnother,
+  onOpenAnother,
+  onBackToCollection,
+}: {
+  session: OpeningSession;
+  canOpenAnother: boolean;
+  onOpenAnother: () => void;
+  onBackToCollection: () => void;
+}) {
+  const bestPull = session.pulls[getBestPullIndex(session.pulls)];
+  const newCount = session.pulls.filter((pull) => pull.isNew).length;
+  const duplicateCount = session.pulls.length - newCount;
+
+  return (
+    <div className="sponge-pack-summary">
+      <div className="sponge-pack-summary-hero">
+        <p>Best pull</p>
+        <CollectibleCardView card={bestPull.card} large />
+        <div>
+          <span>{RARITY_META[bestPull.card.rarity].label}</span>
+          <strong>{bestPull.card.name}</strong>
+          <em>
+            {bestPull.isNew
+              ? `New • #${getCollectionNumber(bestPull.card)} / ${
+                  session.collectionTotal
+                }`
+              : `Duplicate x${bestPull.copy}`}
+          </em>
         </div>
       </div>
 
+      <div className="sponge-pack-summary-panel">
+        <p className="sponge-pack-summary-kicker">Pack complete</p>
+        <div className="sponge-pack-summary-stats">
+          <span>
+            <strong>{newCount}</strong>
+            New
+          </span>
+          <span>
+            <strong>{duplicateCount}</strong>
+            Duplicates
+          </span>
+        </div>
+        <CollectionProgressStrip
+          before={session.collectionBefore}
+          after={session.collectionAfter}
+          total={session.collectionTotal}
+        />
+        <div className="sponge-pack-summary-actions">
+          <button
+            type="button"
+            className="sponge-success-action"
+            disabled={!canOpenAnother}
+            onClick={onOpenAnother}
+          >
+            Open Another
+          </button>
+          <button
+            type="button"
+            className="sponge-ghost-action"
+            onClick={onBackToCollection}
+          >
+            Back To Collection
+          </button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function RewardStage({
+  session,
+  turningCardIndex,
+  autoRevealing,
+  canOpenAnother,
+  onReveal,
+  onRevealNext,
+  onRevealAll,
+  onOpenAnother,
+  onBackToCollection,
+}: {
+  session: OpeningSession;
+  turningCardIndex: number | null;
+  autoRevealing: boolean;
+  canOpenAnother: boolean;
+  onReveal: (index: number) => void;
+  onRevealNext: () => void;
+  onRevealAll: () => void;
+  onOpenAnother: () => void;
+  onBackToCollection: () => void;
+}) {
+  const revealedCount = session.revealed.filter(Boolean).length;
+  const complete = session.revealed.every(Boolean);
+  const cinematicPull =
+    turningCardIndex != null ? session.pulls[turningCardIndex] : null;
+
+  return (
+    <div
+      className="sponge-reward-stage"
+      data-cinematic-rarity={cinematicPull?.card.rarity ?? ""}
+      data-complete={complete ? "true" : "false"}
+    >
+      <div className="sponge-reward-stage-header">
+        <div>
+          <p>Pack results</p>
+          <h3>
+            {complete
+              ? "Every card is awake"
+              : cinematicPull?.card.rarity === "epic"
+                ? "Something big is coming"
+                : "Choose a mystery card"}
+          </h3>
+        </div>
+        <span>
+          {revealedCount}/{session.pulls.length}
+        </span>
+      </div>
+
+      <div className="sponge-cine-reward-grid">
+        {session.pulls.map((pull, index) => (
+          <OpeningRewardCard
+            key={`${session.id}-${pull.card.id}-${index}`}
+            pull={pull}
+            index={index}
+            total={session.collectionTotal}
+            revealed={session.revealed[index]}
+            revealing={turningCardIndex === index}
+            onReveal={onReveal}
+          />
+        ))}
+      </div>
+
+      {!complete && (
+        <div className="sponge-reveal-actions">
+          <button
+            type="button"
+            className="sponge-primary-action"
+            disabled={turningCardIndex !== null || autoRevealing}
+            onClick={onRevealNext}
+          >
+            Reveal Next
+          </button>
+          <button
+            type="button"
+            className="sponge-secondary-action"
+            disabled={turningCardIndex !== null || autoRevealing}
+            onClick={onRevealAll}
+          >
+            Reveal All
+          </button>
+        </div>
+      )}
+
+      {complete && (
+        <PackSummary
+          session={session}
+          canOpenAnother={canOpenAnother}
+          onOpenAnother={onOpenAnother}
+          onBackToCollection={onBackToCollection}
+        />
+      )}
+    </div>
+  );
+}
+
+function PackOpeningFocus({
+  session,
+  theme,
+  opening,
+  holdProgress,
+  turningCardIndex,
+  autoRevealing,
+  soundEnabled,
+  canOpenAnother,
+  onHoldProgress,
+  onBeginOpening,
+  onReveal,
+  onRevealNext,
+  onRevealAll,
+  onOpenAnother,
+  onBackToCollection,
+  onToggleSound,
+  playSound,
+}: {
+  session: OpeningSession;
+  theme: CardTheme;
+  opening: boolean;
+  holdProgress: number;
+  turningCardIndex: number | null;
+  autoRevealing: boolean;
+  soundEnabled: boolean;
+  canOpenAnother: boolean;
+  onHoldProgress: (progress: number) => void;
+  onBeginOpening: () => void;
+  onReveal: (index: number) => void;
+  onRevealNext: () => void;
+  onRevealAll: () => void;
+  onOpenAnother: () => void;
+  onBackToCollection: () => void;
+  onToggleSound: () => void;
+  playSound: (sound: PackSound) => void;
+}) {
+  const complete = session.revealed.every(Boolean);
+  const state: PackOpeningState = opening
+    ? "opening"
+    : !session.packOpen
+      ? holdProgress > 0
+        ? "holding"
+        : "idle"
+      : complete
+        ? "complete"
+        : turningCardIndex != null || autoRevealing
+          ? "revealing"
+          : "rewards-ready";
+  const animation = OPENING_ANIMATION_REGISTRY[session.animationType];
+
+  return (
+    <section
+      className={`sponge-pack-focus ${animation.className}`}
+      data-state={state}
+      data-animation={session.animationType}
+    >
+      <PackParticleField dense={state !== "idle"} />
+      <div className="sponge-pack-focus-glow" aria-hidden />
+
+      <header className="sponge-pack-focus-header">
+        <div>
+          <p>{session.productName}</p>
+          <h2>Pack Opening</h2>
+        </div>
+        <div className="sponge-pack-focus-tools">
+          <button
+            type="button"
+            className="sponge-sound-toggle"
+            aria-pressed={soundEnabled}
+            onClick={onToggleSound}
+          >
+            Sound {soundEnabled ? "On" : "Off"}
+          </button>
+          <span className="sponge-focus-count">
+            {session.revealed.filter(Boolean).length}/{session.pulls.length}
+          </span>
+        </div>
+      </header>
+
+      {!session.packOpen ? (
+        <div className="sponge-pack-focus-intro">
+          <PackDisplay
+            theme={theme}
+            cardCount={session.pulls.length}
+            state={state}
+            holdProgress={holdProgress}
+            animationType={session.animationType}
+          />
+          <div className="sponge-pack-focus-controls">
+            <p>{opening ? "Seal is breaking" : animation.cue}</p>
+            <HoldToOpen
+              disabled={opening}
+              opening={opening}
+              onComplete={onBeginOpening}
+              onProgressChange={onHoldProgress}
+              playSound={playSound}
+            />
+            <CollectionProgressStrip
+              before={session.collectionBefore}
+              after={session.collectionAfter}
+              total={session.collectionTotal}
+            />
+          </div>
+        </div>
+      ) : (
+        <RewardStage
+          session={session}
+          turningCardIndex={turningCardIndex}
+          autoRevealing={autoRevealing}
+          canOpenAnother={canOpenAnother}
+          onReveal={onReveal}
+          onRevealNext={onRevealNext}
+          onRevealAll={onRevealAll}
+          onOpenAnother={onOpenAnother}
+          onBackToCollection={onBackToCollection}
+        />
+      )}
+    </section>
   );
 }
 
@@ -1154,17 +1580,23 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
     null,
   );
   const [packRipActive, setPackRipActive] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
   const [turningCardIndex, setTurningCardIndex] = useState<number | null>(null);
-  const [focusedRevealIndex, setFocusedRevealIndex] = useState<number | null>(
-    null,
-  );
+  const [autoRevealing, setAutoRevealing] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [notice, setNotice] = useState("Vault ready.");
   const packRipTimerRef = useRef<number | null>(null);
   const cardTurnTimerRef = useRef<number | null>(null);
+  const revealAllTimerRefs = useRef<number[]>([]);
+  const completedSessionRef = useRef<string | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sceneRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setGame(readStoredGame());
+      const storedSound = window.localStorage.getItem(SOUND_PREF_KEY);
+      if (storedSound != null) setSoundEnabled(storedSound === "on");
       setHydrated(true);
     }, 0);
     return () => window.clearTimeout(timer);
@@ -1183,6 +1615,10 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
       if (cardTurnTimerRef.current != null) {
         window.clearTimeout(cardTurnTimerRef.current);
       }
+      for (const timer of revealAllTimerRefs.current) {
+        window.clearTimeout(timer);
+      }
+      closePackAudioContext(audioContextRef);
     };
   }, []);
 
@@ -1190,6 +1626,11 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
     if (!hydrated) return;
     window.localStorage.setItem(CARD_GAME_STORAGE_KEY, JSON.stringify(game));
   }, [game, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    window.localStorage.setItem(SOUND_PREF_KEY, soundEnabled ? "on" : "off");
+  }, [hydrated, soundEnabled]);
 
   useEffect(() => {
     function syncStoredGame() {
@@ -1203,6 +1644,18 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
       window.removeEventListener(CARD_GAME_PROGRESS_EVENT, syncStoredGame);
     };
   }, []);
+
+  function playSound(sound: PackSound) {
+    playPackSound(sound, soundEnabled, audioContextRef);
+  }
+
+  function clearRevealAllTimers() {
+    for (const timer of revealAllTimerRefs.current) {
+      window.clearTimeout(timer);
+    }
+    revealAllTimerRefs.current = [];
+    setAutoRevealing(false);
+  }
 
   const selectedThemeMeta = CARD_THEMES[selectedTheme];
   const selectedThemeCards = useMemo(
@@ -1289,6 +1742,10 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
   const starterPack = selectedPacks[0];
 
   function openPack(product: PackProduct, source: PackSource) {
+    if (openingSession && view === "opening" && !openingSession.revealed.every(Boolean)) {
+      setNotice("Finish the current pack first.");
+      return;
+    }
     if (!hydrated) {
       setNotice("Vault loading.");
       return;
@@ -1302,6 +1759,10 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
       return;
     }
 
+    clearRevealAllTimers();
+    const openedAt = Date.now();
+    const productThemeCards = CARDS_BY_THEME[product.themeId];
+    const collectionBefore = countOwnedCards(game.cards, product.themeId);
     const rolledCards = rollPack(product);
     const nextCards = { ...game.cards };
     const pulls = rolledCards.map((card) => {
@@ -1316,6 +1777,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
           currentCount === 0 ? 0 : RARITY_META[card.rarity].sellValue,
       };
     });
+    const collectionAfter = countOwnedCards(nextCards, product.themeId);
 
     setGame((current) => ({
       ...current,
@@ -1329,7 +1791,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
         source === "free"
           ? {
               ...current.lastFreePackAtByTheme,
-              [product.themeId]: Date.now(),
+              [product.themeId]: openedAt,
             }
           : current.lastFreePackAtByTheme,
     }));
@@ -1343,18 +1805,24 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
       cardTurnTimerRef.current = null;
     }
     setOpeningSession({
-      id: `${product.id}-${Date.now()}`,
+      id: `${product.id}-${openedAt}`,
+      productId: product.id,
       productName: product.name,
       themeId: product.themeId,
       source,
+      animationType: pickOpeningAnimationType(),
       pulls,
       revealed: pulls.map(() => false),
       packOpen: false,
+      collectionBefore,
+      collectionAfter,
+      collectionTotal: productThemeCards.length,
       createdAt: Date.now(),
     });
     setPackRipActive(false);
+    setHoldProgress(0);
     setTurningCardIndex(null);
-    setFocusedRevealIndex(null);
+    completedSessionRef.current = null;
     setNotice(
       pulls.some((pull) => pull.isNew)
         ? "New card secured."
@@ -1364,7 +1832,7 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
   }
 
   function revealCard(index: number) {
-    if (turningCardIndex !== null || focusedRevealIndex !== null) return;
+    if (turningCardIndex !== null || autoRevealing) return;
     if (
       !openingSession ||
       !openingSession.packOpen ||
@@ -1373,14 +1841,27 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
       return;
     }
 
-    const nextRevealIndex = openingSession.revealed.findIndex(
-      (revealed) => !revealed,
-    );
-    if (index !== nextRevealIndex) return;
-
     const revealedPull = openingSession.pulls[index];
     setTurningCardIndex(index);
-    setNotice("Card pressure rising.");
+    setNotice(
+      revealedPull.card.rarity === "epic"
+        ? "Something big is coming."
+        : "Card pressure rising.",
+    );
+    playSound(
+      revealedPull.card.rarity === "epic"
+        ? "epic"
+        : revealedPull.card.rarity === "rare"
+          ? "rare"
+          : "flip",
+    );
+    triggerHaptic(
+      revealedPull.card.rarity === "epic"
+        ? [18, 26, 18, 44]
+        : revealedPull.card.rarity === "rare"
+          ? [12, 24]
+          : 10,
+    );
     if (cardTurnTimerRef.current != null) {
       window.clearTimeout(cardTurnTimerRef.current);
     }
@@ -1391,22 +1872,79 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
         revealed[index] = true;
         return { ...current, revealed };
       });
-      setFocusedRevealIndex(index);
       setTurningCardIndex(null);
       cardTurnTimerRef.current = null;
+      if (revealedPull.isNew) playSound("new");
       setNotice(`${revealedPull.card.name} locked in.`);
-    }, CARD_TURN_ANIMATION_MS);
+    }, RARITY_REVEAL_MS[revealedPull.card.rarity]);
   }
 
-  function advanceRevealedCard() {
-    if (turningCardIndex !== null) return;
-    setFocusedRevealIndex(null);
+  function revealNextCard() {
+    if (!openingSession || !openingSession.packOpen) return;
+    const nextIndex = openingSession.revealed.findIndex((revealed) => !revealed);
+    if (nextIndex >= 0) revealCard(nextIndex);
+  }
+
+  function revealAllCards() {
+    if (
+      !openingSession ||
+      !openingSession.packOpen ||
+      turningCardIndex !== null ||
+      autoRevealing
+    ) {
+      return;
+    }
+
+    const indexes = openingSession.revealed
+      .map((revealed, index) => (revealed ? -1 : index))
+      .filter((index) => index >= 0);
+    if (indexes.length === 0) return;
+
+    clearRevealAllTimers();
+    setAutoRevealing(true);
+    setNotice("Reef shelf opening.");
+
+    indexes.forEach((index, order) => {
+      const startTimer = window.setTimeout(() => {
+        const pull = openingSession.pulls[index];
+        setTurningCardIndex(index);
+        playSound(
+          pull.card.rarity === "epic"
+            ? "epic"
+            : pull.card.rarity === "rare"
+              ? "rare"
+              : "flip",
+        );
+        triggerHaptic(pull.card.rarity === "epic" ? [16, 28, 16, 42] : 10);
+
+        const finishTimer = window.setTimeout(() => {
+          setOpeningSession((current) => {
+            if (!current || current.id !== openingSession.id) return current;
+            const revealed = [...current.revealed];
+            revealed[index] = true;
+            return { ...current, revealed };
+          });
+          setTurningCardIndex(null);
+          if (pull.isNew) playSound("new");
+
+          if (order === indexes.length - 1) {
+            setAutoRevealing(false);
+            revealAllTimerRefs.current = [];
+            setNotice("Pack complete.");
+          }
+        }, Math.min(820, RARITY_REVEAL_MS[pull.card.rarity]));
+        revealAllTimerRefs.current.push(finishTimer);
+      }, order * 620);
+      revealAllTimerRefs.current.push(startTimer);
+    });
   }
 
   function crackPack() {
     if (!openingSession || openingSession.packOpen || packRipActive) return;
 
     setPackRipActive(true);
+    setHoldProgress(1);
+    playSound("open");
     setNotice("Pack seal tearing.");
     if (packRipTimerRef.current != null) {
       window.clearTimeout(packRipTimerRef.current);
@@ -1416,9 +1954,11 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
         current ? { ...current, packOpen: true } : current,
       );
       setPackRipActive(false);
+      setHoldProgress(0);
       packRipTimerRef.current = null;
+      triggerHaptic([14, 28, 14]);
       setNotice("Deck released.");
-    }, PACK_RIP_ANIMATION_MS);
+    }, PACK_OPENING_SEQUENCE_MS);
   }
 
   function tradeDuplicate(cardId: string, amount: number) {
@@ -1465,92 +2005,156 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
     setNotice(`Traded ${duplicateCount} duplicates for ${duplicateValue} points.`);
   }
 
-  const openingRevealIndex =
-    openingSession?.packOpen
-      ? (openingSession.revealed.findIndex((revealed) => !revealed) ?? -1)
-      : -1;
+  function backToCollection() {
+    clearRevealAllTimers();
+    if (packRipTimerRef.current != null) {
+      window.clearTimeout(packRipTimerRef.current);
+      packRipTimerRef.current = null;
+    }
+    if (cardTurnTimerRef.current != null) {
+      window.clearTimeout(cardTurnTimerRef.current);
+      cardTurnTimerRef.current = null;
+    }
+    setPackRipActive(false);
+    setHoldProgress(0);
+    setTurningCardIndex(null);
+    setOpeningSession(null);
+    setView("collections");
+  }
+
+  function openAnotherPack() {
+    if (!openingSession) return;
+    const product = PACK_PRODUCTS.find(
+      (candidate) => candidate.id === openingSession.productId,
+    );
+    if (!product) {
+      setNotice("Pack shelf missing.");
+      setView("store");
+      return;
+    }
+    if (game.points < product.cost) {
+      setNotice(`${product.cost - game.points} more points needed.`);
+      setView("store");
+      return;
+    }
+    openPack(product, "points");
+  }
+
   const openingComplete =
     openingSession != null && openingSession.revealed.every(Boolean);
-  const openingDisplayIndex =
-    openingSession?.packOpen ? (focusedRevealIndex ?? openingRevealIndex) : -1;
+  const openingFocusActive = view === "opening" && openingSession != null;
+  const openingProduct = openingSession
+    ? PACK_PRODUCTS.find((product) => product.id === openingSession.productId)
+    : undefined;
+  const canOpenAnother =
+    openingProduct != null && hydrated && game.points >= openingProduct.cost;
+
+  useEffect(() => {
+    if (!openingFocusActive) return;
+    const frame = window.requestAnimationFrame(() => {
+      const scene = sceneRef.current;
+      if (!scene) return;
+      scene.scrollTop = 0;
+      scene.scrollLeft = 0;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [openingFocusActive, openingSession?.id]);
+
+  useEffect(() => {
+    if (!openingComplete || !openingSession) return;
+    if (completedSessionRef.current === openingSession.id) return;
+    completedSessionRef.current = openingSession.id;
+    playPackSound("complete", soundEnabled, audioContextRef);
+    triggerHaptic([14, 22, 14, 34]);
+    setNotice("Pack complete.");
+  }, [openingComplete, openingSession, soundEnabled]);
 
   return (
-    <section className="sponge-card-game-scene fixed inset-0 z-[90] overflow-y-auto text-white">
+    <section
+      ref={sceneRef}
+      className={`sponge-card-game-scene fixed inset-0 z-[90] overflow-y-auto text-white ${
+        openingFocusActive ? "is-opening-focus" : ""
+      }`}
+    >
       <BubbleField />
 
       <div className="sponge-vault-shell relative z-10 mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 py-4 sm:px-6 sm:py-6">
-        <header className="sponge-vault-header">
-          <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.34em] text-cyan-100/70">
-              hidden reef passage
-            </p>
-            <h1 className="sponge-vault-title mt-1 text-4xl font-black leading-none text-white sm:text-6xl">
-              Krusty Vault
-            </h1>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-            <div className="sponge-points-card">
-              <p className="text-2xl font-black text-white">{game.points}</p>
-              <p className="text-[9px] font-black uppercase tracking-widest text-yellow-200">
-                Points
+        {!openingFocusActive && (
+          <header className="sponge-vault-header">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.34em] text-cyan-100/70">
+                hidden reef passage
               </p>
+              <h1 className="sponge-vault-title mt-1 text-4xl font-black leading-none text-white sm:text-6xl">
+                Krusty Vault
+              </h1>
             </div>
-            <button
-              type="button"
-              onClick={onExit}
-              className="sponge-vault-back-button"
-            >
-              Back
-            </button>
-          </div>
-        </header>
-
-        <div className="sponge-vault-toolbar mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
-            {THEME_ORDER.map((themeId) => {
-              const theme = CARD_THEMES[themeId];
-              return (
-                <button
-                  key={theme.id}
-                  type="button"
-                  onClick={() => setSelectedTheme(theme.id)}
-                  className={`sponge-theme-pill ${
-                    selectedTheme === theme.id ? "is-active" : ""
-                  }`}
-                >
-                  {theme.name}
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              disabled
-              className="sponge-theme-pill is-disabled"
-            >
-              Next Theme
-            </button>
-          </div>
-
-          <nav className="sponge-card-tabs" aria-label="Card vault sections">
-            {(
-              [
-                ["lobby", "Lobby"],
-                ["store", "Store"],
-                ["inventory", "Inventory"],
-                ["collections", "Collections"],
-              ] as const
-            ).map(([key, label]) => (
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              <div className="sponge-points-card">
+                <p className="text-2xl font-black text-white">{game.points}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-yellow-200">
+                  Points
+                </p>
+              </div>
               <button
-                key={key}
                 type="button"
-                onClick={() => setView(key)}
-                className={view === key ? "is-active" : ""}
+                onClick={onExit}
+                className="sponge-vault-back-button"
               >
-                {label}
+                Back
               </button>
-            ))}
-          </nav>
-        </div>
+            </div>
+          </header>
+        )}
+
+        {!openingFocusActive && (
+          <div className="sponge-vault-toolbar mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2">
+              {THEME_ORDER.map((themeId) => {
+                const theme = CARD_THEMES[themeId];
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => setSelectedTheme(theme.id)}
+                    className={`sponge-theme-pill ${
+                      selectedTheme === theme.id ? "is-active" : ""
+                    }`}
+                  >
+                    {theme.name}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                disabled
+                className="sponge-theme-pill is-disabled"
+              >
+                Next Theme
+              </button>
+            </div>
+
+            <nav className="sponge-card-tabs" aria-label="Card vault sections">
+              {(
+                [
+                  ["lobby", "Lobby"],
+                  ["store", "Store"],
+                  ["inventory", "Inventory"],
+                  ["collections", "Collections"],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setView(key)}
+                  className={view === key ? "is-active" : ""}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+          </div>
+        )}
 
         <main className="mt-4 flex-1">
           {view === "lobby" && (
@@ -1712,82 +2316,25 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
           {view === "opening" && (
             <section className="sponge-opening-stage">
               {openingSession ? (
-                <>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.34em] text-yellow-200/65">
-                        {openingSession.productName}
-                      </p>
-                      <h2 className="mt-1 text-3xl font-black text-white sm:text-5xl">
-                        Seal Chamber
-                      </h2>
-                    </div>
-                    <div className="sponge-opening-counter">
-                      <p className="text-2xl font-black text-yellow-200">
-                        {openingSession.revealed.filter(Boolean).length}/
-                        {openingSession.pulls.length}
-                      </p>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-white/45">
-                        Revealed
-                      </p>
-                    </div>
-                  </div>
-
-                  {!openingSession.packOpen ? (
-                    <PackRipStage
-                      theme={selectedThemeMeta}
-                      cardCount={openingSession.pulls.length}
-                      ripping={packRipActive}
-                      onRip={crackPack}
-                    />
-                  ) : (
-                    <>
-                      <div className="sponge-opening-drama-bar">
-                        <span className="sponge-opening-drama-scan" />
-                        <p className="text-[10px] font-black uppercase tracking-[0.32em] text-cyan-100/55">
-                          Card{" "}
-                          {openingDisplayIndex >= 0
-                            ? openingDisplayIndex + 1
-                            : openingSession.pulls.length}
-                        </p>
-                        <p className="text-sm font-black text-yellow-100">
-                          {openingComplete
-                            ? "Pack complete"
-                            : "The next card is still hidden"}
-                        </p>
-                      </div>
-
-                      <StackedRevealDeck
-                        key={openingSession.id}
-                        session={openingSession}
-                        activeIndex={openingRevealIndex}
-                        turningIndex={turningCardIndex}
-                        settledIndex={focusedRevealIndex}
-                        onReveal={revealCard}
-                        onAdvance={advanceRevealedCard}
-                      />
-
-                      {openingComplete && (
-                        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setView("inventory")}
-                            className="sponge-success-action"
-                          >
-                            Inventory
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setView("store")}
-                            className="sponge-ghost-action"
-                          >
-                            Store
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </>
+                <PackOpeningFocus
+                  session={openingSession}
+                  theme={CARD_THEMES[openingSession.themeId]}
+                  opening={packRipActive}
+                  holdProgress={holdProgress}
+                  turningCardIndex={turningCardIndex}
+                  autoRevealing={autoRevealing}
+                  soundEnabled={soundEnabled}
+                  canOpenAnother={canOpenAnother}
+                  onHoldProgress={setHoldProgress}
+                  onBeginOpening={crackPack}
+                  onReveal={revealCard}
+                  onRevealNext={revealNextCard}
+                  onRevealAll={revealAllCards}
+                  onOpenAnother={openAnotherPack}
+                  onBackToCollection={backToCollection}
+                  onToggleSound={() => setSoundEnabled((enabled) => !enabled)}
+                  playSound={playSound}
+                />
               ) : (
                 <div className="grid min-h-[28rem] place-items-center text-center">
                   <div>
