@@ -10,7 +10,7 @@ import {
 } from "@/lib/card-game-rewards";
 
 type ThemeId = "spongebob";
-type Rarity = "common" | "rare" | "epic";
+type Rarity = "common" | "rare" | "epic" | "legendary";
 type GameView = "lobby" | "store" | "opening" | "inventory" | "collections";
 type PackSource = "free" | "points";
 type PackOpeningState =
@@ -28,6 +28,7 @@ type PackSound =
   | "flip"
   | "rare"
   | "epic"
+  | "legendary"
   | "new"
   | "complete";
 
@@ -121,6 +122,7 @@ const RARITY_REVEAL_MS: Record<Rarity, number> = {
   common: 760,
   rare: 1080,
   epic: 1650,
+  legendary: 1900,
 };
 
 const OPENING_ANIMATION_REGISTRY: Record<
@@ -166,6 +168,7 @@ const PACK_SOUND_SETTINGS: Record<
   flip: { frequency: 330, duration: 0.12, gain: 0.025, type: "triangle" },
   rare: { frequency: 470, duration: 0.18, gain: 0.03, type: "sine" },
   epic: { frequency: 660, duration: 0.32, gain: 0.038, type: "triangle" },
+  legendary: { frequency: 780, duration: 0.42, gain: 0.044, type: "sawtooth" },
   new: { frequency: 520, duration: 0.2, gain: 0.032, type: "sine" },
   complete: { frequency: 390, duration: 0.24, gain: 0.028, type: "triangle" },
 };
@@ -187,7 +190,14 @@ const PACK_ART_BY_THEME: Record<
   },
 };
 
-const RARITY_ORDER: Rarity[] = ["common", "rare", "epic"];
+const RARITY_ASSET_FOLDER: Record<Rarity, string> = {
+  common: "common",
+  rare: "rare",
+  epic: "epic",
+  legendary: "Legendary",
+};
+
+const RARITY_ORDER: Rarity[] = ["common", "rare", "epic", "legendary"];
 
 const RARITY_META: Record<
   Rarity,
@@ -227,6 +237,15 @@ const RARITY_META: Record<
     chip: "bg-fuchsia-200 text-fuchsia-950",
     text: "text-fuchsia-900",
     ring: "ring-fuchsia-200/80",
+  },
+  legendary: {
+    label: "Legendary",
+    shortLabel: "L",
+    sellValue: 180,
+    frame: "from-amber-300 via-yellow-100 to-rose-500",
+    chip: "bg-yellow-200 text-yellow-950",
+    text: "text-yellow-950",
+    ring: "ring-yellow-200/90",
   },
 };
 
@@ -296,6 +315,27 @@ const CARD_THEMES: Record<ThemeId, CardTheme> = {
         "squidward-city-cruise.jpg",
         "squidward-night-club.jpg",
       ],
+      legendary: [
+        "Bikini Bottom got a streetwear upgrade_ \u{1F306}\u{1F525}\u{1F3A8}\u{1F4A5}.jpg",
+        "Bikini Bottom got a streetwear upgrade_ \u{1F306}\u{1F525}\u{1F3A8}\u{1F4A5} (1).jpg",
+        "Bikini Bottom got a streetwear upgrade_ \u{1F306}\u{1F525}\u{1F3A8}\u{1F4A5} (2).jpg",
+        "download.jpg",
+        "download (3).jpg",
+        "download (4).jpg",
+        "download (5).jpg",
+        "download (6).jpg",
+        "download (7).jpg",
+        "download (8).jpg",
+        "download (9).jpg",
+        "download (10).jpg",
+        "https___t_me_austinauston.jpg",
+        "Patrick Star.jpg",
+        "SpongeBob Diamond Grillz.jpg",
+        "SpongeBob SquarePants.jpg",
+        "Spongebob x Kaws Wallpaper.jpg",
+        "Ya fav cartoons.jpg",
+        "Ya fav cartoons (1).jpg",
+      ],
     },
   },
 };
@@ -310,7 +350,7 @@ const PACK_PRODUCTS: PackProduct[] = [
     tier: "Standard",
     cost: PACK_COST,
     size: 5,
-    odds: { common: 73, rare: 22, epic: 5 },
+    odds: { common: 72, rare: 22, epic: 5, legendary: 1 },
     featured: true,
   },
   {
@@ -320,7 +360,7 @@ const PACK_PRODUCTS: PackProduct[] = [
     tier: "Premium",
     cost: 420,
     size: 5,
-    odds: { common: 48, rare: 38, epic: 14 },
+    odds: { common: 47, rare: 37, epic: 14, legendary: 2 },
   },
   {
     id: "neptune-vault",
@@ -329,7 +369,7 @@ const PACK_PRODUCTS: PackProduct[] = [
     tier: "Elite",
     cost: 850,
     size: 7,
-    odds: { common: 30, rare: 45, epic: 25 },
+    odds: { common: 29, rare: 44, epic: 24, legendary: 3 },
   },
 ];
 
@@ -410,23 +450,97 @@ const CARD_WORDS: Record<string, string> = {
   yard: "Yard",
 };
 
+const LEGENDARY_DOWNLOAD_NAMES: Record<string, string> = {
+  download: "Midnight Reef Icon",
+  "download (3)": "Golden Alley SpongeBob",
+  "download (4)": "Vault Chain SpongeBob",
+  "download (5)": "Night Market SpongeBob",
+  "download (6)": "Royal Grill SpongeBob",
+  "download (7)": "Bubble Flex Patrick",
+  "download (8)": "Krusty Afterhours Boss",
+  "download (9)": "Street Crown Patrick",
+  "download (10)": "Reef Graffiti Legend",
+};
+
+const LEGENDARY_NAME_OVERRIDES: Record<string, string> = {
+  "https___t_me_austinauston": "Midnight Reef Signal",
+  "Patrick Star": "Patrick Star Apex",
+  "SpongeBob Diamond Grillz": "Diamond Grillz SpongeBob",
+  "SpongeBob SquarePants": "SquarePants Icon",
+  "Spongebob x Kaws Wallpaper": "Kaws Reef Signal",
+  "Ya fav cartoons": "Favorite Cartoon Kings",
+  "Ya fav cartoons (1)": "Favorite Cartoon Queens",
+};
+
 const RARITY_SCORE_BASE: Record<Rarity, number> = {
   common: 12,
   rare: 72,
   epic: 150,
+  legendary: 280,
 };
 
 const RARITY_TITLES: Record<Rarity, string[]> = {
   common: ["Reef Regular", "Shift Pull", "Daily Catch", "Dock Card"],
   rare: ["Vault Pull", "Deep Current", "Collector Cut", "Prize Catch"],
   epic: ["Headliner", "Neptune Cut", "Deep-Sea Crown", "Vault Star"],
+  legendary: ["Street Myth", "Vault Apex", "Reef Relic", "Golden Omen"],
+};
+
+const REVEAL_SOUND_BY_RARITY: Record<Rarity, PackSound> = {
+  common: "flip",
+  rare: "rare",
+  epic: "epic",
+  legendary: "legendary",
+};
+
+const REVEAL_NOTICE_BY_RARITY: Record<Rarity, string> = {
+  common: "Card pressure rising.",
+  rare: "The reef is glowing.",
+  epic: "Something big is coming.",
+  legendary: "The vault just went quiet.",
+};
+
+const REVEAL_HAPTIC_BY_RARITY: Record<Rarity, number | number[]> = {
+  common: 10,
+  rare: [12, 24],
+  epic: [18, 26, 18, 44],
+  legendary: [20, 38, 24, 52, 32],
+};
+
+const REVEAL_ALL_HAPTIC_BY_RARITY: Record<Rarity, number | number[]> = {
+  common: 10,
+  rare: [12, 20],
+  epic: [16, 28, 16, 42],
+  legendary: [20, 34, 22, 48],
+};
+
+const REVEAL_ALL_MS: Record<Rarity, number> = {
+  common: 640,
+  rare: 820,
+  epic: 1080,
+  legendary: 1220,
 };
 
 function slugFromFile(file: string) {
   return file.replace(/\.[^.]+$/, "");
 }
 
-function formatCardName(slug: string) {
+function legendaryCardName(slug: string) {
+  if (slug.startsWith("Bikini Bottom got a streetwear upgrade_")) {
+    if (slug.endsWith("(1)")) return "Bikini Bottom Heat Drop";
+    if (slug.endsWith("(2)")) return "Bikini Bottom Night Drop";
+    return "Bikini Bottom Streetwear Drop";
+  }
+
+  return LEGENDARY_NAME_OVERRIDES[slug] ?? LEGENDARY_DOWNLOAD_NAMES[slug];
+}
+
+function formatCardName(slug: string, rarity: Rarity) {
+  if (rarity === "legendary") {
+    const override = legendaryCardName(slug);
+    if (override) return override;
+  }
+
   return slug
     .split("-")
     .map(
@@ -442,6 +556,7 @@ function cardTitle(rarity: Rarity, index: number) {
 }
 
 function cardQuote(rarity: Rarity, name: string) {
+  if (rarity === "legendary") return `${name} makes the whole vault go quiet.`;
   if (rarity === "epic") return `${name} headlines the deep-sea case.`;
   if (rarity === "rare") return `${name} lands in the vault shelf.`;
   return `${name} joins the reef binder.`;
@@ -454,7 +569,7 @@ function buildCard(
   index: number,
 ): CollectibleCard {
   const slug = slugFromFile(file);
-  const name = formatCardName(slug);
+  const name = formatCardName(slug, rarity);
   const base = RARITY_SCORE_BASE[rarity];
   return {
     id: `${theme.id}:${rarity}:${slug}`,
@@ -467,7 +582,7 @@ function buildCard(
     quote: cardQuote(rarity, name),
     power: base + ((index * 7) % 43),
     jelly: base + 10 + ((index * 11) % 53),
-    artImage: `/cards/${theme.id}/${rarity}/${file}`,
+    artImage: encodeURI(`/cards/${theme.id}/${RARITY_ASSET_FOLDER[rarity]}/${file}`),
   };
 }
 
@@ -1260,6 +1375,7 @@ function OpeningRewardCard({
               fill
               sizes="(max-width: 640px) 38vw, 160px"
               className="object-cover"
+              loading="eager"
             />
           </span>
           <span className="sponge-cine-reward-name">{pull.card.name}</span>
@@ -1390,7 +1506,9 @@ function RewardStage({
           <h3>
             {complete
               ? "Every card is awake"
-              : cinematicPull?.card.rarity === "epic"
+              : cinematicPull?.card.rarity === "legendary"
+                ? "The vault just went quiet"
+                : cinematicPull?.card.rarity === "epic"
                 ? "Something big is coming"
                 : "Choose a mystery card"}
           </h3>
@@ -1843,25 +1961,9 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
 
     const revealedPull = openingSession.pulls[index];
     setTurningCardIndex(index);
-    setNotice(
-      revealedPull.card.rarity === "epic"
-        ? "Something big is coming."
-        : "Card pressure rising.",
-    );
-    playSound(
-      revealedPull.card.rarity === "epic"
-        ? "epic"
-        : revealedPull.card.rarity === "rare"
-          ? "rare"
-          : "flip",
-    );
-    triggerHaptic(
-      revealedPull.card.rarity === "epic"
-        ? [18, 26, 18, 44]
-        : revealedPull.card.rarity === "rare"
-          ? [12, 24]
-          : 10,
-    );
+    setNotice(REVEAL_NOTICE_BY_RARITY[revealedPull.card.rarity]);
+    playSound(REVEAL_SOUND_BY_RARITY[revealedPull.card.rarity]);
+    triggerHaptic(REVEAL_HAPTIC_BY_RARITY[revealedPull.card.rarity]);
     if (cardTurnTimerRef.current != null) {
       window.clearTimeout(cardTurnTimerRef.current);
     }
@@ -1904,18 +2006,16 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
     setAutoRevealing(true);
     setNotice("Reef shelf opening.");
 
+    let startDelay = 0;
+
     indexes.forEach((index, order) => {
+      const pull = openingSession.pulls[index];
+      const revealMs = REVEAL_ALL_MS[pull.card.rarity];
       const startTimer = window.setTimeout(() => {
-        const pull = openingSession.pulls[index];
         setTurningCardIndex(index);
-        playSound(
-          pull.card.rarity === "epic"
-            ? "epic"
-            : pull.card.rarity === "rare"
-              ? "rare"
-              : "flip",
-        );
-        triggerHaptic(pull.card.rarity === "epic" ? [16, 28, 16, 42] : 10);
+        setNotice(REVEAL_NOTICE_BY_RARITY[pull.card.rarity]);
+        playSound(REVEAL_SOUND_BY_RARITY[pull.card.rarity]);
+        triggerHaptic(REVEAL_ALL_HAPTIC_BY_RARITY[pull.card.rarity]);
 
         const finishTimer = window.setTimeout(() => {
           setOpeningSession((current) => {
@@ -1932,10 +2032,11 @@ export function SpongeCardGame({ onExit }: { onExit: () => void }) {
             revealAllTimerRefs.current = [];
             setNotice("Pack complete.");
           }
-        }, Math.min(820, RARITY_REVEAL_MS[pull.card.rarity]));
+        }, revealMs);
         revealAllTimerRefs.current.push(finishTimer);
-      }, order * 620);
+      }, startDelay);
       revealAllTimerRefs.current.push(startTimer);
+      startDelay += revealMs + 180;
     });
   }
 

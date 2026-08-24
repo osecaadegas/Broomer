@@ -1982,6 +1982,15 @@ body {
   border-color: rgba(232, 121, 249, 0.42);
 }
 
+.sponge-rarity-breakdown span[data-rarity="legendary"] {
+  border-color: rgba(250, 204, 21, 0.58);
+  background:
+    linear-gradient(135deg, rgba(250, 204, 21, 0.16), rgba(244, 63, 94, 0.12)),
+    rgba(255, 255, 255, 0.08);
+  color: #fef3c7;
+  box-shadow: 0 0 1.2rem rgba(250, 204, 21, 0.16);
+}
+
 .sponge-primary-action,
 .sponge-secondary-action,
 .sponge-success-action,
@@ -2305,6 +2314,16 @@ body {
   --card-accent: #f0abfc;
   --card-accent-strong: #7c3aed;
   --card-text: #581c87;
+}
+
+.sponge-collectible-card[data-rarity="legendary"] {
+  --card-accent: #fde68a;
+  --card-accent-strong: #f43f5e;
+  --card-text: #713f12;
+  box-shadow:
+    0 1rem 1.8rem rgba(2, 6, 23, 0.34),
+    0 0 0 1px rgba(253, 224, 71, 0.24),
+    0 0 2rem rgba(250, 204, 21, 0.18);
 }
 
 .sponge-collectible-card.is-large {
@@ -3540,6 +3559,14 @@ body {
     drop-shadow(0 0 1.6rem rgba(253, 224, 71, 0.36));
 }
 
+.sponge-card-stack-top[data-rarity="legendary"].is-turning .sponge-card-stack-inner {
+  animation-name: sponge-stack-epic-card-turn;
+  filter:
+    drop-shadow(0 2.4rem 2.1rem rgba(2, 6, 23, 0.5))
+    drop-shadow(0 0 3.4rem rgba(250, 204, 21, 0.62))
+    drop-shadow(0 0 2rem rgba(244, 63, 94, 0.42));
+}
+
 .sponge-card-stack-top.is-revealed .sponge-card-stack-inner {
   filter:
     drop-shadow(0 2rem 2rem rgba(2, 6, 23, 0.44))
@@ -3570,6 +3597,14 @@ body {
     drop-shadow(0 0 3rem rgba(232, 121, 249, 0.52))
     drop-shadow(0 0 1.6rem rgba(253, 224, 71, 0.36));
   transform: translate3d(3.4rem, -1.7rem, 5.4rem) rotateZ(6deg) scale(1.09);
+}
+
+.sponge-card-stack-top[data-rarity="legendary"].is-revealed .sponge-card-stack-inner {
+  filter:
+    drop-shadow(0 2.4rem 2.1rem rgba(2, 6, 23, 0.5))
+    drop-shadow(0 0 3.4rem rgba(250, 204, 21, 0.62))
+    drop-shadow(0 0 2rem rgba(244, 63, 94, 0.42));
+  transform: translate3d(3.55rem, -1.8rem, 5.8rem) rotateZ(6deg) scale(1.1);
 }
 
 .sponge-card-stack-complete {
@@ -3679,6 +3714,14 @@ body {
     drop-shadow(0 1.4rem 1.8rem rgba(2, 6, 23, 0.42))
     drop-shadow(0 0 2.5rem rgba(232, 121, 249, 0.46))
     drop-shadow(0 0 1.3rem rgba(253, 224, 71, 0.35));
+}
+
+.sponge-reveal-card[data-rarity="legendary"].sponge-reveal-card-open .sponge-reveal-card-inner {
+  animation: sponge-epic-card-hit 980ms cubic-bezier(0.17, 0.9, 0.19, 1.16) both;
+  filter:
+    drop-shadow(0 1.5rem 1.9rem rgba(2, 6, 23, 0.44))
+    drop-shadow(0 0 2.9rem rgba(250, 204, 21, 0.56))
+    drop-shadow(0 0 1.6rem rgba(244, 63, 94, 0.42));
 }
 
 .sponge-dupe-row {
@@ -6706,6 +6749,15 @@ body {
   animation: sponge-epic-stage-omen 1.65s cubic-bezier(0.18, 0.82, 0.25, 1) both;
 }
 
+.sponge-reward-stage[data-cinematic-rarity="legendary"]::before {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(250, 204, 21, 0.24), transparent 18rem),
+    radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.14), transparent 24rem),
+    radial-gradient(circle at 50% 64%, rgba(8, 47, 73, 0.28), transparent 30rem),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.14) 62%, transparent);
+  animation: sponge-legendary-stage-omen 1.9s cubic-bezier(0.18, 0.82, 0.25, 1) both;
+}
+
 .sponge-reward-stage-header {
   display: flex;
   align-items: center;
@@ -6749,6 +6801,8 @@ body {
 }
 
 .sponge-cine-reward-card {
+  --reveal-glow: rgba(253, 224, 71, 0.26);
+  --reveal-glow-strong: rgba(253, 224, 71, 0.42);
   position: relative;
   display: block;
   width: min(100%, 10.8rem);
@@ -6757,11 +6811,38 @@ body {
   background: transparent;
   color: inherit;
   cursor: pointer;
+  isolation: isolate;
   padding: 0;
   transform-style: preserve-3d;
   transition:
     filter 180ms ease,
     transform 180ms ease;
+}
+
+.sponge-cine-reward-card::before,
+.sponge-cine-reward-card::after {
+  position: absolute;
+  inset: -0.72rem;
+  z-index: 0;
+  border-radius: 1.45rem;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.82);
+}
+
+.sponge-cine-reward-card::before {
+  background:
+    radial-gradient(circle, var(--reveal-glow-strong), transparent 58%),
+    conic-gradient(from 120deg, transparent, var(--reveal-glow), transparent, var(--reveal-glow-strong), transparent);
+  filter: blur(0.18rem);
+}
+
+.sponge-cine-reward-card::after {
+  border: 1px solid var(--reveal-glow);
+  box-shadow:
+    inset 0 0 1.2rem var(--reveal-glow),
+    0 0 1.8rem var(--reveal-glow);
 }
 
 .sponge-cine-reward-card:not(:disabled):hover {
@@ -6777,21 +6858,55 @@ body {
   animation: sponge-cine-card-stage-lift 620ms cubic-bezier(0.18, 0.86, 0.22, 1) both;
 }
 
+.sponge-cine-reward-card.is-revealing::before {
+  animation: sponge-cine-reveal-burst 760ms cubic-bezier(0.16, 0.88, 0.2, 1) both;
+}
+
+.sponge-cine-reward-card.is-revealing::after {
+  animation: sponge-cine-reveal-ring 760ms cubic-bezier(0.18, 0.86, 0.22, 1) both;
+}
+
 .sponge-cine-reward-card.is-revealed {
   cursor: default;
+}
+
+.sponge-cine-reward-card[data-rarity="rare"] {
+  --reveal-glow: rgba(34, 211, 238, 0.28);
+  --reveal-glow-strong: rgba(34, 211, 238, 0.5);
 }
 
 .sponge-cine-reward-card[data-rarity="rare"].is-revealing {
   animation-duration: 860ms;
 }
 
+.sponge-cine-reward-card[data-rarity="epic"] {
+  --reveal-glow: rgba(232, 121, 249, 0.32);
+  --reveal-glow-strong: rgba(253, 224, 71, 0.56);
+}
+
 .sponge-cine-reward-card[data-rarity="epic"].is-revealing {
   animation: sponge-epic-card-omen 1.65s cubic-bezier(0.18, 0.86, 0.22, 1) both;
+}
+
+.sponge-cine-reward-card[data-rarity="legendary"] {
+  --reveal-glow: rgba(250, 204, 21, 0.44);
+  --reveal-glow-strong: rgba(244, 63, 94, 0.62);
+}
+
+.sponge-cine-reward-card[data-rarity="legendary"].is-revealing {
+  animation: sponge-legendary-card-omen 1.9s cubic-bezier(0.18, 0.86, 0.22, 1) both;
+}
+
+.sponge-cine-reward-card[data-rarity="legendary"].is-revealing::before,
+.sponge-cine-reward-card[data-rarity="legendary"].is-revealing::after {
+  animation-duration: 1.08s;
+  animation-delay: 0.42s;
 }
 
 .sponge-cine-card-depth {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: block;
   border-radius: 1rem;
   transform-style: preserve-3d;
@@ -6802,6 +6917,21 @@ body {
 .sponge-cine-reward-card.is-revealed .sponge-cine-card-depth,
 .sponge-cine-reward-card.is-revealing .sponge-cine-card-depth {
   transform: rotateY(180deg);
+}
+
+.sponge-cine-reward-card[data-rarity="rare"].is-revealing .sponge-cine-card-depth {
+  transition-duration: 860ms;
+  transition-delay: 40ms;
+}
+
+.sponge-cine-reward-card[data-rarity="epic"].is-revealing .sponge-cine-card-depth {
+  transition-duration: 980ms;
+  transition-delay: 180ms;
+}
+
+.sponge-cine-reward-card[data-rarity="legendary"].is-revealing .sponge-cine-card-depth {
+  transition-duration: 1040ms;
+  transition-delay: 420ms;
 }
 
 .sponge-cine-card-face {
@@ -6924,6 +7054,26 @@ body {
     0 0 1.8rem rgba(253, 224, 71, 0.2);
 }
 
+.sponge-cine-reward-card[data-rarity="legendary"] .sponge-cine-card-front-face {
+  border-color: rgba(250, 204, 21, 0.9);
+  background:
+    radial-gradient(circle at 50% 16%, rgba(254, 240, 138, 0.36), transparent 30%),
+    radial-gradient(circle at 52% 46%, rgba(244, 63, 94, 0.24), transparent 44%),
+    linear-gradient(180deg, #3d2604, #17101f 55%, #020617);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 1.55rem 3rem rgba(0, 0, 0, 0.5),
+    0 0 3.4rem rgba(250, 204, 21, 0.38),
+    0 0 2rem rgba(244, 63, 94, 0.24);
+}
+
+.sponge-cine-reward-card[data-rarity="legendary"] .sponge-cine-reward-rarity {
+  color: #fef08a;
+  text-shadow:
+    0 0 0.9rem rgba(250, 204, 21, 0.55),
+    0 0 1.5rem rgba(244, 63, 94, 0.28);
+}
+
 .sponge-cine-reward-rarity,
 .sponge-cine-reward-number,
 .sponge-cine-reward-title {
@@ -6951,6 +7101,14 @@ body {
   box-shadow:
     inset 0 0 1.4rem rgba(2, 6, 23, 0.4),
     0 0.7rem 1.4rem rgba(0, 0, 0, 0.28);
+}
+
+.sponge-cine-reward-card.is-revealing .sponge-cine-reward-art {
+  animation: sponge-cine-art-hit 720ms cubic-bezier(0.17, 0.92, 0.2, 1.08) 440ms both;
+}
+
+.sponge-cine-reward-card[data-rarity="legendary"].is-revealing .sponge-cine-reward-art {
+  animation-delay: 760ms;
 }
 
 .sponge-cine-reward-name {
@@ -7338,8 +7496,13 @@ body {
   .sponge-cine-card-back-face,
   .sponge-cine-reward-card.is-revealing,
   .sponge-cine-reward-card[data-rarity="epic"].is-revealing,
+  .sponge-cine-reward-card[data-rarity="legendary"].is-revealing,
+  .sponge-cine-reward-card.is-revealing::before,
+  .sponge-cine-reward-card.is-revealing::after,
+  .sponge-cine-reward-card.is-revealing .sponge-cine-reward-art,
   .sponge-reward-stage[data-cinematic-rarity="rare"]::before,
   .sponge-reward-stage[data-cinematic-rarity="epic"]::before,
+  .sponge-reward-stage[data-cinematic-rarity="legendary"]::before,
   .sponge-cine-reward-badge.is-new,
   .sponge-cine-progress-track span,
   .sponge-pack-summary {
@@ -7621,6 +7784,59 @@ body {
   }
 }
 
+@keyframes sponge-legendary-stage-omen {
+  0% {
+    opacity: 0.24;
+    transform: scale(0.98);
+  }
+  28% {
+    opacity: 0.72;
+    transform: scale(1.01);
+  }
+  48% {
+    opacity: 0.42;
+    transform: scale(0.99);
+  }
+  66% {
+    opacity: 0.9;
+    transform: scale(1.025);
+  }
+  100% {
+    opacity: 0.82;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes sponge-cine-reveal-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.76) rotate(0deg);
+  }
+  42% {
+    opacity: 0.72;
+    transform: scale(1.02) rotate(10deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.34) rotate(24deg);
+  }
+}
+
+@keyframes sponge-cine-reveal-ring {
+  0% {
+    opacity: 0;
+    transform: scale(0.76);
+  }
+  32% {
+    opacity: 0.72;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.34);
+  }
+}
+
 @keyframes sponge-epic-card-omen {
   0%,
   34% {
@@ -7638,6 +7854,52 @@ body {
   100% {
     transform: translateY(0) scale(1.02);
     filter: brightness(1.05);
+  }
+}
+
+@keyframes sponge-legendary-card-omen {
+  0% {
+    transform: translateY(0) scale(1);
+    filter: brightness(0.82) saturate(0.96);
+  }
+  20% {
+    transform: translateY(0.12rem) scale(0.985) rotateZ(-0.8deg);
+    filter: brightness(0.58) saturate(0.9);
+  }
+  38% {
+    transform: translateY(-0.16rem) scale(1.025) rotateZ(0.8deg);
+    filter: brightness(0.44) saturate(1.04);
+  }
+  52% {
+    transform: translateY(-0.18rem) scale(1.025);
+    filter: brightness(0.48) saturate(1.08);
+  }
+  68% {
+    transform: translateY(-0.65rem) scale(1.08) rotateZ(-0.8deg);
+    filter: brightness(1.65) saturate(1.28);
+  }
+  84% {
+    transform: translateY(-0.36rem) scale(1.045) rotateZ(0.8deg);
+    filter: brightness(1.2) saturate(1.12);
+  }
+  100% {
+    transform: translateY(0) scale(1.025);
+    filter: brightness(1.06) saturate(1.04);
+  }
+}
+
+@keyframes sponge-cine-art-hit {
+  0% {
+    filter: brightness(1.32) saturate(1.14);
+    transform: scale(1.045);
+  }
+  58% {
+    filter: brightness(1.08) saturate(1.06);
+    transform: scale(1.01);
+  }
+  100% {
+    filter: none;
+    transform: scale(1);
   }
 }
 
